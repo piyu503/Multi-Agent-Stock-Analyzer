@@ -5,32 +5,38 @@ export const FeatureGrid: React.FC = () => {
   const features = [
     {
       icon: Layers,
-      title: 'Multi-Dimensional Analysis',
+      title: 'Parallel Evidence Swarm',
+      color: 'cyan',
+      iconClass: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30 shadow-[0_0_15px_rgba(6,182,212,0.15)]',
       description:
-        'Fundamentals, balance sheet debt, live Google News, BSE disclosures, and technical momentum evaluated concurrently by specialized analysts.'
+        'Deterministic financial math, multi-year margin spreads, BSE corporate disclosures, and live price microstructure synthesized concurrently by 7 specialist analysts.'
     },
     {
       icon: MessageSquareDiff,
-      title: 'Adversarial Bull vs Bear Debate',
+      title: 'Adversarial Bull vs Bear Arena',
+      color: 'magenta',
+      iconClass: 'text-fuchsia-400 bg-fuchsia-500/10 border-fuchsia-500/30 shadow-[0_0_15px_rgba(217,70,239,0.15)]',
       description:
-        'Independent researchers argue both sides with zero cross-contamination, followed by a structured rebuttal round to challenge assumptions.'
+        'Independent researchers build isolated thesis vectors with zero cross-contamination, then clash in an adversarial rebuttal round to identify critical swing factors.'
     },
     {
       icon: ShieldCheck,
-      title: 'Risk-Audited Conviction Synthesis',
+      title: 'Risk-Audited Conviction',
+      color: 'emerald',
+      iconClass: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.15)]',
       description:
-        'Stress-tests debt solvency and promoter pledging before the Portfolio Manager delivers an institutional capital allocation decision.'
+        'The Risk Analyst stress-tests tail-risk and debt solvency, enabling the Portfolio Manager to assign schema-enforced conviction (OVERWEIGHT / NEUTRAL / UNDERWEIGHT).'
     }
   ];
 
   return (
     <div className="w-full max-w-5xl mx-auto mb-16">
       <div className="text-center mb-8">
-        <h2 className="text-xl sm:text-2xl font-bold text-slate-100 tracking-tight">
-          Why single-perspective analysis falls short
+        <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight font-display">
+          Multi-Perspective Deliberation Engine
         </h2>
-        <p className="mt-2 text-xs sm:text-sm text-slate-400 max-w-xl mx-auto">
-          Markets are multifaceted. EquiAgentic deploys 13 specialized roles to uncover blind spots before allocating capital.
+        <p className="mt-2 text-xs sm:text-sm text-slate-300 max-w-xl mx-auto leading-relaxed">
+          Single-analyst research creates dangerous blind spots. EquiAgentic deploys 13 specialized roles to stress-test every angle before capital deployment.
         </p>
       </div>
 
@@ -40,14 +46,14 @@ export const FeatureGrid: React.FC = () => {
           return (
             <div
               key={idx}
-              className="rounded-2xl bg-[#0b101b] border border-slate-800/80 p-6 flex flex-col justify-between hover:border-slate-700/80 transition-all shadow-lg shadow-black/20"
+              className="rounded-2xl bg-[#0c101c]/80 border border-white/10 p-6 flex flex-col justify-between hover:border-white/20 transition-all duration-300 shadow-xl shadow-black/40 hover:-translate-y-1 backdrop-blur-md"
             >
               <div>
-                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-4">
+                <div className={`w-11 h-11 rounded-xl border flex items-center justify-center mb-4 ${f.iconClass}`}>
                   <Icon className="w-5 h-5 stroke-[1.75]" />
                 </div>
-                <h3 className="text-base font-semibold text-slate-100 mb-2">{f.title}</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">{f.description}</p>
+                <h3 className="text-base font-bold text-white mb-2 font-display">{f.title}</h3>
+                <p className="text-xs text-slate-300 leading-relaxed">{f.description}</p>
               </div>
             </div>
           );

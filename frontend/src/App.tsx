@@ -11,7 +11,7 @@ import { FeatureGrid } from './components/FeatureGrid';
 import { AgentExecutionModal } from './components/AgentExecutionModal';
 import type { AgentProgressItem } from './components/AgentExecutionModal';
 import type { ResearchReport, StockDetail, StockSummary } from './types';
-import { ChevronLeft, ChevronRight, Database, FileSpreadsheet } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Database } from 'lucide-react';
 
 type ViewMode = 'catalog' | 'profile' | 'report';
 
@@ -39,7 +39,6 @@ export function App() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalMatches, setTotalMatches] = useState(0);
-  const [catalogImported, setCatalogImported] = useState(false);
 
   const [isLoadingStocks, setIsLoadingStocks] = useState(false);
   const [stocksError, setStocksError] = useState<string | null>(null);
@@ -73,9 +72,8 @@ export function App() {
 
   const checkHealth = async () => {
     try {
-      const h = await checkBackendHealth();
+      await checkBackendHealth();
       setBackendHealthy(true);
-      setCatalogImported(h.catalog_imported);
     } catch {
       setBackendHealthy(false);
     }
@@ -90,7 +88,6 @@ export function App() {
       setTotalMatches(data.total);
       setTotalPages(data.total_pages);
       setCurrentPage(data.page);
-      setCatalogImported(data.catalog_imported);
       setBackendHealthy(true);
     } catch (err: any) {
       setStocksError(err.message || 'Failed to load stock list from backend.');
@@ -261,10 +258,14 @@ export function App() {
 
 
   return (
-    <div className="min-h-screen bg-[#0b0f17] text-slate-100 flex flex-col font-sans selection:bg-emerald-500/30 selection:text-emerald-200">
+    <div className="min-h-screen bg-[#06080e] text-slate-100 flex flex-col font-sans selection:bg-fuchsia-500/30 selection:text-fuchsia-200 relative overflow-hidden bg-terminal-grid">
+      {/* Ambient background glows */}
+      <div className="fixed top-0 left-1/4 w-[600px] h-[600px] bg-fuchsia-600/5 rounded-full blur-[140px] pointer-events-none" />
+      <div className="fixed bottom-0 right-1/4 w-[600px] h-[600px] bg-cyan-600/5 rounded-full blur-[140px] pointer-events-none" />
+
       <Navbar onHomeClick={handleGoHome} backendHealthy={backendHealthy} />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         {/* VIEW 1: CATALOG / DASHBOARD */}
         {viewMode === 'catalog' && (
           <div className="space-y-8">
@@ -278,13 +279,13 @@ export function App() {
             <FeatureGrid />
 
             {/* Catalog Browser Search Bar & Exchange Selector */}
-            <div className="pt-4 border-t border-slate-800/80">
+            <div className="pt-6 border-t border-white/10">
               <div className="mb-4">
-                <h3 className="text-lg font-semibold text-slate-100">
-                  Explore Listed Indian Stocks
+                <h3 className="text-xl font-bold text-white font-display">
+                  Listed Indian Equity Universe
                 </h3>
                 <p className="text-xs text-slate-400">
-                  Browse the active NSE and BSE securities master list
+                  Direct master catalog covering active National Stock Exchange &amp; Bombay Stock Exchange equities
                 </p>
               </div>
               <SearchBar
@@ -294,42 +295,24 @@ export function App() {
               />
             </div>
 
-            {/* Catalog Status Notice Banner */}
-            {!catalogImported && (
-              <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-amber-300">
-                <div className="flex items-center gap-2.5">
-                  <FileSpreadsheet className="w-5 h-5 text-amber-400 shrink-0" />
-                  <div>
-                    <span className="font-semibold block text-amber-200">Notice: Prototype Seed Catalog Active</span>
-                    <span className="text-amber-300/80">
-                      Official NSE/BSE securities files have not been imported into SQLite yet. Ingest via CLI to expand coverage to all listed equities.
-                    </span>
-                  </div>
-                </div>
-                <div className="px-2.5 py-1 rounded bg-amber-500/20 text-amber-200 font-mono text-[11px] whitespace-nowrap">
-                  python import_catalog.py
-                </div>
-              </div>
-            )}
-
             {/* Catalog Content Area */}
             <div className="space-y-4">
-              <div className="flex items-center justify-between text-xs text-slate-400 border-b border-slate-800 pb-3">
+              <div className="flex items-center justify-between text-xs text-slate-400 border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
-                  <Database className="w-4 h-4 text-emerald-500" />
-                  <span className="font-medium text-slate-300">
+                  <Database className="w-4 h-4 text-cyan-400" />
+                  <span className="font-semibold text-white font-mono">
                     {searchQuery
-                      ? `Search Results (${totalMatches})`
-                      : `Active Stock Catalog (${totalMatches})`}
+                      ? `SEARCH MATCHES (${totalMatches})`
+                      : `ACTIVE EQUITIES UNIVERSE (${totalMatches})`}
                     {selectedExchange && ` • ${selectedExchange}`}
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="font-mono text-[11px] text-slate-500 hidden sm:inline">
-                    {catalogImported ? 'Official Exchange Catalog' : 'Seed Catalog Store'}
+                  <span className="font-mono text-[11px] text-slate-400 hidden sm:inline">
+                    National &amp; Bombay Stock Exchange
                   </span>
                   {totalPages > 1 && (
-                    <span className="font-mono text-[11px] text-slate-400">
+                    <span className="font-mono text-[11px] text-fuchsia-400 font-bold">
                       Page {currentPage} of {totalPages}
                     </span>
                   )}
@@ -375,7 +358,7 @@ export function App() {
 
                   {/* Pagination Controls */}
                   {totalPages > 1 && (
-                    <div className="pt-6 border-t border-slate-800/80 flex items-center justify-between text-xs">
+                    <div className="pt-6 border-t border-white/10 flex items-center justify-between text-xs">
                       <div className="text-slate-400 font-mono">
                         Showing {(currentPage - 1) * 18 + 1}-{Math.min(currentPage * 18, totalMatches)} of {totalMatches} listings
                       </div>
@@ -384,20 +367,20 @@ export function App() {
                         <button
                           onClick={() => handlePageChange(currentPage - 1)}
                           disabled={currentPage <= 1}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                          className="inline-flex items-center gap-1 px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer font-mono font-medium"
                         >
                           <ChevronLeft className="w-4 h-4" />
                           <span>Previous</span>
                         </button>
 
-                        <span className="px-3 py-1 rounded-lg bg-slate-800 font-mono text-slate-200">
+                        <span className="px-3.5 py-1.5 rounded-xl bg-white/10 border border-white/10 font-mono text-white font-bold">
                           {currentPage} / {totalPages}
                         </span>
 
                         <button
                           onClick={() => handlePageChange(currentPage + 1)}
                           disabled={currentPage >= totalPages}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer"
+                          className="inline-flex items-center gap-1 px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer font-mono font-medium"
                         >
                           <span>Next</span>
                           <ChevronRight className="w-4 h-4" />
@@ -491,13 +474,13 @@ export function App() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-900 bg-[#070a10] py-6 text-center text-xs text-slate-500">
+      <footer className="border-t border-white/10 bg-[#04060b] py-6 text-center text-xs text-slate-400 relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p>
-            EquiAgentic Intelligence Platform • Phase 2 NSE/BSE Universe
+          <p className="font-display font-medium text-slate-300">
+            EquiAgentic Intelligence Platform • Professional Multi-Agent Equity Synthesis Terminal
           </p>
-          <p className="font-mono text-[11px] text-slate-600">
-            FastAPI + SQLite + React + Vite + Tailwind CSS
+          <p className="font-mono text-[11px] text-slate-500">
+            FastAPI • SQLite • StateGraph Deliberation • React 19 • Tailwind CSS
           </p>
         </div>
       </footer>

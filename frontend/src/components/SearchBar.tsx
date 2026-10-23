@@ -46,7 +46,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               onSearch(e.target.value, exchange);
             }}
             placeholder="Search by company name, ticker symbol, or ISIN (e.g. RELIANCE, TCS, INE002A01018, 500325)..."
-            className="w-full bg-[#111622] text-slate-100 placeholder-slate-500 pl-12 pr-28 py-4 rounded-xl border border-slate-700/80 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all text-sm sm:text-base shadow-lg shadow-black/20"
+            className="w-full bg-[#0d121f]/90 text-white placeholder-slate-400 pl-12 pr-28 py-4 rounded-xl border border-white/10 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/40 focus:border-fuchsia-500 transition-all text-sm sm:text-base shadow-xl shadow-black/40 font-sans"
           />
 
           <div className="absolute right-3 flex items-center gap-2">
@@ -54,7 +54,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               <button
                 type="button"
                 onClick={handleClear}
-                className="p-1 rounded-md text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition cursor-pointer"
+                className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
                 title="Clear search"
               >
                 <X className="w-4 h-4" />
@@ -63,10 +63,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
             <button
               type="submit"
-              className="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium tracking-wide transition shadow-sm cursor-pointer disabled:opacity-50"
+              className="px-4 py-2 rounded-lg bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white text-xs font-bold tracking-wide transition shadow-lg shadow-fuchsia-950/50 cursor-pointer disabled:opacity-50"
               disabled={isLoading}
             >
-              {isLoading ? 'Searching...' : 'Search'}
+              {isLoading ? 'Scanning...' : 'Scan'}
             </button>
           </div>
         </div>
@@ -76,7 +76,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-2">
           <span className="text-slate-400 flex items-center gap-1.5 font-medium">
-            <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
+            <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
             <span>Exchange:</span>
           </span>
           <button
@@ -84,19 +84,19 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             onClick={() => handleExchangeChange('')}
             className={`px-3 py-1 rounded-lg border font-mono transition cursor-pointer ${
               exchange === ''
-                ? 'bg-slate-100 text-slate-900 border-white font-semibold shadow-sm'
-                : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-slate-200'
+                ? 'bg-white text-slate-950 border-white font-bold shadow-md'
+                : 'bg-white/5 text-slate-300 border-white/10 hover:border-white/20 hover:text-white'
             }`}
           >
-            All Exchanges
+            All Markets
           </button>
           <button
             type="button"
             onClick={() => handleExchangeChange('NSE')}
             className={`px-3 py-1 rounded-lg border font-mono transition cursor-pointer ${
               exchange === 'NSE'
-                ? 'bg-blue-600 text-white border-blue-500 font-semibold shadow-sm'
-                : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-blue-400'
+                ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-bold shadow-md shadow-cyan-500/20'
+                : 'bg-white/5 text-cyan-300/80 border-white/10 hover:border-cyan-500/40 hover:text-cyan-300'
             }`}
           >
             NSE
@@ -106,16 +106,16 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             onClick={() => handleExchangeChange('BSE')}
             className={`px-3 py-1 rounded-lg border font-mono transition cursor-pointer ${
               exchange === 'BSE'
-                ? 'bg-amber-600 text-white border-amber-500 font-semibold shadow-sm'
-                : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700 hover:text-amber-400'
+                ? 'bg-amber-500 text-slate-950 border-amber-400 font-bold shadow-md shadow-amber-500/20'
+                : 'bg-white/5 text-amber-300/80 border-white/10 hover:border-amber-500/40 hover:text-amber-300'
             }`}
           >
             BSE
           </button>
         </div>
 
-        <div className="text-[11px] text-slate-500 hidden sm:block">
-          Supports ticker, legal company name &amp; 12-digit ISIN
+        <div className="text-[11px] font-mono text-slate-400 hidden sm:block">
+          Matches Ticker • Corporate Name • 12-Digit ISIN • Scrip Code
         </div>
       </div>
     </div>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Loader2, Sparkles, X } from 'lucide-react';
+import { Check, Loader2, Sparkles, X, ShieldAlert } from 'lucide-react';
 
 export interface AgentProgressItem {
   id: string;
@@ -40,20 +40,20 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
   const progressPct = Math.round((completedCount / totalAgents) * 100);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="w-full max-w-2xl bg-[#0b101b] border border-slate-700/80 rounded-2xl shadow-2xl shadow-black/80 overflow-hidden flex flex-col max-h-[88vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 backdrop-blur-xl animate-in fade-in duration-200">
+      <div className="w-full max-w-2xl bg-[#090d18] border border-white/15 rounded-3xl shadow-2xl shadow-fuchsia-950/40 overflow-hidden flex flex-col max-h-[88vh]">
         {/* Header */}
-        <div className="px-6 py-5 border-b border-slate-800 flex items-center justify-between bg-[#070b12]">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center text-emerald-400">
-              <Sparkles className="w-5 h-5 stroke-[1.75]" />
+        <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between bg-[#060912]">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-fuchsia-500/20 to-purple-500/20 border border-fuchsia-500/40 flex items-center justify-center text-fuchsia-300 shadow-lg shadow-fuchsia-500/20">
+              <Sparkles className="w-5 h-5" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-slate-100">
+                <h3 className="text-base font-bold text-white font-display">
                   Deliberating on {symbol}
                 </h3>
-                <span className="text-xs font-mono font-medium px-2 py-0.5 rounded bg-slate-800 text-slate-200 border border-slate-700">
+                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-white/10 text-cyan-300 border border-white/10">
                   {exchange}
                 </span>
               </div>
@@ -65,16 +65,16 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
 
           <div className="flex items-center gap-3">
             <div className="text-right hidden sm:block">
-              <div className="text-xs font-mono font-bold text-emerald-400">
-                {completedCount} / {totalAgents} Agents Complete
+              <div className="text-xs font-mono font-bold text-fuchsia-400">
+                {completedCount} / {totalAgents} Roles Synced
               </div>
-              <div className="text-xs text-slate-400">13-Agent Deliberation Loop</div>
+              <div className="text-xs text-slate-400 font-mono">Adversarial Workflow</div>
             </div>
             {isComplete && (
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -82,19 +82,20 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
           </div>
         </div>
 
-        {/* Progress Bar */}
-        <div className="w-full bg-slate-900 h-1.5">
+        {/* Progress Bar with glowing neon gradient */}
+        <div className="w-full bg-[#050810] h-1.5">
           <div
-            className="bg-emerald-500 h-1.5 transition-all duration-300 shadow-sm shadow-emerald-500/50"
+            className="bg-gradient-to-r from-fuchsia-500 via-purple-500 to-cyan-400 h-1.5 transition-all duration-300 shadow-[0_0_12px_rgba(217,70,239,0.7)]"
             style={{ width: `${progressPct}%` }}
           />
         </div>
 
         {/* Agent Step-by-Step List with Clean Ticks */}
-        <div className="p-5 overflow-y-auto divide-y divide-slate-800/60 space-y-1">
+        <div className="p-5 overflow-y-auto divide-y divide-white/5 space-y-1">
           {error && (
-            <div className="p-3.5 mb-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-medium">
-              {error}
+            <div className="p-4 mb-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-medium flex items-center gap-2.5">
+              <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
@@ -105,27 +106,26 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
             return (
               <div
                 key={agent.id}
-                className={`py-3.5 px-3.5 rounded-xl flex items-start justify-between gap-3 transition-colors ${
+                className={`py-3 px-3.5 rounded-xl flex items-start justify-between gap-3 transition-all ${
                   isRunning
-                    ? 'bg-emerald-500/10 border border-emerald-500/30'
+                    ? 'bg-fuchsia-500/10 border border-fuchsia-500/40 shadow-[0_0_15px_rgba(217,70,239,0.15)]'
                     : isDone
-                    ? 'hover:bg-slate-900/40'
+                    ? 'hover:bg-white/[0.02]'
                     : 'opacity-40'
                 }`}
               >
                 <div className="flex items-start gap-3">
-                  {/* Clean SVG Vector Status Indicator */}
                   <div className="mt-0.5 flex-shrink-0">
                     {isDone ? (
-                      <div className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-400 shadow-sm shadow-emerald-500/20">
+                      <div className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.3)]">
                         <Check className="w-3.5 h-3.5 stroke-[2.5]" />
                       </div>
                     ) : isRunning ? (
-                      <div className="w-5 h-5 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                      <div className="w-5 h-5 rounded-full bg-fuchsia-500/20 border border-fuchsia-500/50 flex items-center justify-center text-fuchsia-400">
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                       </div>
                     ) : (
-                      <div className="w-5 h-5 rounded-full bg-slate-900 border border-slate-700/80 flex items-center justify-center">
+                      <div className="w-5 h-5 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
                         <span className="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
                       </div>
                     )}
@@ -133,11 +133,11 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
 
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-bold text-slate-100">
+                      <span className="text-xs font-bold text-white font-display">
                         {agent.name}
                       </span>
-                      <span className="text-xs text-slate-400 font-mono">
-                        ({agent.role})
+                      <span className="text-[11px] text-slate-400 font-mono">
+                        [{agent.role}]
                       </span>
                     </div>
 
@@ -148,8 +148,8 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
                     )}
 
                     {isRunning && (
-                      <p className="mt-1 text-xs text-emerald-400 font-medium animate-pulse">
-                        Reasoning with verified market data &amp; ratios...
+                      <p className="mt-1 text-xs text-fuchsia-300 font-medium animate-pulse flex items-center gap-1.5 font-mono">
+                        <span>Deliberating with deterministic financial ratios...</span>
                       </p>
                     )}
                   </div>
@@ -163,9 +163,9 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
                         : '0.8s'}
                     </span>
                   ) : isRunning ? (
-                    <span className="text-emerald-400 font-semibold">Active</span>
+                    <span className="text-fuchsia-400 font-bold tracking-wider">ACTIVE</span>
                   ) : (
-                    <span className="text-slate-500">Pending</span>
+                    <span className="text-slate-500">PENDING</span>
                   )}
                 </div>
               </div>
@@ -174,16 +174,16 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-800 bg-[#070b12] flex items-center justify-between">
+        <div className="px-6 py-4 border-t border-white/10 bg-[#060912] flex items-center justify-between">
           <div className="text-xs text-slate-300 font-mono">
             {isComplete ? (
               <span className="text-emerald-400 font-bold flex items-center gap-1.5">
                 <Check className="w-4 h-4 stroke-[2.5]" />
-                All 13 Specialized Agents Completed Deliberation
+                All 13 Specialist Roles Synthesized Successfully
               </span>
             ) : (
               <span className="text-slate-400 font-medium">
-                Orchestrating multi-agent deliberation stages...
+                Orchestrating concurrent adversarial stages...
               </span>
             )}
           </div>
@@ -192,9 +192,9 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-bold transition-all shadow-md shadow-emerald-500/20 cursor-pointer"
+              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-fuchsia-600 via-purple-600 to-cyan-500 hover:from-fuchsia-500 hover:to-cyan-400 text-white text-xs font-bold transition-all shadow-lg shadow-fuchsia-950/50 cursor-pointer hover:scale-[1.02]"
             >
-              View Research Report →
+              Open Institutional Report →
             </button>
           )}
         </div>

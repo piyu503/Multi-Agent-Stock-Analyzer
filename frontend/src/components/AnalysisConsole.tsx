@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, ChevronRight, Lock, Loader2, Check } from 'lucide-react';
+import { Search, ChevronRight, Lock, Loader2, Check, Sparkles } from 'lucide-react';
 import type { StockSummary } from '../types';
 import { searchStocks } from '../api';
 
@@ -19,7 +19,7 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
   const [isSearching, setIsSearching] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Debounced search across all 7,854 stocks in backend database
+  // Debounced search across all 7,857 stocks in database
   useEffect(() => {
     const trimmed = searchTerm.trim();
     if (!trimmed) {
@@ -28,7 +28,6 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
       return;
     }
 
-    // If the input exactly matches the selected stock's display string, don't re-search
     if (selectedStock && searchTerm.startsWith(selectedStock.symbol)) {
       return;
     }
@@ -48,7 +47,6 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
     return () => clearTimeout(timer);
   }, [searchTerm, stocks, selectedStock]);
 
-  // Click outside to close dropdown
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
@@ -75,13 +73,11 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
   ];
 
   const handleQuickPick = async (qp: { symbol: string; exchange: string }) => {
-    // Check local stocks first
     const matched = stocks.find((s) => s.symbol === qp.symbol && s.exchange === qp.exchange);
     if (matched) {
       handleSelect(matched);
       return;
     }
-    // Search backend
     try {
       const res = await searchStocks(qp.symbol, qp.exchange, 1, 5);
       const found = res.items.find((s) => s.symbol === qp.symbol) || res.items[0];
@@ -121,29 +117,31 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
     <div className="w-full max-w-5xl mx-auto mb-14">
       {/* Hero Badge & Heading */}
       <div className="mb-10 text-center sm:text-left">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold mb-4 tracking-wide">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          Institutional Multi-Agent Stock Analysis
+        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/30 text-fuchsia-300 text-xs font-semibold mb-4 tracking-wide shadow-sm">
+          <Sparkles className="w-3.5 h-3.5 text-fuchsia-400 animate-pulse" />
+          <span>Institutional Multi-Agent Deliberation Terminal</span>
         </div>
-        <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-slate-100 leading-tight">
-          Smarter equity research, <br className="hidden sm:inline" />
-          <span className="text-emerald-400">powered by agentic deliberation</span>
+        <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight font-display">
+          Deep Equity Intelligence, <br className="hidden sm:inline" />
+          <span className="bg-gradient-to-r from-fuchsia-400 via-purple-300 to-cyan-400 bg-clip-text text-transparent">
+            Adversarially Synthesized
+          </span>
         </h1>
         <p className="mt-4 text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed">
-          13 specialized autonomous agents analyze Indian equities from fundamental, technical, news, and risk angles,
-          then debate in an adversarial rebuttal loop to synthesize institutional conviction.
+          13 specialized autonomous roles evaluate live BSE filings, multi-year statements, and technical microstructure,
+          then deliberate in an adversarial Bull/Bear arena to establish institutional conviction.
         </p>
       </div>
 
       {/* 3-Step Interactive Card */}
-      <div className="rounded-2xl bg-[#0b101b] border border-slate-800/80 p-5 sm:p-7 shadow-xl shadow-black/40">
+      <div className="rounded-2xl bg-[#0c101c]/90 border border-white/10 p-5 sm:p-7 shadow-2xl shadow-black/60 backdrop-blur-md">
         {/* Step 1: Stock Selection */}
         <div className="mb-6" ref={dropdownRef}>
-          <div className="flex items-center gap-2 mb-2.5 text-xs font-semibold uppercase tracking-wider text-slate-300">
-            <span className="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 text-emerald-400 text-xs flex items-center justify-center font-mono font-bold">
+          <div className="flex items-center gap-2 mb-2.5 text-xs font-semibold uppercase tracking-wider text-slate-200">
+            <span className="w-5 h-5 rounded-full bg-fuchsia-500/20 border border-fuchsia-500/40 text-fuchsia-300 text-xs flex items-center justify-center font-mono font-bold">
               1
             </span>
-            <span>Stock Selection</span>
+            <span>Security Selection</span>
           </div>
 
           <div className="relative">
@@ -158,37 +156,37 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
                   if (!e.target.value) setSelectedStock(null);
                 }}
                 onFocus={() => setIsDropdownOpen(true)}
-                placeholder="Search any Indian stock by symbol, legal name, or ISIN (e.g. RELIANCE, TCS, ZOMATO, SUZLON)..."
-                className="w-full bg-[#070b12] border border-slate-700/80 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/40 rounded-xl pl-10 pr-10 py-3.5 text-sm text-slate-100 placeholder-slate-400 outline-none transition-all shadow-inner"
+                placeholder="Search symbol, legal name, or ISIN (e.g. RELIANCE, TCS, ZOMATO, HDFCBANK)..."
+                className="w-full bg-[#060911] border border-white/10 focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/30 rounded-xl pl-10 pr-10 py-3.5 text-sm text-white placeholder-slate-400 outline-none transition-all shadow-inner font-sans"
               />
               {isSearching && (
-                <Loader2 className="w-4 h-4 text-emerald-400 absolute right-3.5 animate-spin" />
+                <Loader2 className="w-4 h-4 text-fuchsia-400 absolute right-3.5 animate-spin" />
               )}
             </div>
 
             {/* Autocomplete Dropdown across all stocks */}
             {isDropdownOpen && searchResults.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-[#0e1626] border border-slate-700/80 rounded-xl shadow-2xl z-50 overflow-hidden divide-y divide-slate-800 max-h-72 overflow-y-auto">
-                <div className="px-3 py-1.5 bg-[#0a0f1a] text-[11px] font-mono text-slate-400 uppercase tracking-wider flex items-center justify-between border-b border-slate-800">
-                  <span>Matches in National &amp; Bombay Stock Exchange</span>
-                  <span>{searchResults.length} results</span>
+              <div className="absolute top-full left-0 right-0 mt-2 bg-[#0d1322] border border-white/15 rounded-xl shadow-2xl z-50 overflow-hidden divide-y divide-white/5 max-h-72 overflow-y-auto">
+                <div className="px-3 py-1.5 bg-[#080d18] text-[11px] font-mono text-slate-300 uppercase tracking-wider flex items-center justify-between border-b border-white/10">
+                  <span>NSE &amp; BSE Universe Matches</span>
+                  <span className="text-cyan-400">{searchResults.length} results</span>
                 </div>
                 {searchResults.map((s) => (
                   <button
                     key={`${s.exchange}-${s.symbol}`}
                     type="button"
                     onClick={() => handleSelect(s)}
-                    className="w-full text-left px-4 py-3 flex items-center justify-between hover:bg-slate-800/80 transition-colors group cursor-pointer"
+                    className="w-full text-left px-4 py-3 flex items-center justify-between hover:bg-white/5 transition-colors group cursor-pointer"
                   >
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-slate-100 text-sm group-hover:text-emerald-400 transition-colors">
+                        <span className="font-mono font-bold text-white text-sm group-hover:text-fuchsia-400 transition-colors">
                           {s.symbol}
                         </span>
                         <span
-                          className={`text-xs font-mono font-medium px-2 py-0.5 rounded ${
+                          className={`text-xs font-mono font-semibold px-2 py-0.5 rounded ${
                             s.exchange === 'NSE'
-                              ? 'bg-blue-500/15 text-blue-300 border border-blue-500/30'
+                              ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30'
                               : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
                           }`}
                         >
@@ -205,8 +203,8 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
                       </p>
                     </div>
                     <div className="text-right">
-                      <span className="text-xs font-mono text-slate-400 block">{s.isin}</span>
-                      <span className="text-[11px] text-slate-500">{s.sector || 'Equities'}</span>
+                      <span className="text-xs font-mono text-slate-300 block">{s.isin}</span>
+                      <span className="text-[11px] text-slate-400">{s.sector || 'Listed Equity'}</span>
                     </div>
                   </button>
                 ))}
@@ -216,13 +214,13 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
 
           {/* Quick Ticker Chips */}
           <div className="flex items-center gap-2 mt-3 flex-wrap">
-            <span className="text-xs text-slate-400 font-medium">Popular:</span>
+            <span className="text-xs text-slate-400 font-medium font-mono">POPULAR:</span>
             {quickPicks.map((qp) => (
               <button
                 key={`${qp.exchange}-${qp.symbol}`}
                 type="button"
                 onClick={() => handleQuickPick(qp)}
-                className="px-2.5 py-1 rounded-md text-xs font-mono font-medium bg-slate-900 border border-slate-700/80 hover:border-emerald-500/50 hover:bg-slate-800 text-slate-300 hover:text-emerald-300 transition-all cursor-pointer shadow-sm"
+                className="px-2.5 py-1 rounded-md text-xs font-mono font-medium bg-white/5 border border-white/10 hover:border-fuchsia-500/50 hover:bg-white/10 text-slate-200 hover:text-fuchsia-300 transition-all cursor-pointer shadow-sm"
               >
                 {qp.symbol}
               </button>
@@ -233,44 +231,42 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
         {/* Step 2 & Step 3: Horizon & Research Depth */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-7">
           {/* Step 2: Investment Horizon */}
-          <div className="rounded-xl bg-[#070b12] border border-slate-800/80 p-4">
+          <div className="rounded-xl bg-[#070a12] border border-white/5 p-4">
             <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-300">
-                <span className="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 text-emerald-400 text-xs flex items-center justify-center font-mono font-bold">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-200">
+                <span className="w-5 h-5 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-300 text-xs flex items-center justify-center font-mono font-bold">
                   2
                 </span>
-                <span>Investment Horizon</span>
+                <span>Allocation Horizon</span>
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-2.5">
-              {/* Short-Term (Greyed Out / Coming Soon) */}
-              <div className="relative rounded-xl border border-slate-800/80 bg-slate-900/30 p-3 text-center opacity-40 cursor-not-allowed select-none">
-                <div className="text-xs font-semibold text-slate-300">Short-term</div>
-                <div className="text-xs text-slate-400 mt-0.5">1-3 months</div>
-                <span className="inline-block mt-2 text-[10px] uppercase font-mono font-medium px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
-                  Coming Soon
+              <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3 text-center opacity-40 cursor-not-allowed select-none">
+                <div className="text-xs font-semibold text-slate-400">Short-term</div>
+                <div className="text-xs text-slate-500 mt-0.5">1-3 months</div>
+                <span className="inline-block mt-2 text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-white/5 text-slate-400 border border-white/10">
+                  SOON
                 </span>
               </div>
 
-              {/* Medium-Term (Active & Supported: 1 Year Analysis) */}
-              <div className="relative rounded-xl border border-emerald-500/60 bg-emerald-500/10 p-3 text-center ring-1 ring-emerald-500/30 cursor-pointer shadow-sm shadow-emerald-500/10">
-                <div className="text-xs font-bold text-emerald-300 flex items-center justify-center gap-1">
-                  <span>Medium-term</span>
+              {/* Medium-Term Active */}
+              <div className="rounded-xl border border-fuchsia-500/50 bg-fuchsia-500/10 p-3 text-center ring-1 ring-fuchsia-500/30 cursor-pointer shadow-lg shadow-fuchsia-950/30">
+                <div className="text-xs font-bold text-fuchsia-300 flex items-center justify-center gap-1">
+                  <span>Tactical Core</span>
                   <Check className="w-3.5 h-3.5 stroke-[2.5]" />
                 </div>
-                <div className="text-xs text-emerald-300/90 font-medium mt-0.5">3-24 months (1 Yr)</div>
-                <span className="inline-block mt-2 text-[10px] uppercase font-mono font-semibold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                <div className="text-xs text-fuchsia-200/90 font-medium mt-0.5">3-24 months (1 Yr)</div>
+                <span className="inline-block mt-2 text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/40">
                   Active
                 </span>
               </div>
 
-              {/* Long-Term (Greyed Out / Coming Soon) */}
-              <div className="relative rounded-xl border border-slate-800/80 bg-slate-900/30 p-3 text-center opacity-40 cursor-not-allowed select-none">
-                <div className="text-xs font-semibold text-slate-300">Long-term</div>
-                <div className="text-xs text-slate-400 mt-0.5">2+ years</div>
-                <span className="inline-block mt-2 text-[10px] uppercase font-mono font-medium px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
-                  Coming Soon
+              <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3 text-center opacity-40 cursor-not-allowed select-none">
+                <div className="text-xs font-semibold text-slate-400">Long-term</div>
+                <div className="text-xs text-slate-500 mt-0.5">2+ years</div>
+                <span className="inline-block mt-2 text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-white/5 text-slate-400 border border-white/10">
+                  SOON
                 </span>
               </div>
             </div>
@@ -279,39 +275,37 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
             </p>
           </div>
 
-          {/* Step 3: Research Depth */}
-          <div className="rounded-xl bg-[#070b12] border border-slate-800/80 p-4">
+          {/* Step 3: Deliberation Depth */}
+          <div className="rounded-xl bg-[#070a12] border border-white/5 p-4">
             <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-300">
-                <span className="w-5 h-5 rounded-full bg-slate-800 border border-slate-700 text-emerald-400 text-xs flex items-center justify-center font-mono font-bold">
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-200">
+                <span className="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 text-xs flex items-center justify-center font-mono font-bold">
                   3
                 </span>
-                <span>Research Depth</span>
+                <span>Deliberation Architecture</span>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-2.5">
-              {/* Standard 1 Debate Round (Active) */}
-              <div className="relative rounded-xl border border-emerald-500/60 bg-emerald-500/10 p-3 text-center ring-1 ring-emerald-500/30 cursor-pointer shadow-sm shadow-emerald-500/10">
-                <div className="text-xs font-bold text-emerald-300 flex items-center justify-center gap-1">
-                  <span>Standard Deliberation</span>
+              <div className="rounded-xl border border-cyan-500/50 bg-cyan-500/10 p-3 text-center ring-1 ring-cyan-500/30 cursor-pointer shadow-lg shadow-cyan-950/30">
+                <div className="text-xs font-bold text-cyan-300 flex items-center justify-center gap-1">
+                  <span>13-Agent Full Loop</span>
                   <Check className="w-3.5 h-3.5 stroke-[2.5]" />
                 </div>
-                <div className="text-xs text-emerald-300/90 font-medium mt-0.5">1 Bounded Debate Round</div>
-                <span className="inline-block mt-2 text-[10px] uppercase font-mono font-semibold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+                <div className="text-xs text-cyan-200/90 font-medium mt-0.5">Adversarial Rebuttal</div>
+                <span className="inline-block mt-2 text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
                   Active
                 </span>
               </div>
 
-              {/* Deep Multi-Round (Greyed Out / Coming Soon) */}
-              <div className="relative rounded-xl border border-slate-800/80 bg-slate-900/30 p-3 text-center opacity-40 cursor-not-allowed select-none">
-                <div className="flex items-center justify-center gap-1 text-xs font-semibold text-slate-300">
-                  <Lock className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Deep Multi-Round</span>
+              <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3 text-center opacity-40 cursor-not-allowed select-none">
+                <div className="flex items-center justify-center gap-1 text-xs font-semibold text-slate-400">
+                  <Lock className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Multi-Round Arena</span>
                 </div>
-                <div className="text-xs text-slate-400 mt-0.5">3 Debate Rounds</div>
-                <span className="inline-block mt-2 text-[10px] uppercase font-mono font-medium px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">
-                  Coming Soon
+                <div className="text-xs text-slate-500 mt-0.5">3 Debate Rounds</div>
+                <span className="inline-block mt-2 text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-white/5 text-slate-400 border border-white/10">
+                  SOON
                 </span>
               </div>
             </div>
@@ -322,18 +316,18 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
         </div>
 
         {/* CTA Button */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-slate-800/80">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-white/10">
           <div className="text-xs text-slate-300 text-center sm:text-left">
             {selectedStock ? (
               <span>
-                Selected equity:{' '}
-                <strong className="text-emerald-400 font-mono text-sm">
+                Ready to synthesize:{' '}
+                <strong className="text-fuchsia-400 font-mono text-sm font-bold">
                   {selectedStock.symbol} ({selectedStock.exchange})
                 </strong>{' '}
-                <span className="text-slate-200">- {selectedStock.company_name}</span>
+                <span className="text-slate-300">• {selectedStock.company_name}</span>
               </span>
             ) : (
-              <span className="text-slate-400">Select an Indian stock above to initiate institutional multi-agent analysis</span>
+              <span className="text-slate-400">Select an equity above to initiate 13-agent deliberation loop</span>
             )}
           </div>
 
@@ -341,14 +335,14 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
             type="button"
             disabled={!selectedStock}
             onClick={() => selectedStock && onStartAnalysis(selectedStock)}
-            className={`w-full sm:w-auto px-6 py-3 rounded-xl font-medium text-sm flex items-center justify-center gap-2 transition-all shadow-md ${
+            className={`w-full sm:w-auto px-7 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-xl ${
               selectedStock
-                ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-emerald-500/20 cursor-pointer font-bold'
-                : 'bg-slate-800 text-slate-500 cursor-not-allowed opacity-60'
+                ? 'bg-gradient-to-r from-fuchsia-600 via-purple-600 to-cyan-500 hover:from-fuchsia-500 hover:to-cyan-400 text-white shadow-fuchsia-500/30 cursor-pointer hover:scale-[1.02] active:scale-[0.98]'
+                : 'bg-white/5 text-slate-500 border border-white/5 cursor-not-allowed opacity-50'
             }`}
           >
-            <span>Start Agentic Analysis</span>
-            <ChevronRight className="w-4 h-4" />
+            <span>Launch Deliberation Engine</span>
+            <ChevronRight className="w-4 h-4 stroke-[2.5]" />
           </button>
         </div>
       </div>
