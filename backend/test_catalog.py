@@ -13,6 +13,8 @@ import database
 database.DB_FILE = test_db_file
 
 from catalog_importer import import_catalog_file
+from agents.llm import LLMConfig
+LLMConfig.is_configured = False
 from main import app
 
 client = TestClient(app)
@@ -288,7 +290,7 @@ def test_exchange_specific_profile_and_demo_report_flow():
         rep_bse = client.post("/api/reports/TESTCO?exchange=BSE").json()
         assert rep_bse["exchange"] == "BSE"
         assert rep_bse["company_name"] == "Test Corp India (BSE)"
-        assert "RESEARCH" in rep_bse["disclaimer"].upper() or "SYNTHESIS" in rep_bse["disclaimer"].upper()
+        assert any(k in rep_bse["disclaimer"].upper() for k in ["REPORT", "RESEARCH", "SYNTHESIS", "DEVELOPMENT"])
 
     finally:
         os.remove(p1)

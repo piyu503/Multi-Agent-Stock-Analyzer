@@ -28,8 +28,10 @@ from schemas import ImportSummary
 # Header aliases mapping to standard fields
 COLUMN_ALIASES = {
     "symbol": [
-        "symbol", "tckrsymb", "security id", "security_id", "ticker", "scrip_id",
-        "scrip code", "sc_code", "fininstrmid", "security code"
+        "symbol", "tckrsymb", "security id", "security_id", "ticker", "scrip_id"
+    ],
+    "scrip_code": [
+        "security code", "scrip code", "sc_code", "security_code", "scrip_code"
     ],
     "company_name": [
         "issuer name", "name of company", "company name", "fininstrmnm", "security name", "scrip name",
@@ -69,6 +71,10 @@ def identify_columns(headers: List[str]) -> Dict[str, int]:
             if norm_alias in normalized:
                 field_map[standard_field] = normalized.index(norm_alias)
                 break
+
+    # If symbol column is missing but scrip_code column is present (common in BSE files), alias symbol to scrip_code
+    if "symbol" not in field_map and "scrip_code" in field_map:
+        field_map["symbol"] = field_map["scrip_code"]
 
     return field_map
 
@@ -210,6 +216,14 @@ def import_catalog_file(
                 if val and val.lower() != "nan" and val.lower() != "null":
                     raw_isin = val.upper()
 
+            raw_scrip = None
+            if "scrip_code" in col_map and col_map["scrip_code"] < len(row):
+                val = row[col_map["scrip_code"]].strip()
+                if val and val.lower() != "nan" and val.lower() != "null":
+                    raw_scrip = val
+            elif exchange == "BSE" and raw_symbol.isdigit():
+                raw_scrip = raw_symbol
+
             raw_series = default_series
             if "series" in col_map and col_map["series"] < len(row):
                 val = row[col_map["series"]].strip()
@@ -240,6 +254,7 @@ def import_catalog_file(
                 exchange=exchange,
                 isin=raw_isin,
                 series=raw_series,
+                scrip_code=raw_scrip,
                 sector=raw_industry,
                 industry=raw_industry,
                 listing_date=raw_date,

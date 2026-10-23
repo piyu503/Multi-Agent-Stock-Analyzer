@@ -25,17 +25,36 @@ class BullResearcherAgent(BaseAgent):
         )
 
     def get_user_prompt(self, company_context: Dict[str, Any], evidence: Dict[str, Any]) -> str:
+        analyst_findings = evidence.get("analyst_findings") or {}
+        findings_block = "\n".join([f"[{role}]: " + " | ".join(findings) for role, findings in analyst_findings.items()])
+        metrics = evidence.get("calculated_metrics") or company_context.get("calculated_metrics") or {}
+        mkt = company_context.get("market_data") or {}
+
+        baseline_text = (
+            f"Verified Financial & Valuation Baseline:\n"
+            f"- CMP: INR {mkt.get('current_price', 'N/A')}, P/E: {mkt.get('pe_ratio', 'N/A')}, EV/EBITDA: {mkt.get('ev_ebitda', 'N/A')}\n"
+            f"- D/E: {metrics.get('debt_to_equity', 'N/A')}, Interest Coverage: {metrics.get('interest_coverage', 'N/A')}\n"
+            f"- ROCE: {metrics.get('roce_pct', 'N/A')}%, ROCE-WACC Spread: {metrics.get('roce_wacc_spread', 'N/A')}%\n"
+            f"- 3-Year EPS CAGR: {metrics.get('eps_cagr_3yr_pct', 'N/A')}%, PEG Ratio: {metrics.get('peg_ratio', 'N/A')}\n"
+            f"Specialist Evidence Pool:\n{findings_block}"
+        )
+
         bear_case = evidence.get("bear_thesis")
         if bear_case:
             return (
                 f"REBUTTAL STAGE: Formulate counter-arguments for {company_context.get('company_name')} "
-                f"({company_context.get('symbol')}) against this Bear Case:\n{bear_case}\n"
-                "Provide evidence-backed rebuttals defending the long-term compounding thesis."
+                f"({company_context.get('symbol')}) against this Bear Case:\n"
+                f"{bear_case}\n\n"
+                f"{baseline_text}\n\n"
+                "Refute the Bear's specific risk points using the verified financial data and specialist findings above. "
+                "Defend the long-term compounding thesis with empirical operational facts."
             )
+
         return (
             f"INITIAL THESIS: Formulate the independent Bull Thesis for {company_context.get('company_name')} "
-            f"({company_context.get('symbol')}), sector: {company_context.get('sector')}. "
-            "Detail the moat, revenue catalysts, and margin expansion potential."
+            f"({company_context.get('symbol')}), sector: {company_context.get('sector')}.\n"
+            f"{baseline_text}\n\n"
+            "Build the maximum viable upside thesis: competitive moats, pricing power, margin expansion leverage, and earnings visibility. Ground every point in the data provided above."
         )
 
     def get_development_stub(self, company_context: Dict[str, Any], evidence: Dict[str, Any]) -> AgentOutput:
@@ -89,17 +108,36 @@ class BearResearcherAgent(BaseAgent):
         )
 
     def get_user_prompt(self, company_context: Dict[str, Any], evidence: Dict[str, Any]) -> str:
+        analyst_findings = evidence.get("analyst_findings") or {}
+        findings_block = "\n".join([f"[{role}]: " + " | ".join(findings) for role, findings in analyst_findings.items()])
+        metrics = evidence.get("calculated_metrics") or company_context.get("calculated_metrics") or {}
+        mkt = company_context.get("market_data") or {}
+
+        baseline_text = (
+            f"Verified Financial & Valuation Baseline:\n"
+            f"- CMP: INR {mkt.get('current_price', 'N/A')}, P/E: {mkt.get('pe_ratio', 'N/A')}, EV/EBITDA: {mkt.get('ev_ebitda', 'N/A')}\n"
+            f"- D/E: {metrics.get('debt_to_equity', 'N/A')}, Interest Coverage: {metrics.get('interest_coverage', 'N/A')}\n"
+            f"- ROCE: {metrics.get('roce_pct', 'N/A')}%, ROCE-WACC Spread: {metrics.get('roce_wacc_spread', 'N/A')}%\n"
+            f"- 3-Year EPS CAGR: {metrics.get('eps_cagr_3yr_pct', 'N/A')}%, PEG Ratio: {metrics.get('peg_ratio', 'N/A')}\n"
+            f"Specialist Evidence Pool:\n{findings_block}"
+        )
+
         bull_case = evidence.get("bull_thesis")
         if bull_case:
             return (
                 f"REBUTTAL STAGE: Formulate counter-arguments for {company_context.get('company_name')} "
-                f"({company_context.get('symbol')}) against this Bull Case:\n{bull_case}\n"
-                "Highlight execution bottlenecks, valuation risks, and competitive threats."
+                f"({company_context.get('symbol')}) against this Bull Case:\n"
+                f"{bull_case}\n\n"
+                f"{baseline_text}\n\n"
+                "Attack the Bull's growth and moat assumptions using the verified baseline metrics and specialist findings above. "
+                "Highlight execution bottlenecks, valuation risks, and margin vulnerabilities."
             )
+
         return (
             f"INITIAL THESIS: Formulate the independent Bear Thesis for {company_context.get('company_name')} "
-            f"({company_context.get('symbol')}), sector: {company_context.get('sector')}. "
-            "Detail structural headwinds, competitive threats, and downside scenarios."
+            f"({company_context.get('symbol')}), sector: {company_context.get('sector')}.\n"
+            f"{baseline_text}\n\n"
+            "Build the maximum viable downside thesis: leverage vulnerabilities, input-cost margin compression, rich multiples, and governance risks. Ground every point in the data provided above."
         )
 
     def get_development_stub(self, company_context: Dict[str, Any], evidence: Dict[str, Any]) -> AgentOutput:
@@ -151,7 +189,34 @@ class TraderAgent(BaseAgent):
         )
 
     def get_user_prompt(self, company_context: Dict[str, Any], evidence: Dict[str, Any]) -> str:
-        return f"Determine optimal execution pacing and accumulation strategy for {company_context.get('symbol')} on {company_context.get('exchange')}."
+        mkt = company_context.get("market_data") or {}
+        cmp = mkt.get("current_price")
+        dma_50 = mkt.get("dma_50")
+        dma_200 = mkt.get("dma_200")
+        vol = mkt.get("avg_volume_30d")
+        beta = mkt.get("beta")
+        atr_14 = mkt.get("atr_14", "N/A")
+        swing_h = mkt.get("swing_high_20d", "N/A")
+        swing_l = mkt.get("swing_low_20d", "N/A")
+        vol_20d = mkt.get("realized_vol_20d_pct", "N/A")
+
+        bull_points = evidence.get("bull_rebuttal_points") or evidence.get("bull_points") or []
+        bear_points = evidence.get("bear_rebuttal_points") or evidence.get("bear_points") or []
+
+        return (
+            f"Formulate optimal execution structure and tactical accumulation strategy for {company_context.get('symbol')} on {company_context.get('exchange')}:\n"
+            f"- Price & Technical Levels: CMP INR {cmp}, 50-DMA INR {dma_50}, 200-DMA INR {dma_200}\n"
+            f"- 52-Week Range (Intraday Extrema): Low INR {mkt.get('year_low')} / High INR {mkt.get('year_high')}\n"
+            f"- Volatility & Swing Bands: 14-Day ATR: INR {atr_14}, 20-Day Swing Range: [Low INR {swing_l} - High INR {swing_h}], 20-Day Realized Volatility: {vol_20d}%\n"
+            f"- Liquidity: 30-Day Avg Volume: {vol} shares, Beta: {beta}\n"
+            f"- Bull Key Catalyst: {bull_points[0] if bull_points else 'Secular earnings visibility'}\n"
+            f"- Bear Downside Risk: {bear_points[0] if bear_points else 'Margin compression'}\n\n"
+            "Define an institutional execution plan including:\n"
+            "1. Recommended Entry Range / Accumulation Zone (explicit price band relative to CMP & 20-day swing low)\n"
+            "2. Tactical Invalidation / Stop-Loss Level (anchored by ATR buffer below support / swing low)\n"
+            "3. Staged Tranche Strategy (e.g. 40% initial, 30% on pullback, 30% on confirmed breakout)\n"
+            "4. Impact Cost & Volatility Buffer (derived from 14-day ATR & 20-day realized volatility)"
+        )
 
     def get_development_stub(self, company_context: Dict[str, Any], evidence: Dict[str, Any]) -> AgentOutput:
         exch = company_context.get("exchange", "NSE")
@@ -194,7 +259,21 @@ class RiskAnalystAgent(BaseAgent):
         )
 
     def get_user_prompt(self, company_context: Dict[str, Any], evidence: Dict[str, Any]) -> str:
-        return f"Perform independent risk and stress-test assessment for {company_context.get('company_name')} ({company_context.get('symbol')})."
+        metrics = evidence.get("calculated_metrics") or company_context.get("calculated_metrics") or {}
+        fin = company_context.get("financials") or {}
+        filings = company_context.get("corporate_filings") or []
+        bear_points = evidence.get("bear_rebuttal_points") or evidence.get("bear_points") or []
+
+        filing_snippets = [f"- {f.get('category')}: {f.get('headline')}" for f in filings[:3]]
+        filings_text = "\n".join(filing_snippets) if filing_snippets else "No adverse regulatory disclosures in current window."
+
+        return (
+            f"Perform independent risk and stress-test assessment for {company_context.get('company_name')} ({company_context.get('symbol')}):\n"
+            f"- Solvency & Leverage: Total Debt INR {fin.get('total_debt')}, Debt/Equity: {metrics.get('debt_to_equity')}, Interest Coverage: {metrics.get('interest_coverage')} (Solvent: {metrics.get('is_solvent')})\n"
+            f"- Regulatory & Exchange Disclosures:\n{filings_text}\n"
+            f"- Debate Downside Points to Stress-Test:\n" + "\n".join([f"- {p}" for p in bear_points[:3]]) + "\n\n"
+            "Evaluate catastrophic tail risks, debt covenant sensitivity, regulatory exposure, and produce a ranked risk matrix with required downside mitigations."
+        )
 
     def get_development_stub(self, company_context: Dict[str, Any], evidence: Dict[str, Any]) -> AgentOutput:
         sym = company_context.get("symbol")

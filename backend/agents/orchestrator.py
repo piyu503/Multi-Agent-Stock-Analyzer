@@ -37,7 +37,7 @@ from agents.decision_makers import (
     TraderAgent,
 )
 from agents.metrics import calculate_financial_metrics
-from schemas import BullBearDebate, ReportSection, ResearchReport
+from schemas import BullBearDebate, ReportSection, ResearchReport, TacticalExecutionPlan
 
 
 class AgentGraphState(TypedDict):
@@ -158,7 +158,15 @@ async def debate_rebuttal_node(state: AgentGraphState) -> Dict[str, Any]:
 
 # Node 4: Risk & Execution Evaluation
 async def risk_and_execution_node(state: AgentGraphState) -> Dict[str, Any]:
-    evidence = state["evidence_pool"]
+    evidence = dict(state["evidence_pool"])
+    bull_reb = state.get("bull_rebuttal")
+    bear_reb = state.get("bear_rebuttal")
+    bull_init = state.get("bull_initial")
+    bear_init = state.get("bear_initial")
+
+    evidence["bull_rebuttal_points"] = bull_reb.findings if bull_reb else (bull_init.findings if bull_init else [])
+    evidence["bear_rebuttal_points"] = bear_reb.findings if bear_reb else (bear_init.findings if bear_init else [])
+
     trader_agent = TraderAgent()
     risk_agent = RiskAnalystAgent()
 
@@ -271,6 +279,7 @@ async def orchestrate_stock_research(company_context: Dict[str, Any]) -> Tuple[R
     bull_reb = final_state.get("bull_rebuttal")
     bear_reb = final_state.get("bear_rebuttal")
     risk_out = final_state.get("risk_output")
+    trader_out = final_state.get("trader_output")
     pm_output = final_state.get("pm_output")
 
     # Find specific analyst outputs by name
@@ -282,13 +291,57 @@ async def orchestrate_stock_research(company_context: Dict[str, Any]) -> Tuple[R
     bull_case = (bull_initial.findings if bull_initial else []) + (bull_reb.findings if bull_reb else [])
     bear_case = (bear_initial.findings if bear_initial else []) + (bear_reb.findings if bear_reb else [])
 
+    # Swing factors derived from specific debate rebuttals and risk audit
+    swing_factors = []
+    if bull_reb and bull_reb.findings:
+        swing_factors.append(f"Bull Rebuttal Defense: {bull_reb.findings[0]}")
+    if bear_reb and bear_reb.findings:
+        swing_factors.append(f"Bear Rebuttal Challenge: {bear_reb.findings[0]}")
+    if risk_out and risk_out.findings:
+        swing_factors.append(f"Risk Invalidation Trigger: {risk_out.findings[0]}")
+
     debate = BullBearDebate(
         bull_case=bull_case,
         bear_case=bear_case,
-        critical_swing_factors=risk_out.findings if risk_out else []
+        critical_swing_factors=swing_factors if swing_factors else (risk_out.findings if risk_out else [])
     )
 
-    is_dev_mode = any(r.execution_status == "dev_stub" for r in all_agent_runs)
+    # Check both dev_stub and stub_fallback so failed LLM calls are transparently reported
+    is_dev_mode = any(r.execution_status in ("dev_stub", "stub_fallback") for r in all_agent_runs)
+    has_fallback = any(r.execution_status == "stub_fallback" for r in all_agent_runs)
+
+    if has_fallback:
+        report_status = "fallback_stub"
+        disclaimer_text = (
+            "FALLBACK AUDIT REPORT: Live LLM inference timed out or failed; analytical sections have fallen back "
+            "to deterministic financial ratios and verified listing parameters."
+        )
+    elif is_dev_mode:
+        report_status = "dev_stub"
+        disclaimer_text = (
+            "DEVELOPMENT STUB REPORT: Generated with explicitly labeled agent analytical stubs because live LLM "
+            "is operating in local dev mode. Grounded in deterministic financial math."
+        )
+    else:
+        report_status = "generated"
+        disclaimer_text = (
+            "MULTI-AGENT RESEARCH SYNTHESIS: Generated through an adversarial LangGraph 13-agent deliberation loop "
+            "grounded in deterministic Python financial math, official BSE disclosures, and live price microstructure. "
+            "Does not constitute personal investment advice."
+        )
+
+    pm_data = pm_output.role_specific_data if (pm_output and pm_output.role_specific_data) else {}
+    trader_data = trader_out.role_specific_data if (trader_out and trader_out.role_specific_data) else {}
+
+    conviction = pm_data.get("conviction") or "NEUTRAL"
+    target_alloc = pm_data.get("target_allocation_pct") or 2.5
+    execution_plan = TacticalExecutionPlan(
+        entry_range_low=trader_data.get("entry_range_low"),
+        entry_range_high=trader_data.get("entry_range_high"),
+        invalidation_stop=trader_data.get("invalidation_stop"),
+        atr_buffer=trader_data.get("atr_buffer"),
+        staged_tranches=trader_data.get("staged_tranches", [])
+    )
 
     report = ResearchReport(
         report_id=f"AGY-{symbol.upper()}-{int(datetime.now().timestamp())}",
@@ -296,20 +349,15 @@ async def orchestrate_stock_research(company_context: Dict[str, Any]) -> Tuple[R
         company_name=company_name,
         exchange=exchange,
         generated_at=now_iso,
-        status="generated" if not is_dev_mode else "dev_stub",
+        status=report_status,
         is_prototype_demo=is_dev_mode,
-        disclaimer=(
-            "MULTI-AGENT RESEARCH SYNTHESIS: Generated through a LangGraph 13-agent deliberation loop "
-            "powered by Qwen 2.5 Coder 7B reasoning engine (Orchestration, Evidence Verification, Fundamentals, Growth, "
-            "Valuation, Independent Bull vs Bear Debate, Risk Audit, Execution Trader, and Portfolio Manager). "
-            "Does not constitute personal investment advice."
-            if not is_dev_mode else
-            "DEVELOPMENT STUB REPORT: Generated with explicitly labeled agent analytical stubs because live LLM_API_KEY "
-            "is not configured in backend/.env. Connect Ollama or an API key to activate live reasoning."
-        ),
+        disclaimer=disclaimer_text,
+        conviction=conviction,
+        target_allocation_pct=target_alloc,
+        execution_plan=execution_plan,
         business_overview=ReportSection(
             title="Business Overview & Evidence Audit",
-            status="generated",
+            status="generated" if not is_dev_mode else "stub",
             summary=manager_output.summary if manager_output else "",
             key_points=manager_output.findings if manager_output else []
         ),

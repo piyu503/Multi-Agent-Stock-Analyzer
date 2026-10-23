@@ -4,6 +4,13 @@ from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 
+class CatalogCoverage(BaseModel):
+    total: int = 0
+    with_scrip_code: int = 0
+    with_sector: int = 0
+    with_listing_date: int = 0
+
+
 class HealthResponse(BaseModel):
     status: str
     service: str
@@ -12,6 +19,7 @@ class HealthResponse(BaseModel):
     catalog_imported: bool = Field(False, description="Whether official exchange catalog has been imported")
     total_listings: int = Field(0, description="Total active listings across exchanges")
     timestamp: str
+    catalog_coverage: Optional[CatalogCoverage] = None
 
 
 class StockSummary(BaseModel):
@@ -19,6 +27,7 @@ class StockSummary(BaseModel):
     symbol: str = Field(..., description="Exchange trading symbol, e.g. RELIANCE, TCS, 500325")
     company_name: str = Field(..., description="Registered legal/trade name")
     exchange: str = Field(..., description="Exchange, e.g. NSE / BSE")
+    scrip_code: Optional[str] = Field(None, description="Official 6-digit BSE Scrip Code if available")
     sector: Optional[str] = Field(None, description="Industry sector")
     industry: Optional[str] = Field(None, description="Industry classification")
     isin: Optional[str] = Field(None, description="ISIN number")
@@ -76,6 +85,14 @@ class BullBearDebate(BaseModel):
     critical_swing_factors: List[str] = Field(default_factory=list)
 
 
+class TacticalExecutionPlan(BaseModel):
+    entry_range_low: Optional[float] = None
+    entry_range_high: Optional[float] = None
+    invalidation_stop: Optional[float] = None
+    atr_buffer: Optional[float] = None
+    staged_tranches: List[str] = Field(default_factory=list)
+
+
 class ResearchReport(BaseModel):
     report_id: str
     symbol: str
@@ -88,6 +105,9 @@ class ResearchReport(BaseModel):
         "PROTOTYPE DEMO REPORT: Synthesized for development and interface validation only. "
         "Does not constitute genuine financial advice, live metrics, or verified agent synthesis."
     )
+    conviction: Optional[str] = Field("NEUTRAL", description="OVERWEIGHT, NEUTRAL, or UNDERWEIGHT")
+    target_allocation_pct: Optional[float] = Field(None, description="Suggested portfolio sizing, e.g. 1.0 to 5.0%")
+    execution_plan: Optional[TacticalExecutionPlan] = None
     business_overview: ReportSection
     financial_analysis: ReportSection
     growth_prospects: ReportSection

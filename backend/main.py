@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from catalog_importer import import_catalog_file
 from database import (
+    get_catalog_coverage_summary,
     get_stock_by_symbol,
     get_total_listings_count,
     init_db,
@@ -25,12 +26,23 @@ from schemas import (
     StocksSearchResponse,
 )
 
+from contextlib import asynccontextmanager
+
 load_dotenv()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Ensure database tables are created, migrated, and seeded if empty on startup."""
+    init_db()
+    yield
+
 
 app = FastAPI(
     title="Indian Stock Research Platform API",
     description="Backend API supporting Indian stock search, company profiles, and multi-agent report generation across NSE and BSE.",
-    version="0.2.0"
+    version="0.2.0",
+    lifespan=lifespan
 )
 
 # CORS configuration
@@ -46,18 +58,13 @@ app.add_middleware(
 )
 
 
-@app.on_event("startup")
-def startup_event():
-    """Ensure database tables are created, migrated, and seeded if empty on startup."""
-    init_db()
-
-
 @app.get("/api/health", response_model=HealthResponse, tags=["Health"])
 def health_check():
     """Health check endpoint to verify backend operational readiness and catalog status."""
     now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     catalog_imported = is_official_catalog_imported()
     total_listings = get_total_listings_count()
+    coverage_data = get_catalog_coverage_summary()
 
     return HealthResponse(
         status="ok",
@@ -66,7 +73,8 @@ def health_check():
         database="sqlite-ready",
         catalog_imported=catalog_imported,
         total_listings=total_listings,
-        timestamp=now_iso
+        timestamp=now_iso,
+        catalog_coverage=coverage_data
     )
 
 

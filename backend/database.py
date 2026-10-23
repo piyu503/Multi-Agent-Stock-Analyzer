@@ -26,6 +26,7 @@ def init_db() -> None:
         symbol TEXT NOT NULL,
         company_name TEXT NOT NULL,
         exchange TEXT NOT NULL DEFAULT 'NSE',
+        scrip_code TEXT,
         sector TEXT,
         industry TEXT,
         isin TEXT,
@@ -47,6 +48,8 @@ def init_db() -> None:
     # Check and add columns safely if table already existed without new Phase 2 columns
     cursor.execute("PRAGMA table_info(stocks)")
     existing_cols = {row["name"] for row in cursor.fetchall()}
+    if "scrip_code" not in existing_cols:
+        cursor.execute("ALTER TABLE stocks ADD COLUMN scrip_code TEXT")
     if "is_active" not in existing_cols:
         cursor.execute("ALTER TABLE stocks ADD COLUMN is_active INTEGER DEFAULT 1")
     if "data_source" not in existing_cols:
@@ -77,6 +80,7 @@ def init_db() -> None:
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_stocks_sector ON stocks(sector)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_stocks_isin ON stocks(isin)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_stocks_exchange ON stocks(exchange)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_stocks_scrip ON stocks(scrip_code)")
 
     # Check if any stocks exist
     cursor.execute("SELECT COUNT(*) FROM stocks")
@@ -322,6 +326,30 @@ def get_total_listings_count() -> int:
     return count
 
 
+def get_catalog_coverage_summary() -> Dict[str, Any]:
+    """Calculate field coverage counts across the catalog for transparent audit."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    SELECT 
+        COUNT(*) as total,
+        COUNT(CASE WHEN scrip_code IS NOT NULL AND scrip_code != '' THEN 1 END) as with_scrip,
+        COUNT(CASE WHEN sector IS NOT NULL AND sector != '' THEN 1 END) as with_sector,
+        COUNT(CASE WHEN listing_date IS NOT NULL AND listing_date != '' THEN 1 END) as with_listing_date
+    FROM stocks
+    """)
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return {"total": 0, "with_scrip_code": 0, "with_sector": 0, "with_listing_date": 0}
+    return {
+        "total": row["total"],
+        "with_scrip_code": row["with_scrip"],
+        "with_sector": row["with_sector"],
+        "with_listing_date": row["with_listing_date"]
+    }
+
+
 def search_stocks(
     query: str = "",
     exchange: Optional[str] = None,
@@ -427,43 +455,66 @@ def search_stocks(
 
 
 def get_stock_by_symbol(symbol: str, exchange: Optional[str] = None) -> Optional[Dict[str, Any]]:
-    """Retrieve detailed profile for a specific stock ticker and exchange."""
+    """Retrieve detailed profile for a specific stock ticker and exchange, with dual-listed scrip_code resolution."""
     conn = get_db_connection()
     cursor = conn.cursor()
 
     cleaned_symbol = symbol.strip()
     if exchange and exchange.strip():
         cursor.execute("""
-        SELECT id, symbol, company_name, exchange, sector, industry, isin, series,
+        SELECT id, symbol, company_name, exchange, scrip_code, sector, industry, isin, series,
                market_cap_category, currency, description, headquarters, listing_date,
                is_active, is_prototype_data, data_source, imported_at
         FROM stocks
-        WHERE UPPER(symbol) = UPPER(?) AND UPPER(exchange) = UPPER(?)
+        WHERE (UPPER(symbol) = UPPER(?) OR scrip_code = ?) AND UPPER(exchange) = UPPER(?)
         LIMIT 1
-        """, (cleaned_symbol, exchange.strip()))
+        """, (cleaned_symbol, cleaned_symbol, exchange.strip()))
     else:
         # If exchange is unspecified, prioritize NSE then BSE
         cursor.execute("""
-        SELECT id, symbol, company_name, exchange, sector, industry, isin, series,
+        SELECT id, symbol, company_name, exchange, scrip_code, sector, industry, isin, series,
                market_cap_category, currency, description, headquarters, listing_date,
                is_active, is_prototype_data, data_source, imported_at
         FROM stocks
-        WHERE UPPER(symbol) = UPPER(?)
+        WHERE UPPER(symbol) = UPPER(?) OR scrip_code = ?
         ORDER BY CASE WHEN exchange = 'NSE' THEN 1 ELSE 2 END
         LIMIT 1
-        """, (cleaned_symbol,))
+        """, (cleaned_symbol, cleaned_symbol))
 
     row = cursor.fetchone()
-    conn.close()
 
     if not row:
+        conn.close()
         return None
+
+    stock_isin = row["isin"]
+    resolved_scrip_code = row["scrip_code"]
+
+    # If scrip_code is missing (e.g. looking at an NSE listing), check if a dual-listed BSE listing shares the same ISIN
+    if not resolved_scrip_code and stock_isin:
+        cursor.execute("""
+        SELECT scrip_code, symbol FROM stocks 
+        WHERE isin = ? AND exchange = 'BSE' AND (scrip_code IS NOT NULL AND scrip_code != '')
+        LIMIT 1
+        """, (stock_isin,))
+        bse_match = cursor.fetchone()
+        if bse_match and bse_match["scrip_code"]:
+            resolved_scrip_code = bse_match["scrip_code"]
+        elif bse_match and bse_match["symbol"] and bse_match["symbol"].isdigit():
+            resolved_scrip_code = bse_match["symbol"]
+
+    # Also, if this is BSE and symbol itself is a 6-digit code, ensure scrip_code is set
+    if not resolved_scrip_code and row["exchange"] == "BSE" and row["symbol"].isdigit():
+        resolved_scrip_code = row["symbol"]
+
+    conn.close()
 
     return {
         "id": row["id"],
         "symbol": row["symbol"],
         "company_name": row["company_name"],
         "exchange": row["exchange"],
+        "scrip_code": resolved_scrip_code,
         "sector": row["sector"],
         "industry": row["industry"],
         "isin": row["isin"],
@@ -486,6 +537,7 @@ def upsert_stock_listing(
     exchange: str,
     isin: Optional[str] = None,
     series: Optional[str] = "EQ",
+    scrip_code: Optional[str] = None,
     sector: Optional[str] = None,
     industry: Optional[str] = None,
     listing_date: Optional[str] = None,
@@ -501,26 +553,32 @@ def upsert_stock_listing(
     cursor = conn.cursor()
 
     cursor.execute("""
-    SELECT id, company_name, isin, series, sector, industry, listing_date, is_active, is_prototype_data, data_source
+    SELECT id, company_name, isin, series, scrip_code, sector, industry, listing_date, is_active, is_prototype_data, data_source
     FROM stocks
     WHERE UPPER(symbol) = UPPER(?) AND UPPER(exchange) = UPPER(?)
     """, (symbol.strip(), exchange.strip().upper()))
 
     existing = cursor.fetchone()
 
+    # Normalize scrip_code: if this is BSE and symbol itself is numeric, default scrip_code
+    clean_scrip = scrip_code.strip() if scrip_code else None
+    if not clean_scrip and exchange.strip().upper() == "BSE" and symbol.strip().isdigit():
+        clean_scrip = symbol.strip()
+
     if existing is None:
         # Insert new record
         cursor.execute("""
         INSERT INTO stocks (
-            symbol, company_name, exchange, isin, series, sector, industry,
+            symbol, company_name, exchange, isin, series, scrip_code, sector, industry,
             listing_date, is_active, is_prototype_data, data_source, imported_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             symbol.strip().upper(),
             company_name.strip(),
             exchange.strip().upper(),
             isin.strip().upper() if isin else None,
             series.strip() if series else "EQ",
+            clean_scrip,
             sector.strip() if sector else None,
             industry.strip() if industry else None,
             listing_date.strip() if listing_date else None,
@@ -540,6 +598,7 @@ def upsert_stock_listing(
             company_name = ?,
             isin = COALESCE(?, isin),
             series = COALESCE(?, series),
+            scrip_code = COALESCE(?, scrip_code),
             sector = COALESCE(?, sector),
             industry = COALESCE(?, industry),
             listing_date = COALESCE(?, listing_date),
@@ -552,6 +611,7 @@ def upsert_stock_listing(
             company_name.strip(),
             isin.strip().upper() if isin else None,
             series.strip() if series else None,
+            clean_scrip,
             sector.strip() if sector else None,
             industry.strip() if industry else None,
             listing_date.strip() if listing_date else None,

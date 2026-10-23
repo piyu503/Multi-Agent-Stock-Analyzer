@@ -160,30 +160,32 @@ async def test_bull_bear_independence_and_debate_sequencing():
 @pytest.mark.asyncio
 async def test_orchestration_flow_all_13_agents_executed():
     """Verify complete orchestration coordinates all 13 roles and generates compatible report."""
-    report, agent_runs = await orchestrate_stock_research(MOCK_COMPANY)
+    with patch.object(LLMConfig, "is_configured", return_value=False):
+        report, agent_runs = await orchestrate_stock_research(MOCK_COMPANY)
 
-    # 13 agent runs (plus rebuttal stages tagged)
-    assert len(agent_runs) >= 13
-    assert report.symbol == "RELIANCE"
-    assert report.exchange == "NSE"
-    assert report.business_overview is not None
-    assert report.financial_analysis is not None
-    assert report.growth_prospects is not None
-    assert report.valuation is not None
-    assert report.risks is not None
-    assert len(report.bull_vs_bear.bull_case) > 0
-    assert len(report.bull_vs_bear.bear_case) > 0
-    assert report.final_assessment is not None
+        # 13 agent runs (plus rebuttal stages tagged)
+        assert len(agent_runs) >= 13
+        assert report.symbol == "RELIANCE"
+        assert report.exchange == "NSE"
+        assert report.business_overview is not None
+        assert report.financial_analysis is not None
+        assert report.growth_prospects is not None
+        assert report.valuation is not None
+        assert report.risks is not None
+        assert len(report.bull_vs_bear.bull_case) > 0
+        assert len(report.bull_vs_bear.bear_case) > 0
+        assert report.final_assessment is not None
 
 
 def test_create_report_endpoint_compatibility():
     """Test POST /api/reports/{symbol} integration with multi-agent report."""
-    res = client.post("/api/reports/RELIANCE?exchange=NSE")
-    assert res.status_code == 200
-    data = res.json()
-    assert data["symbol"] == "RELIANCE"
-    assert "business_overview" in data
-    assert "financial_analysis" in data
-    assert "bull_vs_bear" in data
-    assert "agent_runs" in data
-    assert len(data["agent_runs"]) >= 13
+    with patch.object(LLMConfig, "is_configured", return_value=False):
+        res = client.post("/api/reports/RELIANCE?exchange=NSE")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["symbol"] == "RELIANCE"
+        assert "business_overview" in data
+        assert "financial_analysis" in data
+        assert "bull_vs_bear" in data
+        assert "agent_runs" in data
+        assert len(data["agent_runs"]) >= 13

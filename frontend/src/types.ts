@@ -6,6 +6,7 @@ export interface StockSummary {
   sector?: string;
   industry?: string;
   isin?: string;
+  scrip_code?: string;
   series?: string;
   is_active: boolean;
   is_prototype_data: boolean;
@@ -77,6 +78,14 @@ export interface AgentOutput {
   error_message?: string;
 }
 
+export interface TacticalExecutionPlan {
+  entry_range_low?: number;
+  entry_range_high?: number;
+  invalidation_stop?: number;
+  atr_buffer?: number;
+  staged_tranches?: string[];
+}
+
 export interface ResearchReport {
   report_id: string;
   symbol: string;
@@ -86,6 +95,9 @@ export interface ResearchReport {
   status: string;
   is_prototype_demo: boolean;
   disclaimer: string;
+  conviction?: string;
+  target_allocation_pct?: number;
+  execution_plan?: TacticalExecutionPlan;
   business_overview: ReportSection;
   financial_analysis: ReportSection;
   growth_prospects: ReportSection;
@@ -96,6 +108,13 @@ export interface ResearchReport {
   agent_runs?: AgentOutput[];
 }
 
+export interface CatalogCoverage {
+  total: number;
+  with_scrip_code: number;
+  with_sector: number;
+  with_listing_date: number;
+}
+
 export interface HealthResponse {
   status: string;
   service: string;
@@ -104,4 +123,5 @@ export interface HealthResponse {
   catalog_imported: boolean;
   total_listings: number;
   timestamp: string;
+  catalog_coverage?: CatalogCoverage;
 }

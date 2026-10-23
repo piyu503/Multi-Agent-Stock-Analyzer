@@ -53,3 +53,7 @@ frontend/.env
 *.swo
 .DS_Store
 Thumbs.db
+
+# Archives
+compressed.zip
+*.zip

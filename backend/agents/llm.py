@@ -51,8 +51,16 @@ class LLMConfig:
         except ValueError:
             return 0.2
 
+    _configured_override: Optional[bool] = None
+
+    @classmethod
+    def set_configured(cls, val: Optional[bool]):
+        cls._configured_override = val
+
     @classmethod
     def is_configured(cls) -> bool:
+        if cls._configured_override is not None:
+            return cls._configured_override
         provider = cls.get_provider()
         if provider == "ollama":
             return True

@@ -16,7 +16,7 @@ def safe_div(numerator: Optional[float], denominator: Optional[float], default: 
     return numerator / denominator
 
 
-def calculate_financial_metrics(financials: Dict[str, Any]) -> Dict[str, Any]:
+def calculate_financial_metrics(financials: Dict[str, Any], market_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
     Computes key financial ratios deterministically:
     - Debt-to-Equity
@@ -24,18 +24,24 @@ def calculate_financial_metrics(financials: Dict[str, Any]) -> Dict[str, Any]:
     - ROCE vs Estimated WACC spread
     - PEG Ratio (P/E / EPS Growth Rate)
     - Valuation metrics & margins
+    - Multi-factor Solvency Check
     """
-    total_debt = financials.get("total_debt")
-    equity = financials.get("total_equity") or financials.get("shareholders_equity")
-    ebit = financials.get("ebit") or financials.get("operating_profit")
-    interest_expense = financials.get("interest_expense") or financials.get("finance_costs")
-    roce = financials.get("roce_pct")  # as percentage, e.g. 18.5
-    estimated_wacc = financials.get("estimated_wacc_pct", 10.5)  # default Indian equity cost of capital ~10.5%
-    pe_ratio = financials.get("pe_ratio")
-    eps_growth_3yr = financials.get("eps_cagr_3yr_pct")
-    revenue = financials.get("revenue")
-    pat = financials.get("pat") or financials.get("net_profit")
-    ebitda = financials.get("ebitda")
+    fin = financials or {}
+    mkt = market_data or {}
+
+    total_debt = fin.get("total_debt")
+    equity = fin.get("total_equity") or fin.get("shareholders_equity")
+    ebit = fin.get("ebit") or fin.get("operating_profit")
+    interest_expense = fin.get("interest_expense") or fin.get("finance_costs")
+    roce = fin.get("roce_pct")  # as percentage, e.g. 18.5
+    estimated_wacc = fin.get("estimated_wacc_pct", 10.5)  # default Indian equity cost of capital ~10.5%
+    
+    # Check P/E in financials first, fallback to market_data
+    pe_ratio = fin.get("pe_ratio") if fin.get("pe_ratio") is not None else mkt.get("pe_ratio")
+    eps_growth_3yr = fin.get("eps_cagr_3yr_pct")
+    revenue = fin.get("revenue")
+    pat = fin.get("pat") or fin.get("net_profit")
+    ebitda = fin.get("ebitda")
 
     debt_to_equity = safe_div(total_debt, equity)
     interest_coverage = safe_div(ebit, interest_expense)
@@ -44,7 +50,9 @@ def calculate_financial_metrics(financials: Dict[str, Any]) -> Dict[str, Any]:
     if roce is not None and estimated_wacc is not None:
         roce_wacc_spread = round(roce - estimated_wacc, 2)
 
-    peg_ratio = safe_div(pe_ratio, eps_growth_3yr)
+    peg_ratio = None
+    if pe_ratio is not None and eps_growth_3yr is not None and eps_growth_3yr > 0:
+        peg_ratio = safe_div(pe_ratio, eps_growth_3yr)
 
     net_margin_pct = None
     if pat is not None and revenue:
@@ -54,15 +62,26 @@ def calculate_financial_metrics(financials: Dict[str, Any]) -> Dict[str, Any]:
     if ebitda is not None and revenue:
         ebitda_margin_pct = round((ebitda / revenue) * 100.0, 2)
 
+    # Multi-factor solvency assessment
+    # A firm is solvent if it has either no debt, or interest coverage > 2.0 with debt/equity < 2.5
+    is_solvent = None
+    if interest_coverage is not None and debt_to_equity is not None:
+        is_solvent = bool(interest_coverage > 2.0 and debt_to_equity < 2.5)
+    elif interest_coverage is not None:
+        is_solvent = bool(interest_coverage > 2.0)
+    elif debt_to_equity is not None:
+        is_solvent = bool(debt_to_equity < 1.0)
+
     return {
         "debt_to_equity": round(debt_to_equity, 2) if debt_to_equity is not None else None,
         "interest_coverage": round(interest_coverage, 2) if interest_coverage is not None else None,
         "roce_pct": roce,
         "estimated_wacc_pct": estimated_wacc,
         "roce_wacc_spread": roce_wacc_spread,
+        "eps_cagr_3yr_pct": round(eps_growth_3yr, 2) if eps_growth_3yr is not None else None,
         "peg_ratio": round(peg_ratio, 2) if peg_ratio is not None else None,
         "net_margin_pct": net_margin_pct,
         "ebitda_margin_pct": ebitda_margin_pct,
-        "is_solvent": interest_coverage > 2.5 if interest_coverage is not None else None,
+        "is_solvent": is_solvent,
         "is_value_creating": roce_wacc_spread > 0 if roce_wacc_spread is not None else None,
     }

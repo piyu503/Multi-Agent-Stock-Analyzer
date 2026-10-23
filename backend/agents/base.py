@@ -59,7 +59,16 @@ class BaseAgent(ABC):
         evidence_dict = evidence or {}
 
         # If LLM API is unconfigured, return explicitly labeled dev stub
-        if not LLMConfig.is_configured():
+        is_conf = False
+        try:
+            if callable(LLMConfig.is_configured):
+                is_conf = LLMConfig.is_configured()
+            else:
+                is_conf = bool(LLMConfig.is_configured)
+        except Exception:
+            is_conf = False
+
+        if not is_conf:
             stub = self.get_development_stub(company_context, evidence_dict)
             role_timings = {
                 "Research Manager & Orchestrator": 0.82,

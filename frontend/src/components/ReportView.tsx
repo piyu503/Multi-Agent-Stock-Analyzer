@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   Calendar,
   CheckCircle2,
+  Crosshair,
   FileCheck2,
   Layers,
   Scale,
@@ -35,7 +36,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
       <div className="bg-[#111622] border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
           <div>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
               <span className="font-mono text-2xl sm:text-3xl font-bold text-slate-100">
                 {report.symbol}
               </span>
@@ -45,6 +46,17 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
               <span className="text-xs font-mono px-2 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/30">
                 SYNTHESIS REPORT
               </span>
+              {report.conviction && (
+                <span className={`text-xs font-mono font-bold px-2.5 py-0.5 rounded border ${
+                  report.conviction.toUpperCase().includes('OVERWEIGHT')
+                    ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40'
+                    : report.conviction.toUpperCase().includes('UNDERWEIGHT')
+                    ? 'bg-rose-500/15 text-rose-300 border-rose-500/40'
+                    : 'bg-amber-500/15 text-amber-300 border-amber-500/40'
+                }`}>
+                  CONVICTION: {report.conviction} {report.target_allocation_pct ? `(${report.target_allocation_pct}% Sizing)` : ''}
+                </span>
+              )}
             </div>
             <h2 className="text-lg text-slate-300 font-medium">{report.company_name}</h2>
           </div>
@@ -222,6 +234,64 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
           </div>
         )}
       </div>
+
+      {/* Tactical Execution & Accumulation Staging */}
+      {report.execution_plan && (
+        <div className="bg-[#111622] border border-slate-800 rounded-xl p-6 shadow-sm">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-5">
+            <div className="flex items-center gap-2.5">
+              <Crosshair className="w-5 h-5 text-cyan-400" />
+              <h3 className="text-base font-semibold text-slate-100">Tactical Institutional Execution &amp; Tranche Plan</h3>
+            </div>
+            <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-300 border border-cyan-500/30">
+              Trader Execution Architecture
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            <div className="bg-[#0b0f17] p-3 rounded-lg border border-slate-800">
+              <span className="text-[11px] text-slate-400 font-mono block">Entry Zone (Low)</span>
+              <span className="text-sm font-mono font-bold text-slate-200">
+                {report.execution_plan.entry_range_low ? `₹${report.execution_plan.entry_range_low}` : 'Market CMP'}
+              </span>
+            </div>
+            <div className="bg-[#0b0f17] p-3 rounded-lg border border-slate-800">
+              <span className="text-[11px] text-slate-400 font-mono block">Entry Zone (High)</span>
+              <span className="text-sm font-mono font-bold text-slate-200">
+                {report.execution_plan.entry_range_high ? `₹${report.execution_plan.entry_range_high}` : 'CMP + 1.5%'}
+              </span>
+            </div>
+            <div className="bg-[#0b0f17] p-3 rounded-lg border border-rose-900/30">
+              <span className="text-[11px] text-rose-400 font-mono block">Invalidation Stop</span>
+              <span className="text-sm font-mono font-bold text-rose-300">
+                {report.execution_plan.invalidation_stop ? `₹${report.execution_plan.invalidation_stop}` : 'Below 200-DMA'}
+              </span>
+            </div>
+            <div className="bg-[#0b0f17] p-3 rounded-lg border border-slate-800">
+              <span className="text-[11px] text-slate-400 font-mono block">14-Day ATR Buffer</span>
+              <span className="text-sm font-mono font-bold text-cyan-300">
+                {report.execution_plan.atr_buffer ? `₹${report.execution_plan.atr_buffer}` : '2.5%'}
+              </span>
+            </div>
+          </div>
+
+          {report.execution_plan.staged_tranches && report.execution_plan.staged_tranches.length > 0 && (
+            <div className="bg-[#0b0f17] p-3.5 rounded-lg border border-slate-800">
+              <span className="text-[11px] font-mono text-slate-400 block mb-2 font-semibold uppercase tracking-wider">
+                Staged Accumulation Pacing
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                {report.execution_plan.staged_tranches.map((tranche, idx) => (
+                  <div key={idx} className="flex items-center gap-2 text-xs text-slate-300 bg-slate-900/70 p-2.5 rounded border border-slate-800">
+                    <span className="text-cyan-400 font-mono font-bold">Tranche {idx + 1}:</span>
+                    <span>{tranche}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Section 7: Final Assessment */}
       <div className="bg-gradient-to-br from-[#111622] to-[#151c2d] border border-slate-700/80 rounded-xl p-6 sm:p-7 shadow-lg">
