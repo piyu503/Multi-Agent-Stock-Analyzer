@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, ChevronRight, Lock, Loader2, Check, Sparkles } from 'lucide-react';
+import { Search, ChevronRight, Lock, Loader2, Sparkles } from 'lucide-react';
 import type { StockSummary } from '../types';
 import { searchStocks } from '../api';
 
@@ -119,17 +119,17 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
       <div className="mb-10 text-center sm:text-left">
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/30 text-fuchsia-300 text-xs font-semibold mb-4 tracking-wide shadow-sm">
           <Sparkles className="w-3.5 h-3.5 text-fuchsia-400 animate-pulse" />
-          <span>Institutional Multi-Agent Deliberation Terminal</span>
+          <span>Institutional Equity Research Platform</span>
         </div>
         <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight font-display">
           Deep Equity Intelligence, <br className="hidden sm:inline" />
-          <span className="bg-gradient-to-r from-fuchsia-400 via-purple-300 to-cyan-400 bg-clip-text text-transparent">
-            Adversarially Synthesized
+          <span className="bg-gradient-to-r from-fuchsia-400 to-pink-300 bg-clip-text text-transparent">
+            Institutional Coverage
           </span>
         </h1>
         <p className="mt-4 text-sm sm:text-base text-slate-300 max-w-2xl leading-relaxed">
-          13 specialized autonomous roles evaluate live BSE filings, multi-year statements, and technical microstructure,
-          then deliberate in an adversarial Bull/Bear arena to establish institutional conviction.
+          13 specialized analyst perspectives evaluate live BSE filings, multi-year statements, and technical momentum,
+          reviewing Bull vs Bear arguments to formulate disciplined investment conviction.
         </p>
       </div>
 
@@ -169,7 +169,7 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
               <div className="absolute top-full left-0 right-0 mt-2 bg-[#0d1322] border border-white/15 rounded-xl shadow-2xl z-50 overflow-hidden divide-y divide-white/5 max-h-72 overflow-y-auto">
                 <div className="px-3 py-1.5 bg-[#080d18] text-[11px] font-mono text-slate-300 uppercase tracking-wider flex items-center justify-between border-b border-white/10">
                   <span>NSE &amp; BSE Universe Matches</span>
-                  <span className="text-cyan-400">{searchResults.length} results</span>
+                  <span className="text-fuchsia-400">{searchResults.length} results</span>
                 </div>
                 {searchResults.map((s) => (
                   <button
@@ -183,13 +183,7 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
                         <span className="font-mono font-bold text-white text-sm group-hover:text-fuchsia-400 transition-colors">
                           {s.symbol}
                         </span>
-                        <span
-                          className={`text-xs font-mono font-semibold px-2 py-0.5 rounded ${
-                            s.exchange === 'NSE'
-                              ? 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30'
-                              : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
-                          }`}
-                        >
+                        <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-white/5 text-slate-300 border border-white/10">
                           {s.exchange}
                         </span>
                         {s.series && (
@@ -234,37 +228,36 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
           <div className="rounded-xl bg-[#070a12] border border-white/5 p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-200">
-                <span className="w-5 h-5 rounded-full bg-purple-500/20 border border-purple-500/40 text-purple-300 text-xs flex items-center justify-center font-mono font-bold">
+                <span className="w-5 h-5 rounded-full bg-fuchsia-500/20 border border-fuchsia-500/40 text-fuchsia-300 text-xs flex items-center justify-center font-mono font-bold">
                   2
                 </span>
-                <span>Allocation Horizon</span>
+                <span>Investment Horizon</span>
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-2.5">
               <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3 text-center opacity-40 cursor-not-allowed select-none">
-                <div className="text-xs font-semibold text-slate-400">Short-term</div>
-                <div className="text-xs text-slate-500 mt-0.5">1-3 months</div>
+                <div className="text-xs font-semibold text-slate-400">Short-Term</div>
+                <div className="text-xs text-slate-500 mt-0.5">1-3 Months</div>
                 <span className="inline-block mt-2 text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-white/5 text-slate-400 border border-white/10">
                   SOON
                 </span>
               </div>
 
-              {/* Medium-Term Active */}
+              {/* Medium-Term Active (No checkmark tick) */}
               <div className="rounded-xl border border-fuchsia-500/50 bg-fuchsia-500/10 p-3 text-center ring-1 ring-fuchsia-500/30 cursor-pointer shadow-lg shadow-fuchsia-950/30">
-                <div className="text-xs font-bold text-fuchsia-300 flex items-center justify-center gap-1">
-                  <span>Tactical Core</span>
-                  <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                <div className="text-xs font-bold text-fuchsia-300">
+                  Medium-Term
                 </div>
-                <div className="text-xs text-fuchsia-200/90 font-medium mt-0.5">3-24 months (1 Yr)</div>
+                <div className="text-xs text-fuchsia-200/90 font-medium mt-0.5">1 Year Outlook</div>
                 <span className="inline-block mt-2 text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/40">
                   Active
                 </span>
               </div>
 
               <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3 text-center opacity-40 cursor-not-allowed select-none">
-                <div className="text-xs font-semibold text-slate-400">Long-term</div>
-                <div className="text-xs text-slate-500 mt-0.5">2+ years</div>
+                <div className="text-xs font-semibold text-slate-400">Long-Term</div>
+                <div className="text-xs text-slate-500 mt-0.5">3+ Years</div>
                 <span className="inline-block mt-2 text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-white/5 text-slate-400 border border-white/10">
                   SOON
                 </span>
@@ -275,25 +268,25 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
             </p>
           </div>
 
-          {/* Step 3: Deliberation Depth */}
+          {/* Step 3: Research Depth */}
           <div className="rounded-xl bg-[#070a12] border border-white/5 p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-200">
-                <span className="w-5 h-5 rounded-full bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 text-xs flex items-center justify-center font-mono font-bold">
+                <span className="w-5 h-5 rounded-full bg-fuchsia-500/20 border border-fuchsia-500/40 text-fuchsia-300 text-xs flex items-center justify-center font-mono font-bold">
                   3
                 </span>
-                <span>Deliberation Architecture</span>
+                <span>Research Scope</span>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-2.5">
-              <div className="rounded-xl border border-cyan-500/50 bg-cyan-500/10 p-3 text-center ring-1 ring-cyan-500/30 cursor-pointer shadow-lg shadow-cyan-950/30">
-                <div className="text-xs font-bold text-cyan-300 flex items-center justify-center gap-1">
-                  <span>13-Agent Full Loop</span>
-                  <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+              {/* Standard Review Active (No checkmark tick, matching fuchsia theme) */}
+              <div className="rounded-xl border border-fuchsia-500/50 bg-fuchsia-500/10 p-3 text-center ring-1 ring-fuchsia-500/30 cursor-pointer shadow-lg shadow-fuchsia-950/30">
+                <div className="text-xs font-bold text-fuchsia-300">
+                  Full 13-Analyst Review
                 </div>
-                <div className="text-xs text-cyan-200/90 font-medium mt-0.5">Adversarial Rebuttal</div>
-                <span className="inline-block mt-2 text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                <div className="text-xs text-fuchsia-200/90 font-medium mt-0.5">Bull vs Bear Debate</div>
+                <span className="inline-block mt-2 text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/40">
                   Active
                 </span>
               </div>
@@ -301,7 +294,7 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
               <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3 text-center opacity-40 cursor-not-allowed select-none">
                 <div className="flex items-center justify-center gap-1 text-xs font-semibold text-slate-400">
                   <Lock className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Multi-Round Arena</span>
+                  <span>Multi-Stage Review</span>
                 </div>
                 <div className="text-xs text-slate-500 mt-0.5">3 Debate Rounds</div>
                 <span className="inline-block mt-2 text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-white/5 text-slate-400 border border-white/10">
@@ -310,7 +303,7 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
               </div>
             </div>
             <p className="mt-2.5 text-xs text-slate-400 leading-relaxed">
-              Executes the full 13-agent deliberation loop including independent Bull/Bear drafting and rebuttal.
+              Executes the full 13-analyst framework including independent Bull/Bear drafting and rebuttal analysis.
             </p>
           </div>
         </div>
@@ -320,14 +313,14 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
           <div className="text-xs text-slate-300 text-center sm:text-left">
             {selectedStock ? (
               <span>
-                Ready to synthesize:{' '}
+                Selected for research:{' '}
                 <strong className="text-fuchsia-400 font-mono text-sm font-bold">
                   {selectedStock.symbol} ({selectedStock.exchange})
                 </strong>{' '}
                 <span className="text-slate-300">• {selectedStock.company_name}</span>
               </span>
             ) : (
-              <span className="text-slate-400">Select an equity above to initiate 13-agent deliberation loop</span>
+              <span className="text-slate-400">Select an equity above to generate institutional research</span>
             )}
           </div>
 
@@ -337,11 +330,11 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
             onClick={() => selectedStock && onStartAnalysis(selectedStock)}
             className={`w-full sm:w-auto px-7 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-xl ${
               selectedStock
-                ? 'bg-gradient-to-r from-fuchsia-600 via-purple-600 to-cyan-500 hover:from-fuchsia-500 hover:to-cyan-400 text-white shadow-fuchsia-500/30 cursor-pointer hover:scale-[1.02] active:scale-[0.98]'
+                ? 'bg-gradient-to-r from-fuchsia-600 to-pink-600 hover:from-fuchsia-500 hover:to-pink-500 text-white shadow-fuchsia-600/30 cursor-pointer hover:scale-[1.02] active:scale-[0.98]'
                 : 'bg-white/5 text-slate-500 border border-white/5 cursor-not-allowed opacity-50'
             }`}
           >
-            <span>Launch Deliberation Engine</span>
+            <span>Generate Research Report</span>
             <ChevronRight className="w-4 h-4 stroke-[2.5]" />
           </button>
         </div>

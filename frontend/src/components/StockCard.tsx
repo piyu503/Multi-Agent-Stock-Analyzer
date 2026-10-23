@@ -8,8 +8,6 @@ interface StockCardProps {
 }
 
 export const StockCard: React.FC<StockCardProps> = ({ stock, onSelect }) => {
-  const isNSE = stock.exchange === 'NSE';
-
   return (
     <div
       onClick={() => onSelect(stock.symbol, stock.exchange)}
@@ -21,22 +19,16 @@ export const StockCard: React.FC<StockCardProps> = ({ stock, onSelect }) => {
             <span className="font-mono text-lg font-bold text-white tracking-wide group-hover:text-fuchsia-300 transition-colors">
               {stock.symbol}
             </span>
-            <span
-              className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border ${
-                isNSE
-                  ? 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30'
-                  : 'bg-amber-500/10 text-amber-300 border-amber-500/30'
-              }`}
-            >
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-white/5 text-slate-300 border border-white/10">
               {stock.exchange}
             </span>
             {stock.series && (
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-slate-300 border border-white/10">
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/5 text-slate-400 border border-white/5">
                 {stock.series}
               </span>
             )}
           </div>
-          <div className="p-1.5 rounded-lg text-slate-400 group-hover:text-white group-hover:bg-fuchsia-500/20 group-hover:border-fuchsia-500/40 border border-transparent transition-all">
+          <div className="p-1.5 rounded-lg text-slate-400 group-hover:text-fuchsia-300 group-hover:bg-fuchsia-500/10 group-hover:border-fuchsia-500/30 border border-transparent transition-all">
             <ArrowUpRight className="w-4 h-4" />
           </div>
         </div>

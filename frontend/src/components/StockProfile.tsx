@@ -83,11 +83,11 @@ export const StockProfile: React.FC<StockProfileProps> = ({
               className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-xl bg-gradient-to-r from-fuchsia-600 via-purple-600 to-cyan-500 hover:from-fuchsia-500 hover:to-cyan-400 text-white font-bold text-sm transition-all shadow-xl shadow-fuchsia-950/40 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 cursor-pointer"
             >
               <Sparkles className="w-4 h-4 text-white" />
-              <span>{isGeneratingReport ? 'Deliberation in Progress...' : 'Launch 13-Agent Deliberation'}</span>
+              <span>{isGeneratingReport ? 'Compiling Research Report...' : 'Generate Full Research Report'}</span>
             </button>
             <span className="text-[11px] font-mono text-slate-400 flex items-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Adversarial Bull/Bear Synthesis Engine</span>
+              <span>13-Analyst Comprehensive Evaluation</span>
             </span>
           </div>
         </div>

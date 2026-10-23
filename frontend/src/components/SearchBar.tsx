@@ -63,7 +63,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
             <button
               type="submit"
-              className="px-4 py-2 rounded-lg bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white text-xs font-bold tracking-wide transition shadow-lg shadow-fuchsia-950/50 cursor-pointer disabled:opacity-50"
+              className="px-4 py-2 rounded-lg bg-fuchsia-600 hover:bg-fuchsia-500 text-white text-xs font-bold tracking-wide transition shadow-lg shadow-fuchsia-950/50 cursor-pointer disabled:opacity-50"
               disabled={isLoading}
             >
               {isLoading ? 'Scanning...' : 'Scan'}
@@ -84,7 +84,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             onClick={() => handleExchangeChange('')}
             className={`px-3 py-1 rounded-lg border font-mono transition cursor-pointer ${
               exchange === ''
-                ? 'bg-white text-slate-950 border-white font-bold shadow-md'
+                ? 'bg-fuchsia-600 text-white border-fuchsia-500 font-bold shadow-md shadow-fuchsia-600/20'
                 : 'bg-white/5 text-slate-300 border-white/10 hover:border-white/20 hover:text-white'
             }`}
           >
@@ -95,8 +95,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             onClick={() => handleExchangeChange('NSE')}
             className={`px-3 py-1 rounded-lg border font-mono transition cursor-pointer ${
               exchange === 'NSE'
-                ? 'bg-cyan-500 text-slate-950 border-cyan-400 font-bold shadow-md shadow-cyan-500/20'
-                : 'bg-white/5 text-cyan-300/80 border-white/10 hover:border-cyan-500/40 hover:text-cyan-300'
+                ? 'bg-fuchsia-600 text-white border-fuchsia-500 font-bold shadow-md shadow-fuchsia-600/20'
+                : 'bg-white/5 text-slate-300 border-white/10 hover:border-fuchsia-500/40 hover:text-white'
             }`}
           >
             NSE
@@ -106,8 +106,8 @@ export const SearchBar: React.FC<SearchBarProps> = ({
             onClick={() => handleExchangeChange('BSE')}
             className={`px-3 py-1 rounded-lg border font-mono transition cursor-pointer ${
               exchange === 'BSE'
-                ? 'bg-amber-500 text-slate-950 border-amber-400 font-bold shadow-md shadow-amber-500/20'
-                : 'bg-white/5 text-amber-300/80 border-white/10 hover:border-amber-500/40 hover:text-amber-300'
+                ? 'bg-fuchsia-600 text-white border-fuchsia-500 font-bold shadow-md shadow-fuchsia-600/20'
+                : 'bg-white/5 text-slate-300 border-white/10 hover:border-fuchsia-500/40 hover:text-white'
             }`}
           >
             BSE

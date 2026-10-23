@@ -54,7 +54,7 @@ export const StateFeedback: React.FC<StateCardProps> = ({
           No matches found {query ? `for "${query}"` : ''} {exchange ? `on ${exchange}` : ''}
         </h4>
         <p className="text-xs text-slate-300 mt-1.5 max-w-md font-sans leading-relaxed">
-          Verify spelling or search by legal name, exchange symbol, or 12-digit ISIN (e.g. <span className="font-mono text-cyan-300 font-bold">INE002A01018</span> or <span className="font-mono text-fuchsia-300 font-bold">500325</span>).
+          Verify spelling or search by legal name, exchange symbol, or 12-digit ISIN (e.g. <span className="font-mono text-fuchsia-300 font-bold">INE002A01018</span> or <span className="font-mono text-fuchsia-300 font-bold">500325</span>).
         </p>
       </div>
     );

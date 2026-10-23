@@ -228,16 +228,16 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
         {report.bull_vs_bear.critical_swing_factors.length > 0 && (
           <div className="mt-7 pt-6 border-t border-white/10">
             <div className="flex items-center gap-2 mb-4">
-              <Activity className="w-4 h-4 text-amber-400" />
+              <Activity className="w-4 h-4 text-fuchsia-400" />
               <h4 className="text-xs uppercase font-mono tracking-wider text-slate-200 font-bold">
                 Critical Swing Variables &amp; Invalidation Triggers
               </h4>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
               {report.bull_vs_bear.critical_swing_factors.map((factor, idx) => (
-                <div key={idx} className="bg-[#070b13] p-4 rounded-xl border border-amber-500/30 text-xs text-slate-200 shadow-lg">
-                  <span className="text-amber-400 font-mono text-[11px] font-bold block mb-1.5 flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                <div key={idx} className="bg-[#070b13] p-4 rounded-xl border border-white/10 text-xs text-slate-200 shadow-lg">
+                  <span className="text-fuchsia-300 font-mono text-[11px] font-bold block mb-1.5 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-fuchsia-400" />
                     TRIGGER 0{idx + 1}
                   </span>
                   <p className="leading-relaxed text-slate-200 font-sans">{factor}</p>

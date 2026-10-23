@@ -261,7 +261,6 @@ export function App() {
     <div className="min-h-screen bg-[#06080e] text-slate-100 flex flex-col font-sans selection:bg-fuchsia-500/30 selection:text-fuchsia-200 relative overflow-hidden bg-terminal-grid">
       {/* Ambient background glows */}
       <div className="fixed top-0 left-1/4 w-[600px] h-[600px] bg-fuchsia-600/5 rounded-full blur-[140px] pointer-events-none" />
-      <div className="fixed bottom-0 right-1/4 w-[600px] h-[600px] bg-cyan-600/5 rounded-full blur-[140px] pointer-events-none" />
 
       <Navbar onHomeClick={handleGoHome} backendHealthy={backendHealthy} />
 
@@ -299,7 +298,7 @@ export function App() {
             <div className="space-y-4">
               <div className="flex items-center justify-between text-xs text-slate-400 border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
-                  <Database className="w-4 h-4 text-cyan-400" />
+                  <Database className="w-4 h-4 text-fuchsia-400" />
                   <span className="font-semibold text-white font-mono">
                     {searchQuery
                       ? `SEARCH MATCHES (${totalMatches})`

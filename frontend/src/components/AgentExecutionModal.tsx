@@ -51,7 +51,7 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-bold text-white font-display">
-                  Deliberating on {symbol}
+                  Evaluating {symbol}
                 </h3>
                 <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-white/10 text-cyan-300 border border-white/10">
                   {exchange}
@@ -66,9 +66,9 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
           <div className="flex items-center gap-3">
             <div className="text-right hidden sm:block">
               <div className="text-xs font-mono font-bold text-fuchsia-400">
-                {completedCount} / {totalAgents} Roles Synced
+                {completedCount} / {totalAgents} Roles Complete
               </div>
-              <div className="text-xs text-slate-400 font-mono">Adversarial Workflow</div>
+              <div className="text-xs text-slate-400 font-mono">Research Committee</div>
             </div>
             {isComplete && (
               <button
@@ -149,7 +149,7 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
 
                     {isRunning && (
                       <p className="mt-1 text-xs text-fuchsia-300 font-medium animate-pulse flex items-center gap-1.5 font-mono">
-                        <span>Deliberating with deterministic financial ratios...</span>
+                        <span>Evaluating financial metrics and filing data...</span>
                       </p>
                     )}
                   </div>
@@ -179,11 +179,11 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
             {isComplete ? (
               <span className="text-emerald-400 font-bold flex items-center gap-1.5">
                 <Check className="w-4 h-4 stroke-[2.5]" />
-                All 13 Specialist Roles Synthesized Successfully
+                All 13 Research Perspectives Completed Successfully
               </span>
             ) : (
               <span className="text-slate-400 font-medium">
-                Orchestrating concurrent adversarial stages...
+                Processing multi-analyst research stages...
               </span>
             )}
           </div>
