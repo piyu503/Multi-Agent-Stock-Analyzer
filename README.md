@@ -1,14 +1,14 @@
-# EquiAgentic - Multi-Agent Institutional Stock Research Platform
+# EquiAgentic - Multi-Agent Stock Research Platform
 
-An institutional-grade research platform for NSE & BSE Indian equities powered by an adversarial **13-agent deliberation loop**, **LangGraph** orchestration, deterministic financial math, and a **heterogeneous multi-model AI architecture** (IBM Granite + Qwen 2.5/3.5 + DeepSeek-R1).
+A research platform for NSE & BSE Indian equities powered by an adversarial **13-agent research loop**, **LangGraph** orchestration, deterministic financial math, and a **heterogeneous multi-model AI architecture** (IBM Granite + Qwen 2.5/3.5 + DeepSeek-R1).
 
 ---
 
 ## What is EquiAgentic?
 
-EquiAgentic moves beyond simple chatbot summaries by simulating an institutional equity research committee:
+EquiAgentic moves beyond simple chatbot summaries by simulating an equity research team:
 - **13 Specialized Agent Roles**: Fundamentals, Growth, News/Events, Sentiment, Market Microstructure, Peer Valuation, Bull/Bear Researchers, Trader Desk, Risk Analyst, and Portfolio Manager.
-- **True Adversarial Debate & Cross-Examination**: Isolated Bull and Bear researchers craft independent theses, followed by adversarial challenge and investment committee cross-examination.
+- **True Adversarial Debate & Cross-Examination**: Isolated Bull and Bear researchers craft independent theses, followed by adversarial challenge and cross-examination.
 - **Deterministic Math Engine**: Eliminates LLM arithmetic hallucinations with Python-calculated Return on Equity (ROE: 45.89%), ROCE (56.29%), 3-year Revenue/EPS CAGRs, 14-day RSI, ATR buffers, and negative-equity solvency guards.
 - **Real NSE & BSE Exchange Data**: Integrated with `stock-nse-india` for security-wise delivery position %, order book market depth (bid/ask ratio), and official exchange regulatory announcements.
 - **7,800+ Official NSE & BSE Catalog**: Real securities database with exchange disambiguation, ISIN lookup, and scrip mapping.
@@ -71,12 +71,12 @@ EquiAgentic/
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── Navbar.tsx          # Clean institutional header & exchange badges
+│   │   │   ├── Navbar.tsx          # Clean header & exchange badges
 │   │   │   ├── SearchBar.tsx       # Search by Symbol, Name, or 12-digit ISIN + Exchange filters
 │   │   │   ├── StockCard.tsx       # Summary card with exchange tags & ISIN badge
 │   │   │   ├── StockProfile.tsx    # Exchange-specific stock profile & "Generate Full Report" button
 │   │   │   ├── ReportView.tsx      # Dynamic Bull/Bear debate, status badges, and trade execution matrix
-│   │   │   └── AnalysisConsole.tsx # Live streaming terminal for agent deliberation rounds
+│   │   │   └── AnalysisConsole.tsx # Live streaming terminal for agent rounds
 │   │   ├── types.ts                # TypeScript interfaces matching backend models
 │   │   └── App.tsx                 # Main layout & view routing
 │   └── package.json                # Frontend dependencies
@@ -221,7 +221,7 @@ This verifies:
 | `GET` | `/api/health` | Health check verifying API, database, and catalog coverage |
 | `GET` | `/api/stocks?q=...&exchange=...&page=...` | Search stocks by ticker, company name, or ISIN with filters |
 | `GET` | `/api/stocks/{symbol}?exchange={NSE\|BSE}` | Retrieve profile for a specific exchange listing |
-| `GET` | `/api/reports/stream/{symbol}?exchange={NSE\|BSE}` | SSE real-time stream of the 13-agent research deliberation loop |
+| `GET` | `/api/reports/stream/{symbol}?exchange={NSE\|BSE}` | SSE real-time stream of the 13-agent research loop |
 | `POST` | `/api/reports/{symbol}?exchange={NSE\|BSE}` | Trigger full asynchronous multi-agent report generation |
 | `POST` | `/api/catalog/import?exchange={NSE\|BSE}` | Upload official exchange CSV or Excel security master |
 
