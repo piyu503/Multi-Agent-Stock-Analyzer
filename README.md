@@ -1,59 +1,123 @@
-# EquiAgentic - Multi-Agent Stock Research Platform
+# EquiAgentic - Multi-Agent Institutional Stock Research Platform
 
-An institutional-grade research platform for NSE & BSE Indian equities powered by an adversarial **13-agent deliberation loop**, **LangGraph** orchestration, deterministic financial math, and local/remote LLM reasoning (e.g. Qwen 2.5 Coder via Ollama).
+An institutional-grade research platform for NSE & BSE Indian equities powered by an adversarial **13-agent deliberation loop**, **LangGraph** orchestration, deterministic financial math, and a **heterogeneous multi-model AI architecture** (IBM Granite + Qwen 2.5/3.5 + DeepSeek-R1).
 
 ---
 
 ## What is EquiAgentic?
 
-EquiAgentic moves beyond simple chatbot summaries by simulating an institutional investment committee:
-- **13 Specialized Agent Roles**: Fundamentals, Growth, News/Events, Sentiment, Market Microstructure, Valuation, Risk, Trader, and Portfolio Manager.
-- **Adversarial Bull vs Bear Debate**: Isolated bull and bear researchers craft independent theses, then challenge each other in an adversarial rebuttal round.
-- **Deterministic Math Engine**: Computes Debt/Equity, Interest Coverage, ROCE-WACC spread, and PEG ratios in Python to eliminate LLM arithmetic hallucinations.
+EquiAgentic moves beyond simple chatbot summaries by simulating an institutional equity research committee:
+- **Heterogeneous Multi-Model AI**: Specialized models assigned to specific tasks based on model strengths (Granite for factual extraction, Qwen for institutional analysis, DeepSeek-R1 for adversarial reasoning).
+- **13 Specialized Agent Roles**: Fundamentals, Growth, News/Events, Sentiment, Market Microstructure, Peer Valuation, Bull/Bear Researchers, Trader Desk, Risk Analyst, and Portfolio Manager.
+- **True Adversarial Debate & Cross-Examination**: Isolated Bull and Bear researchers craft independent theses, followed by a DeepSeek-R1 adversarial challenge and investment committee cross-examination.
+- **Deterministic Math Engine**: Eliminates LLM arithmetic hallucinations with Python-calculated Return on Equity (ROE: 45.89%), ROCE (56.29%), 3-year Revenue/EPS CAGRs, 14-day RSI, ATR buffers, and negative-equity solvency guards.
+- **Real NSE & BSE Exchange Data**: Integrated with `stock-nse-india` for security-wise delivery position %, order book market depth (bid/ask ratio), and official exchange regulatory announcements.
 - **7,800+ Official NSE & BSE Catalog**: Real securities database with exchange disambiguation, ISIN lookup, and scrip mapping.
 
 ---
 
-## System Architecture
+## Heterogeneous Multi-Model Architecture
+
+Unlike traditional single-model systems that suffer from sycophancy or factual hallucination, EquiAgentic uses a **tier-dispatched multi-model architecture**:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       EQUIAGENTIC MULTI-MODEL STACK                         │
+├────────────────────────────────┬────────────────────────────────────────────┤
+│ IBM Granite 3.0 (2B / 8B)      │ Zero-hallucination factual extraction,     │
+│ [Extractors & Classifiers]     │ strict constraint adherence, sentiment.    │
+├────────────────────────────────┼────────────────────────────────────────────┤
+│ Qwen 2.5 / 3.5 (7B / 14B)      │ Domain analysis, structured JSON outputs,  │
+│ [Core Analytical Workhorses]   │ financial reasoning, trade desk pacing.    │
+├────────────────────────────────┼────────────────────────────────────────────┤
+│ DeepSeek-R1 (7B / 8B / 14B)    │ High-order adversarial debate challenge,   │
+│ [Adversarial Stress-Testers]   │ stress-testing vulnerabilities, PM critique│
+├────────────────────────────────┼────────────────────────────────────────────┤
+│ Deterministic Python Engine    │ Mathematical truth: ROCE, ROE, 3Y CAGR,   │
+│ [Unbreakable Numerical Anchor] │ RSI-14, ATR, ISIN checksums, Delivery %.   │
+└────────────────────────────────┴────────────────────────────────────────────┘
+```
+
+### The 13 Specialized Agent Roles & Model Mapping
+
+| # | Agent Role | Model Tier | Default Model | Core Function & Advantage |
+| :---: | :--- | :---: | :---: | :--- |
+| **1** | **Research Manager** | `analyst` | **Qwen 2.5** | Scopes investment hypotheses, sets analysis parameters, and coordinates LangGraph state dependencies. |
+| **2** | **Evidence Verification Analyst** | `extractor` | **IBM Granite 3.0** | Audits listing provenance, trading series (`EQ` vs `BE`/`SM`), and ISIN checksums without hallucinating missing records. |
+| **3** | **Fundamentals Analyst** | `analyst` | **Qwen 2.5** + Python | Evaluates business durability using deterministic ROE (45.89%), ROCE (56.29%), and solvency guards. |
+| **4** | **Growth & Industry Analyst** | `analyst` | **Qwen 2.5** | Assesses macro tailwinds (Make in India, PLI schemes, supply-chain formalization) and secular TAM expansion. |
+| **5** | **News & Corporate Events Analyst** | `extractor` $\rightarrow$ `analyst` *(2-Stage)* | **Granite** $\rightarrow$ **Qwen** | **Stage 1 (Granite)** extracts verified facts from official filings $\rightarrow$ **Stage 2 (Qwen)** interprets governance risks and catalysts. |
+| **6** | **Social Sentiment Analyst** | `extractor` | **IBM Granite 3.0** | Calibrated sentiment classification (-1.0 to +1.0) of retail discussion headlines without bias. |
+| **7** | **Market Analyst** | `analyst` | **Qwen 2.5** + Python | Evaluates 14-day RSI, ATR buffer, and live **NSE Delivery %** + order book depth (`stock-nse-india`). |
+| **8** | **Peer & Valuation Analyst** | `analyst` | **Qwen 2.5** + Python | Benchmarks multiples (P/E, P/B, EV/EBITDA, PEG) against peer medians from the SQLite securities master. |
+| **9** | **Bull Researcher** | `analyst` | **Qwen 2.5** | Formulates thesis-driven asymmetric upside case under strict factual rules (e.g. cannot label high multiples as cheap). |
+| **10** | **Bear Researcher** | `analyst` | **Qwen 2.5** | Adversarial downside stress-test attacking multiple compression and deceleration; prohibited from fabricating debt when D/E < 0.3. |
+| **11** | **Trader / Tactical Execution Desk** | `analyst` | **Qwen 2.5** + Python | Formulates concrete institutional execution parameters (`entry_range_low`, `entry_range_high`, `invalidation_stop`, staged tranches). |
+| **12** | **Risk Analyst** | `reasoner` | **DeepSeek-R1** | Uses `<think>` chain-of-thought to attack Bull assumptions, uncover balance-sheet fragility, and define invalidation thresholds. |
+| **13** | **Portfolio Manager** | `reasoner` $\rightarrow$ `analyst` *(2-Stage)* | **DeepSeek-R1** $\rightarrow$ **Qwen** | **Stage 1 (DeepSeek-R1)** conducts an Investment Committee Cross-Examination $\rightarrow$ **Stage 2 (Qwen)** assigns capital conviction (`OVERWEIGHT`, `NEUTRAL`, `UNDERWEIGHT`) and target allocation (0.0% to 10.0%). |
+
+---
+
+## Branch Architecture & Comparison
+
+EquiAgentic provides both architectures for direct side-by-side evaluation:
+
+* **`main` (Default Branch)**: **Heterogeneous Multi-Model Architecture**
+  * Dispatches tasks to IBM Granite (extraction), Qwen (analysis), and DeepSeek-R1 (adversarial challenge).
+  * Includes automatic fallback to the primary model if a specialized model is not loaded.
+* **`single-model-architecture` (Alternate Branch)**: **Single Unified Model Baseline**
+  * Executes all 13 agents on a single model (e.g. `qwen2.5:7b` or `gpt-4o-mini`).
+  * Useful for benchmarking against the multi-model architecture.
+
+To switch between architectures:
+```bash
+# Switch to Multi-Model Architecture (Main):
+git checkout main
+
+# Switch to Single-Model Baseline:
+git checkout single-model-architecture
+```
+
+---
+
+## System Structure
 
 ```text
 EquiAgentic/
 ├── backend/
 │   ├── agents/                     # LangGraph Multi-Agent Engine
 │   │   ├── orchestrator.py         # StateGraph workflow (5 stages, safe parallel state merging)
-│   │   ├── analysts.py             # 7 foundational specialist agents (Evidence, Fundamentals, etc.)
+│   │   ├── analysts.py             # 7 foundational specialist agents (Evidence, Fundamentals, News, etc.)
 │   │   ├── decision_makers.py      # Bull, Bear, Risk, Trader, and Portfolio Manager agents
-│   │   ├── metrics.py              # Deterministic financial ratio calculator (Debt/Equity, ROCE, PEG)
-│   │   ├── base.py                 # Abstract BaseAgent, AgentOutput schema, and error containment
-│   │   └── llm.py                  # Ollama / OpenAI API client with JSON schema enforcement
-│   ├── data_providers/             # Free Data Connectors (Zero API Keys)
+│   │   ├── metrics.py              # Deterministic financial ratio calculator (ROE, ROCE, 3Y CAGR, PEG)
+│   │   ├── base.py                 # Abstract BaseAgent, AgentOutput schema, and model_tier tracking
+│   │   └── llm.py                  # Multi-model tier router (Granite, Qwen, DeepSeek-R1) with auto-fallback
+│   ├── data_providers/             # Free Market & Exchange Data Providers
 │   │   ├── aggregator.py           # Unified concurrent context enricher
-│   │   ├── yfinance_provider.py    # Live price, 50/200 DMA, 52W range, P/E, P&L, Balance Sheet
+│   │   ├── nse_provider.py         # Python async bridge for stock-nse-india
+│   │   ├── yfinance_provider.py    # 1Y historical OHLCV, 50/200 DMA, RSI-14, ATR-14, multi-year statements
 │   │   ├── news_provider.py        # Live Google News RSS feed for Indian stocks
-│   │   └── bse_provider.py         # Official BSE corporate filings & announcements API
-│   ├── catalog_importer.py         # CSV & Excel importer for official NSE/BSE securities masters
-│   ├── import_catalog.py           # Reusable CLI utility for batch importing exchange catalogs
+│   │   ├── bse_provider.py         # Official BSE corporate filings & announcements API
+│   │   └── peers_provider.py       # Sector peer benchmarking with comparative valuation multiples
+│   ├── nse_service/                # Lightweight Node.js NSE Microstructure Bridge
+│   │   ├── nse_bridge.cjs          # Script extracting Delivery %, Order Book Depth, and Board Meetings
+│   │   └── package.json            # stock-nse-india dependency
 │   ├── database.py                 # SQLite database connection, indexing, and search queries
 │   ├── main.py                     # FastAPI REST API endpoints
 │   ├── schemas.py                  # Pydantic v2 data models
-│   ├── test_catalog.py             # Catalog import and search test suite
-│   ├── test_agents.py              # Multi-agent LangGraph test suite
-│   ├── requirements.txt            # Python dependencies
-│   └── .env                        # Local backend configuration
+│   ├── test_real_fixes.py          # Complete verification test suite (ISIN, Metrics, NSE, Multi-Model)
+│   └── requirements.txt            # Python dependencies
 ├── frontend/
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── Navbar.tsx          # Header with connection badge & branding
+│   │   │   ├── Navbar.tsx          # Clean institutional header & exchange badges
 │   │   │   ├── SearchBar.tsx       # Search by Symbol, Name, or 12-digit ISIN + Exchange filters
 │   │   │   ├── StockCard.tsx       # Summary card with exchange tags & ISIN badge
 │   │   │   ├── StockProfile.tsx    # Exchange-specific stock profile & "Generate Full Report" button
-│   │   │   ├── ReportView.tsx      # Multi-agent report view: Bull vs Bear debate & audit trail
-│   │   │   └── StateFeedback.tsx   # Loading, empty, and catalog notice states
-│   │   ├── api.ts                  # Typed Axios/Fetch client
+│   │   │   ├── ReportView.tsx      # Dynamic Bull/Bear debate, status badges, and trade execution matrix
+│   │   │   └── AnalysisConsole.tsx # Live streaming terminal for agent deliberation rounds
 │   │   ├── types.ts                # TypeScript interfaces matching backend models
-│   │   ├── App.tsx                 # Main layout & view routing
-│   │   └── index.css               # Tailwind CSS styles & dark theme design system
-│   ├── vite.config.ts              # Vite server with API proxy to localhost:8000
+│   │   └── App.tsx                 # Main layout & view routing
 │   └── package.json                # Frontend dependencies
 ├── .env.example                    # Environment variables template
 └── README.md                       # Documentation & setup guide
@@ -61,17 +125,13 @@ EquiAgentic/
 
 ---
 
-## Quickstart Guide (Beginner Friendly)
-
-Follow these steps to get EquiAgentic running locally on your computer.
+## Quickstart Guide
 
 ### Step 1: Check Prerequisites
-
-Make sure you have the following installed:
 1. **Python** (version 3.10 or higher): [Download Python](https://www.python.org/downloads/)
 2. **Node.js** (version 18 or higher): [Download Node.js](https://nodejs.org/)
 3. **Git**: [Download Git](https://git-scm.com/)
-4. *(Optional for local AI)* **Ollama**: [Download Ollama](https://ollama.ai/)
+4. *(Recommended for local AI)* **Ollama**: [Download Ollama](https://ollama.ai/)
 
 ---
 
@@ -91,53 +151,64 @@ cd Multi-Agent-Stock-Analyzer
    cd backend
    ```
 
-2. Create a virtual environment:
+2. Create and activate a virtual environment:
    ```bash
-   # Windows (PowerShell or Command Prompt):
+   # Windows (PowerShell):
    python -m venv venv
+   .\venv\Scripts\Activate.ps1
 
    # macOS / Linux:
    python3 -m venv venv
-   ```
-
-3. Activate the virtual environment:
-   ```bash
-   # Windows PowerShell:
-   .\venv\Scripts\Activate.ps1
-
-   # Windows Command Prompt:
-   .\venv\Scripts\activate.bat
-
-   # macOS / Linux:
    source venv/bin/activate
    ```
 
-4. Install the required libraries:
+3. Install the required Python libraries:
    ```bash
    pip install -r requirements.txt
    ```
 
-5. *(Optional)* Configure your LLM in `backend/.env`:
-   If you want to use local Ollama with `qwen2.5-coder:7b`:
+4. Install the NSE bridge service dependencies:
+   ```bash
+   cd nse_service
+   npm install
+   cd ..
+   ```
+
+5. Configure your models in `backend/.env` (or copy from `.env.example`):
    ```dotenv
    LLM_PROVIDER=ollama
    LLM_BASE_URL=http://localhost:11434/v1
-   LLM_MODEL=qwen2.5-coder:7b
    LLM_TEMPERATURE=0.2
+
+   # Heterogeneous Model Dispatching:
+   LLM_MODEL_ANALYST=qwen2.5:7b
+   LLM_MODEL_EXTRACTOR=granite3-dense:2b
+   LLM_MODEL_REASONER=deepseek-r1:7b
+
+   # Fallback primary model
+   LLM_MODEL=qwen2.5:7b
    ```
-   > **Note:** If Ollama is not running, the platform runs in **Development Mode**, returning analytical stubs and pre-calculated deterministic ratios without errors.
+
+   **To pull the local models in Ollama:**
+   ```bash
+   ollama pull qwen2.5:7b
+   ollama pull granite3-dense:2b
+   ollama pull deepseek-r1:7b
+   ```
+
+   > **Note:** If Ollama is not running, the platform operates in **Development Mode**, returning analytical stubs grounded in deterministic Python financial math without errors.
 
 6. Start the backend server:
    ```bash
    uvicorn main:app --host 127.0.0.1 --port 8000 --reload
    ```
-   The backend is now live at `http://127.0.0.1:8000`. You can visit `http://127.0.0.1:8000/docs` to see the interactive Swagger API documentation.
+   The backend API is live at `http://127.0.0.1:8000` with interactive Swagger docs at `http://127.0.0.1:8000/docs`.
 
 ---
 
 ### Step 4: Setup the Frontend (React + Vite)
 
-Open a **new, separate terminal** in the project root:
+Open a **separate terminal** in the project root:
 
 1. Enter the `frontend` folder:
    ```bash
@@ -161,58 +232,24 @@ Open a **new, separate terminal** in the project root:
 
 ---
 
-## Importing the Full NSE & BSE Stock Universe
-
-EquiAgentic comes preloaded with sample securities. To import the complete official universe of 7,800+ NSE and BSE stocks:
-
-In your `backend` terminal (with virtual environment activated):
-
-```bash
-# Ingest official NSE equity list
-python import_catalog.py --file data/sample_nse_equities.csv --exchange NSE
-
-# Ingest official BSE scrip master
-python import_catalog.py --file data/sample_bse_equities.csv --exchange BSE
-```
-
-**Catalog Importer Features:**
-- **Idempotent**: Safely re-run imports without creating duplicate records.
-- **Exchange Disambiguation**: Correctly identifies whether a stock is on NSE, BSE, or dual-listed.
-- **ISIN Linking**: Accurately links company profiles sharing the same 12-digit ISIN (e.g., `INE002A01018` for Reliance).
-
----
-
 ## Running Automated Tests
 
-Run the backend test suite to verify data imports, search queries, and multi-agent orchestration:
+Run the complete backend verification suite:
 
 ```bash
 cd backend
-.\venv\Scripts\pytest.exe test_catalog.py test_agents.py -v
+.\venv\Scripts\pytest.exe test_real_fixes.py -v
 ```
 
-All 16 unit and integration tests will run and display green checkmarks.
-
----
-
-## The 13 Specialized Agent Roles
-
-| Stage | Role | Focus |
-| :--- | :--- | :--- |
-| **0. Planning** | **Research Manager** | Scopes investment hypotheses and coordinates dependencies. |
-| **1. Evidence** | **Evidence Verification Analyst** | Audits listing parameters, exchange series, and ISIN metadata. |
-| **1. Quality** | **Fundamentals Analyst** | Examines balance sheet durability, debt solvency, and cash conversion. |
-| **1. Growth** | **Growth & Industry Analyst** | Analyzes market expansion, domestic tailwinds, and industry catalysts. |
-| **1. Events** | **News & Corporate Events Analyst** | Scrutinizes recent BSE filings, earnings announcements, and board actions. |
-| **1. Sentiment** | **Social Sentiment Analyst** | Evaluates retail investor discussions without overriding hard metrics. |
-| **1. Market** | **Market Analyst** | Evaluates liquidity, 50/200 DMA, 52W range, and price momentum. |
-| **1. Valuation** | **Peer & Valuation Analyst** | Compares relative multiples (P/E, P/B, EV/EBITDA, PEG) vs sector peers. |
-| **2. Bull Case** | **Bull Researcher** | Constructs an independent positive thesis (isolated from Bear influence). |
-| **2. Bear Case** | **Bear Researcher** | Constructs an independent downside risk thesis (isolated from Bull influence). |
-| **3. Debate** | **Bull & Bear (Rebuttal)** | Single bounded round where Bull challenges Bear and Bear answers Bull. |
-| **4. Risk** | **Risk Analyst** | Stress-tests debt maturity, promoter pledging, and regulatory risks. |
-| **4. Execution** | **Trader Agent** | Formulates optimal accumulation pacing, entry zones, and volatility buffers. |
-| **5. Synthesis** | **Portfolio Manager** | Final institutional conviction synthesis and capital allocation decision. |
+This verifies:
+1. Deterministic ISIN Luhn checksum validation.
+2. Distinct ROE (45.89%) vs ROCE (56.29%) and multi-year CAGR calculation.
+3. Sector peer comparative multiples benchmarking.
+4. Bull and Bear evidence pool consumption and factual guardrails.
+5. Technical indicators, 14-day ATR, and 20-day swing range ingestion.
+6. Catalog coverage across official exchange securities masters.
+7. `stock-nse-india` delivery position and order book depth bridge.
+8. Multi-model tier routing (Granite / Qwen / DeepSeek-R1) and `<think>` tag stripping.
 
 ---
 
@@ -220,14 +257,15 @@ All 16 unit and integration tests will run and display green checkmarks.
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| `GET` | `/api/health` | Health check verifying API and SQLite status |
+| `GET` | `/api/health` | Health check verifying API, database, and catalog coverage |
 | `GET` | `/api/stocks?q=...&exchange=...&page=...` | Search stocks by ticker, company name, or ISIN with filters |
 | `GET` | `/api/stocks/{symbol}?exchange={NSE\|BSE}` | Retrieve profile for a specific exchange listing |
-| `POST` | `/api/reports/{symbol}?exchange={NSE\|BSE}` | Trigger the 13-agent LangGraph research deliberation loop |
-| `POST` | `/api/catalog/import?exchange={NSE\|BSE}` | Upload official exchange CSV or Excel file |
+| `GET` | `/api/reports/stream/{symbol}?exchange={NSE\|BSE}` | SSE real-time stream of the 13-agent research deliberation loop |
+| `POST` | `/api/reports/{symbol}?exchange={NSE\|BSE}` | Trigger full asynchronous multi-agent report generation |
+| `POST` | `/api/catalog/import?exchange={NSE\|BSE}` | Upload official exchange CSV or Excel security master |
 
 ---
 
 ## License & Disclaimer
 
-*Disclaimer: EquiAgentic is an educational and analytical research tool. It does not provide personal financial or investment advice. Always conduct your own due diligence before making investment decisions.*
+*Disclaimer: EquiAgentic is an educational and analytical research platform. It does not provide personal financial or investment advice. Always conduct your own independent due diligence before making investment decisions.*
