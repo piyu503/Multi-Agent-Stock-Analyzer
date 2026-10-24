@@ -70,6 +70,40 @@ def calculate_financial_metrics(financials: Dict[str, Any], market_data: Optiona
     if ebitda is not None and revenue:
         ebitda_margin_pct = round((ebitda / revenue) * 100.0, 2)
 
+    # Deterministic Semantic Interpretations to prevent contradictory agent claims
+    coverage_interpretation = None
+    if interest_coverage is not None:
+        if interest_coverage >= 5.0:
+            coverage_interpretation = "ROBUST_SOLVENCY (Strong debt-service capability; comfortably above distress thresholds)"
+        elif interest_coverage >= 2.5:
+            coverage_interpretation = "ADEQUATE_SOLVENCY (Manageable interest burden; standard operational volatility buffer)"
+        elif interest_coverage >= 1.5:
+            coverage_interpretation = "TIGHT_COVERAGE (Constrained debt-service buffer; monitor in rising interest rate environment)"
+        else:
+            coverage_interpretation = "HIGH_STRESS (Vulnerable debt-service capability; potential covenant breach risk)"
+
+    leverage_interpretation = None
+    if debt_to_equity is not None:
+        if debt_to_equity <= 0.3:
+            leverage_interpretation = "MINIMAL_LEVERAGE (Conservatively geared balance sheet; low structural solvency risk)"
+        elif debt_to_equity <= 0.8:
+            leverage_interpretation = "MODERATE_LEVERAGE (Healthy gearing within typical industry operating ranges)"
+        elif debt_to_equity <= 1.8:
+            leverage_interpretation = "ELEVATED_LEVERAGE (Higher debt load requiring consistent operating cash flow)"
+        else:
+            leverage_interpretation = "HIGH_LEVERAGE (Aggressive financial gearing; heightened balance-sheet vulnerability)"
+
+    spread_interpretation = None
+    if roce_wacc_spread is not None:
+        if roce_wacc_spread >= 5.0:
+            spread_interpretation = "SUBSTANTIAL_VALUE_ADD (ROCE significantly exceeds WACC; strong economic profit compounding)"
+        elif roce_wacc_spread >= 1.5:
+            spread_interpretation = "MODERATE_VALUE_ADD (Healthy spread above cost of capital)"
+        elif roce_wacc_spread > 0.0:
+            spread_interpretation = "MARGINAL_VALUE_ADD (Spread is narrow/near cost of capital; tight economic profit buffer)"
+        else:
+            spread_interpretation = "VALUE_DESTRUCTIVE (ROCE trails cost of capital; returns below WACC hurdle rate)"
+
     # Multi-factor solvency assessment
     # Negative equity is an immediate distress flag. Otherwise require coverage > 2.0 and D/E < 2.5
     is_solvent = None
@@ -84,11 +118,14 @@ def calculate_financial_metrics(financials: Dict[str, Any], market_data: Optiona
 
     return {
         "debt_to_equity": round(debt_to_equity, 2) if debt_to_equity is not None else None,
+        "debt_to_equity_rating": leverage_interpretation,
         "interest_coverage": round(interest_coverage, 2) if interest_coverage is not None else None,
+        "interest_coverage_rating": coverage_interpretation,
         "roce_pct": roce,
         "roe_pct": roe,
         "estimated_wacc_pct": estimated_wacc,
         "roce_wacc_spread": roce_wacc_spread,
+        "roce_wacc_spread_rating": spread_interpretation,
         "revenue_cagr_3yr_pct": revenue_cagr_3yr,
         "revenue_growth_yoy_pct": revenue_growth_yoy,
         "eps_cagr_3yr_pct": round(eps_growth_3yr, 2) if eps_growth_3yr is not None else None,

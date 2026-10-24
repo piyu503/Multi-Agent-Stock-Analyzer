@@ -115,7 +115,12 @@ def get_sector_peers_with_multiples(
 def format_peer_comparison_text(peers: List[Dict[str, Any]], current_multiples: Dict[str, Any]) -> str:
     """Format structured peer benchmarking table for inclusion in analyst prompt."""
     if not peers:
-        return "No listed sector peers identified in current catalog for comparative benchmarking."
+        return (
+            "SECTOR PEER BENCHMARK STATUS: PEER_BENCHMARK_UNAVAILABLE.\n"
+            "No direct listed peers found in database for this company/conglomerate. "
+            "Report headline valuation multiples neutrally. PROHIBITION: DO NOT declare stock 'overvalued' "
+            "or 'above sector norms' without verified peer numbers."
+        )
 
     target_pe = current_multiples.get("pe_ratio", "N/A")
     target_pb = current_multiples.get("pb_ratio", "N/A")

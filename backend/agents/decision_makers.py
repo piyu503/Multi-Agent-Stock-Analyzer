@@ -130,7 +130,9 @@ class BearResearcherAgent(BaseAgent):
             f"- 3-Year Rev CAGR: {metrics.get('revenue_cagr_3yr_pct', 'N/A')}%, 3-Year EPS CAGR: {metrics.get('eps_cagr_3yr_pct', 'N/A')}%, PEG Ratio: {metrics.get('peg_ratio', 'N/A')}\n"
             f"Specialist Evidence Pool:\n{findings_block}\n\n"
             "FACTUAL DISCIPLINE RULES:\n"
-            "- If Debt-to-Equity is low (< 0.3) or the company is virtually net-debt free, DO NOT fabricate debt crisis or solvency failure. Focus on valuation re-rating, deceleration, margin compression, or competitive threats.\n"
+            "- DEBT CONSISTENCY: If Debt-to-Equity is <= 0.8 (e.g. 0.44), it is MODERATE/LOW gearing. You are STRICTLY PROHIBITED from using headings like 'High Debt-to-Equity Ratio' or asserting solvency distress. Focus on cyclical demand, margin pressure, or capital allocation drag instead.\n"
+            "- OFF-BALANCE-SHEET DEBT: Do NOT allege off-balance-sheet debt or contingent liabilities without citing a specific disclosed figure or auditor qualification from the input data.\n"
+            "- PEER COMPARISON: If sector peers are missing, DO NOT claim the stock trades 'higher than sector norms'. Report multiples factually.\n"
             "- Never label high ROCE (> 25%) as unviable returns; challenge whether returns will mean-revert.\n"
             "- Never conflate ROCE with ROE."
         )
@@ -315,10 +317,15 @@ class RiskAnalystAgent(BaseAgent):
 
         return (
             f"Perform independent risk and stress-test assessment for {company_context.get('company_name')} ({company_context.get('symbol')}):\n"
-            f"- Solvency & Leverage: Total Debt INR {fin.get('total_debt')}, Debt/Equity: {metrics.get('debt_to_equity')}, Interest Coverage: {metrics.get('interest_coverage')} (Solvent: {metrics.get('is_solvent')})\n"
+            f"- Solvency & Leverage: Total Debt INR {fin.get('total_debt')}, Debt/Equity: {metrics.get('debt_to_equity')} [{metrics.get('debt_to_equity_rating')}], Interest Coverage: {metrics.get('interest_coverage')} [{metrics.get('interest_coverage_rating')}] (Solvent: {metrics.get('is_solvent')})\n"
             f"- Regulatory & Exchange Disclosures:\n{filings_text}\n"
             f"- Debate Downside Points to Stress-Test:\n" + "\n".join([f"- {p}" for p in bear_points[:3]]) + "\n\n"
-            "Evaluate catastrophic tail risks, debt covenant sensitivity, regulatory exposure, and produce a ranked risk matrix with required downside mitigations."
+            "CONSISTENCY & GROUNDING RULES:\n"
+            "- Solvency Consistency: If Interest Coverage is >= 4.0x or rated ROBUST/ADEQUATE, DO NOT describe interest coverage as low or precarious. Frame debt risks around capex commitments, refinancing terms, or rate cycles rather than claiming immediate insolvency.\n"
+            "- Leverage Consistency: If Debt/Equity is <= 0.6 or rated MINIMAL/MODERATE, DO NOT describe debt as an existential solvency crisis.\n"
+            "- Off-Balance-Sheet & Contingent Liabilities: Every material liability claim MUST cite a specific rupee amount or audit disclosure from the data. If specific amounts or auditor qualification notes are missing, label it as 'Unverified contingent risk (unquantified)' and EXCLUDE it from the scored risk assessment.\n"
+            "- Temporal Grounding: Do not treat historical filings or completed board meetings as pending tail risks.\n"
+            "Evaluate realistic tail risks, cyclical margin sensitivity, regulatory exposure, and produce a ranked risk matrix with required downside mitigations."
         )
 
     def get_development_stub(self, company_context: Dict[str, Any], evidence: Dict[str, Any]) -> AgentOutput:
@@ -365,16 +372,38 @@ class PortfolioManagerAgent(BaseAgent):
         )
 
     def get_user_prompt(self, company_context: Dict[str, Any], evidence: Dict[str, Any]) -> str:
+        metrics = company_context.get("calculated_metrics") or {}
+        mkt = company_context.get("market_data") or {}
         return (
             f"Synthesize comprehensive investment decision for {company_context.get('company_name')} "
             f"({company_context.get('symbol')} on {company_context.get('exchange')}).\n"
+            f"Financial Baseline: CMP: INR {mkt.get('current_price')}, P/E: {mkt.get('pe_ratio')}, D/E: {metrics.get('debt_to_equity')} [{metrics.get('debt_to_equity_rating')}], "
+            f"Coverage: {metrics.get('interest_coverage')} [{metrics.get('interest_coverage_rating')}], ROCE: {metrics.get('roce_pct')}%, Spread: {metrics.get('roce_wacc_spread')}%\n\n"
             f"Sub-agent findings summary:\n{evidence.get('synthesis_inputs', {})}\n\n"
-            "MANDATORY: In your JSON response under 'role_specific_data', you MUST provide exact conviction and allocation fields:\n"
+            "MANDATORY DECISION FRAMEWORK & CONVICTION RULES:\n"
+            "1. You MUST evaluate 4 explicit score dimensions (0.0 to 10.0):\n"
+            "   - business_quality_score: Moat durability, ROCE, balance-sheet strength\n"
+            "   - valuation_attractiveness_score: Margin of safety, P/E vs growth runway\n"
+            "   - catalyst_momentum_score: Near-term earnings growth, capex realization\n"
+            "   - downside_risk_penalty: (0.0 to -5.0) Tail risks, cyclical vulnerability, debt burden\n"
+            "2. CONVICTION ALIGNMENT:\n"
+            "   - A company with strong business quality DOES NOT automatically justify an OVERWEIGHT rating if valuation attractiveness is low (e.g. fair/full pricing, narrow spread).\n"
+            "   - If conviction is NEUTRAL, your narrative MUST explicitly state: 'High franchise quality offset by fair/full valuation, leaving insufficient margin of safety at CMP.'\n"
+            "   - DO NOT claim 'strong case for investment' if the final conviction is NEUTRAL.\n"
+            "3. In your JSON response under 'role_specific_data', you MUST provide:\n"
             '{\n'
             '  "conviction": "OVERWEIGHT" | "NEUTRAL" | "UNDERWEIGHT",\n'
             '  "target_allocation_pct": <float between 0.0 and 10.0>,\n'
             '  "investment_horizon": "1-Year",\n'
-            '  "key_catalyst": "Primary thesis driver"\n'
+            '  "key_catalyst": "Primary thesis driver",\n'
+            '  "decision_framework": {\n'
+            '    "business_quality_score": <float 0-10>,\n'
+            '    "valuation_attractiveness_score": <float 0-10>,\n'
+            '    "catalyst_momentum_score": <float 0-10>,\n'
+            '    "downside_risk_penalty": <float -5 to 0>,\n'
+            '    "composite_conviction_score": <float 0-10>,\n'
+            '    "conviction_rationale": "Clear 1-sentence reconciliation of quality vs valuation"\n'
+            '  }\n'
             '}'
         )
 

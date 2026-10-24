@@ -60,12 +60,39 @@ async def enrich_company_with_free_sources(company_context: Dict[str, Any]) -> D
     nse_announcements = safe_nse.get("announcements") or []
     combined_filings = nse_announcements + safe_bse
 
+    # Temporal context injection (Current execution date anchor)
+    from datetime import datetime, timezone
+    today_dt = datetime.now(timezone.utc)
+    anchor_date_str = today_dt.strftime("%Y-%m-%d")
+
+    def _tag_temporal_status(items_list):
+        tagged = []
+        for it in items_list:
+            item_copy = dict(it)
+            pub_str = str(item_copy.get("published") or item_copy.get("time") or item_copy.get("date") or "")
+            text_str = (str(item_copy.get("headline") or "") + " " + str(item_copy.get("title") or "") + " " + str(item_copy.get("details") or "")).lower()
+
+            # Milestone analysis for IPOs and corporate corporate transactions
+            milestone = "GENERAL_NEWS"
+            if "ipo" in text_str or "public issue" in text_str:
+                if "listing" in text_str or "listed" in text_str:
+                    milestone = "TRANSACTION_MILESTONE: Check if secondary listing date has arrived vs currently in bidding/allocation"
+                elif "subscription" in text_str or "bid" in text_str or "subscribed" in text_str:
+                    milestone = "TRANSACTION_MILESTONE: Subscription/Bidding Phase (DO NOT describe as officially listed until secondary trading begins)"
+                else:
+                    milestone = "TRANSACTION_MILESTONE: Draft Prospectus / Filing Phase"
+
+            item_copy["temporal_reference"] = f"Report Generation Anchor: {anchor_date_str}. (Events prior to this are COMPLETED/HISTORICAL; verify milestones: {milestone})"
+            tagged.append(item_copy)
+        return tagged
+
     # Merge into enriched context
     enriched = dict(company_context)
+    enriched["as_of_date"] = anchor_date_str
     enriched["market_data"] = safe_market
-    enriched["recent_news"] = safe_news
+    enriched["recent_news"] = _tag_temporal_status(safe_news)
     enriched["social_sentiment"] = safe_sentiment
-    enriched["corporate_filings"] = combined_filings
+    enriched["corporate_filings"] = _tag_temporal_status(combined_filings)
     enriched["nse_microstructure"] = safe_nse
 
     # Fetch sector peers enriched with real comparative multiples

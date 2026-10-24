@@ -97,14 +97,22 @@ class ResearchManagerAgent(BaseAgent):
     def get_user_prompt(self, company_context: Dict[str, Any], evidence: Dict[str, Any]) -> str:
         mkt = company_context.get("market_data") or {}
         metrics = company_context.get("calculated_metrics") or {}
+        de_ratio = metrics.get('debt_to_equity')
+        de_rating = metrics.get('debt_to_equity_rating', 'MODERATE')
+        cov_ratio = metrics.get('interest_coverage')
+        cov_rating = metrics.get('interest_coverage_rating', 'ADEQUATE')
+
         return (
             f"Set up the research agenda for {company_context.get('company_name')} "
             f"({company_context.get('symbol')} on {company_context.get('exchange')}).\n"
             f"Sector: {company_context.get('sector') or company_context.get('industry')}.\n"
             f"ISIN: {company_context.get('isin')}, BSE Scrip: {company_context.get('scrip_code') or 'N/A'}.\n"
             f"Market Baseline: CMP INR {mkt.get('current_price')}, Market Cap: INR {mkt.get('market_cap')}, PE: {mkt.get('pe_ratio')}.\n"
-            f"Key Deterministic Ratios: D/E: {metrics.get('debt_to_equity')}, Interest Coverage: {metrics.get('interest_coverage')}, "
-            f"ROCE: {metrics.get('roce_pct')}%, ROCE-WACC Spread: {metrics.get('roce_wacc_spread')}%.\n"
+            f"Key Deterministic Ratios: D/E: {de_ratio} [{de_rating}], Interest Coverage: {cov_ratio} [{cov_rating}], "
+            f"ROCE: {metrics.get('roce_pct')}%, ROCE-WACC Spread: {metrics.get('roce_wacc_spread')}%.\n\n"
+            "MANDATORY CONSISTENCY & EVIDENCE RULES:\n"
+            "- Leverage Interpretation: If D/E is <= 0.8, you MUST classify leverage as MODERATE/LOW. Prohibit claiming the company has 'significant leverage' or 'high debt'.\n"
+            "- Off-Balance-Sheet & Contingent Liabilities: Prohibit alleging off-balance-sheet debt without citing specific verified note disclosures from official filings.\n"
             "Identify 3 core investment hypotheses and define the data dependencies for specialized analysts."
         )
 
@@ -351,13 +359,18 @@ class NewsCorporateEventsAnalyst(BaseAgent):
         news_text = "\n".join(headlines) if headlines else "No recent Google News headlines retrieved."
         filings_text = "\n".join(filings) if filings else "No recent statutory filings retrieved."
         meetings_text = "\n".join(meetings_lines) if meetings_lines else "No upcoming board meetings reported on official exchange calendar."
+        as_of_date = company_context.get("as_of_date", "Current Date")
 
         return (
             f"Review recent corporate disclosures and material events for {company_context.get('company_name')} ({company_context.get('symbol')}):\n"
+            f"REPORT GENERATION DATE (ANCHOR): {as_of_date}\n\n"
             f"Official Exchange Disclosures (NSE & BSE):\n{filings_text}\n\n"
             f"Scheduled Board & Financial Results Meetings:\n{meetings_text}\n\n"
             f"Recent Media Headlines:\n{news_text}\n\n"
-            "Identify key corporate governance risks, management catalysts, capital return actions, or litigation items from these disclosures."
+            "TEMPORAL & GROUNDING RULES:\n"
+            "- Check the publication date relative to REPORT GENERATION DATE. If an event or board meeting occurred in the past (e.g. months ago), treat it as HISTORICAL FACT, NEVER as an upcoming event or future risk.\n"
+            "- Scheduled board meetings for financial results are routine statutory procedures; DO NOT label them as governance risks unless an adverse agenda item is explicitly disclosed.\n"
+            "Identify confirmed corporate developments, management catalysts, capital return actions, or litigation items from these disclosures."
         )
 
     def get_development_stub(self, company_context: Dict[str, Any], evidence: Dict[str, Any]) -> AgentOutput:
@@ -565,8 +578,11 @@ class MarketAnalyst(BaseAgent):
             f"- NSE Delivery Position: {deliv_text} (Delivery Qty: {mkt.get('delivery_qty', 'N/A')})\n"
             f"- Microstructure Order Depth: Bid/Ask Ratio: {ratio_text}\n"
             f"- 30-Day Avg Volume: {mkt.get('avg_volume_30d')}\n"
-            f"- Beta: {mkt.get('beta')}\n"
-            "Assess trend strength, relative position vs 50/200 DMA, delivery absorption vs speculative turnover, and institutional order book depth."
+            f"- Beta: {mkt.get('beta')}\n\n"
+            "FACTUAL DISCIPLINE RULES:\n"
+            "- Beta only measures systematic market price volatility. DO NOT use Beta to infer institutional buying, selling, or absorption. Use NSE Delivery % and order book bid/ask ratio for liquidity and turnover analysis.\n"
+            "- If institutional shareholding data is not provided, explicitly state: 'Direct institutional flows/holding changes not provided in market feed.'\n"
+            "Assess trend strength, relative position vs 50/200 DMA, delivery absorption vs speculative turnover, and microstructure order book depth."
         )
 
     def get_development_stub(self, company_context: Dict[str, Any], evidence: Dict[str, Any]) -> AgentOutput:
@@ -637,6 +653,10 @@ class PeerValuationAnalyst(BaseAgent):
             f"- ROCE: {metrics.get('roce_pct')}%, ROCE-WACC Spread: {metrics.get('roce_wacc_spread')}%\n"
             f"- Market Cap: INR {mkt.get('market_cap')}\n\n"
             f"{peer_benchmark}\n\n"
+            "FACTUAL DISCIPLINE RULES:\n"
+            "- If listed sector peers are missing or 'No listed peers found' is indicated, you MUST explicitly state: 'Peer multiple comparison unavailable; valuation cannot be assessed against sector medians.'\n"
+            "- PROHIBITION: DO NOT declare the stock 'overvalued' or 'above industry norms' when peer comparative data is missing.\n"
+            "- If ROCE-WACC spread is under 1.0 percentage point, describe it as 'marginal/tight economic spread', NEVER as 'substantial operational profitability'.\n"
             "State whether current valuation provides an adequate margin of safety relative to peers and capital efficiency."
         )
 
