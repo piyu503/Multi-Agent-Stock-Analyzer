@@ -265,3 +265,43 @@ async def test_nse_microstructure_bridge():
         assert "board_meetings" in data
 
 
+def test_multi_model_tier_routing():
+    """Verify that heterogeneous model tiers (Qwen, Granite, DeepSeek-R1) resolve and agents configure properly."""
+    from agents.llm import LLMConfig, sanitize_json_response
+    from agents.analysts import EvidenceVerificationAnalyst, SocialSentimentAnalyst, NewsCorporateEventsAnalyst
+    from agents.decision_makers import RiskAnalystAgent, PortfolioManagerAgent, BullResearcherAgent
+
+    # 1. Tier resolution test
+    analyst_model = LLMConfig.get_model("analyst")
+    extractor_model = LLMConfig.get_model("extractor")
+    reasoner_model = LLMConfig.get_model("reasoner")
+
+    assert isinstance(analyst_model, str) and len(analyst_model) > 0
+    assert isinstance(extractor_model, str) and len(extractor_model) > 0
+    assert isinstance(reasoner_model, str) and len(reasoner_model) > 0
+
+    # 2. Agent model tier assignments
+    ev_agent = EvidenceVerificationAnalyst()
+    assert ev_agent.model_tier == "extractor"
+
+    sent_agent = SocialSentimentAnalyst()
+    assert sent_agent.model_tier == "extractor"
+
+    risk_agent = RiskAnalystAgent()
+    assert risk_agent.model_tier == "reasoner"
+
+    pm_agent = PortfolioManagerAgent()
+    assert pm_agent.model_tier == "reasoner+analyst"
+
+    bull_agent = BullResearcherAgent()
+    assert bull_agent.model_tier == "analyst"
+
+    # 3. DeepSeek-R1 <think> token stripping test
+    r1_sample = "<think>Analyzing margin contraction risk under high input cost...</think>{\"summary\": \"High risk\", \"findings\": []}"
+    sanitized = sanitize_json_response(r1_sample)
+    assert "<think>" not in sanitized
+    assert "Analyzing margin" not in sanitized
+    assert "High risk" in sanitized
+
+
+

@@ -39,10 +39,24 @@ class LLMConfig:
         return os.environ.get("LLM_BASE_URL", "https://api.openai.com/v1").rstrip("/")
 
     @classmethod
-    def get_model(cls) -> str:
+    def get_model(cls, tier: Optional[str] = None) -> str:
         provider = cls.get_provider()
-        default_model = "qwen2.5-coder:7b" if provider == "ollama" else "gpt-4o-mini"
-        return os.environ.get("LLM_MODEL", default_model)
+        default_base = "qwen2.5:7b" if provider == "ollama" else "gpt-4o-mini"
+        primary_model = os.environ.get("LLM_MODEL", default_base)
+
+        tier_clean = (tier or "analyst").lower()
+        if tier_clean in ("extractor", "classifier"):
+            # IBM Granite for strict tabular fact extraction & classification
+            granite_default = "granite3-dense:2b" if provider == "ollama" else primary_model
+            return os.environ.get("LLM_MODEL_EXTRACTOR") or os.environ.get("GRANITE_MODEL") or granite_default
+        elif tier_clean in ("reasoner", "challenger", "adversarial"):
+            # DeepSeek-R1 for adversarial reasoning and critique
+            deepseek_default = "deepseek-r1:7b" if provider == "ollama" else primary_model
+            return os.environ.get("LLM_MODEL_REASONER") or os.environ.get("DEEPSEEK_MODEL") or deepseek_default
+        else:
+            # Qwen 2.5/3.5 for standard institutional analysis
+            qwen_default = "qwen2.5:7b" if provider == "ollama" else primary_model
+            return os.environ.get("LLM_MODEL_ANALYST") or os.environ.get("QWEN_MODEL") or primary_model
 
     @classmethod
     def get_temperature(cls) -> float:
@@ -74,7 +88,7 @@ def sanitize_json_response(raw_text: str) -> str:
     """
     cleaned = raw_text.strip()
     
-    # Strip <think>...</think> tags emitted by models like Qwen / DeepSeek-R1
+    # Strip <think>...</think> tags emitted by reasoning models like DeepSeek-R1 and Qwen
     cleaned = re.sub(r"<think>[\s\S]*?</think>", "", cleaned, flags=re.IGNORECASE).strip()
 
     # Look for code block fences ```json ... ``` or ``` ... ```
@@ -95,11 +109,17 @@ async def call_llm(
     user_prompt: str,
     temperature: Optional[float] = None,
     response_format: Optional[str] = "json",
-    timeout_sec: float = 60.0
+    timeout_sec: float = 60.0,
+    model_tier: Optional[str] = "analyst",
+    model: Optional[str] = None
 ) -> Dict[str, Any]:
-    """Execute chat completion request using OpenAI-compatible HTTP client.
+    """Execute chat completion request using OpenAI-compatible HTTP client with multi-model tier routing.
     
-    Compatible with local Ollama `/v1` endpoints as well as remote OpenAI/Gemini/DeepSeek.
+    Supports:
+    - model_tier="analyst" -> Qwen 2.5/3.5 (standard analysis)
+    - model_tier="extractor" -> IBM Granite (zero-hallucination fact extraction)
+    - model_tier="reasoner" -> DeepSeek-R1 (adversarial challenge)
+    - Automatic fallback to primary model if specialized model fails or is uninstalled.
     """
     if not LLMConfig.is_configured():
         raise RuntimeError(
@@ -108,7 +128,8 @@ async def call_llm(
 
     base_url = LLMConfig.get_base_url()
     api_key = LLMConfig.get_api_key() or "ollama"
-    model = LLMConfig.get_model()
+    primary_model = LLMConfig.get_model("analyst")
+    target_model = model or LLMConfig.get_model(model_tier)
     temp = temperature if temperature is not None else LLMConfig.get_temperature()
 
     headers = {
@@ -138,19 +159,19 @@ async def call_llm(
         "Do NOT include preamble, conversational remarks, or markdown text outside the JSON block."
     )
 
-    payload: Dict[str, Any] = {
-        "model": model,
-        "messages": [
-            {"role": "system", "content": formatted_system},
-            {"role": "user", "content": user_prompt}
-        ],
-        "temperature": temp
-    }
+    async def _execute_request(chosen_model: str) -> Dict[str, Any]:
+        payload: Dict[str, Any] = {
+            "model": chosen_model,
+            "messages": [
+                {"role": "system", "content": formatted_system},
+                {"role": "user", "content": user_prompt}
+            ],
+            "temperature": temp
+        }
 
-    if response_format == "json":
-        payload["response_format"] = {"type": "json_object"}
+        if response_format == "json":
+            payload["response_format"] = {"type": "json_object"}
 
-    try:
         async with httpx.AsyncClient(timeout=timeout_sec) as client:
             response = await client.post(
                 f"{base_url}/chat/completions",
@@ -159,7 +180,7 @@ async def call_llm(
             )
             if response.status_code != 200:
                 raise RuntimeError(
-                    f"LLM Provider ({base_url}) returned error {response.status_code}: {response.text}"
+                    f"LLM Provider ({base_url}) returned error {response.status_code} for {chosen_model}: {response.text}"
                 )
 
             data = response.json()
@@ -170,14 +191,22 @@ async def call_llm(
                 try:
                     return json.loads(cleaned)
                 except json.JSONDecodeError as decode_err:
-                    logger.warning(f"Malformed JSON from model {model}: {content}")
+                    logger.warning(f"Malformed JSON from model {chosen_model}: {content}")
                     raise ValueError(f"Model returned invalid JSON: {decode_err}") from decode_err
             return {"raw_text": content}
 
-    except httpx.ConnectError as conn_err:
-        raise ConnectionError(
-            f"Could not connect to Ollama / LLM server at '{base_url}'. "
-            "Ensure Ollama is running (`ollama serve`)."
-        ) from conn_err
-    except httpx.TimeoutException as timeout_err:
-        raise TimeoutError(f"LLM request timed out after {timeout_sec}s for model {model}.") from timeout_err
+    # First try the target model (Granite / DeepSeek / Qwen)
+    try:
+        return await _execute_request(target_model)
+    except Exception as primary_err:
+        if target_model != primary_model:
+            logger.warning(
+                f"Specialized model tier '{model_tier}' ({target_model}) failed: {primary_err}. "
+                f"Falling back to primary model '{primary_model}'."
+            )
+            try:
+                return await _execute_request(primary_model)
+            except Exception as fallback_err:
+                raise fallback_err from primary_err
+        raise primary_err
+

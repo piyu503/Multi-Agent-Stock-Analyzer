@@ -73,6 +73,7 @@ export interface AgentOutput {
   confidence_explanation: string;
   questions_for_investigation: string[];
   role_specific_data?: Record<string, any>;
+  model_tier?: string;
   execution_status: string;
   execution_duration_sec: number;
   error_message?: string;

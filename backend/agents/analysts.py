@@ -9,9 +9,14 @@
 8. Peer Benchmarking & Valuation Analyst
 """
 
-from typing import Any, Dict, List
+import logging
 import re
+import time
+from typing import Any, Dict, List, Optional
 from agents.base import BaseAgent, AgentOutput
+from agents.llm import LLMConfig, call_llm
+
+logger = logging.getLogger("bharatequity.analysts")
 
 
 def verify_isin_and_listing(company_context: Dict[str, Any]) -> Dict[str, Any]:
@@ -134,7 +139,11 @@ class EvidenceVerificationAnalyst(BaseAgent):
     """Distinguishes verified factual evidence from unverified claims, rumors, and gaps."""
 
     def __init__(self):
-        super().__init__(name="Evidence Verification Analyst", role="Data & Evidence Verification Analyst")
+        super().__init__(
+            name="Evidence Verification Analyst",
+            role="Data & Evidence Verification Analyst",
+            model_tier="extractor"
+        )
 
     def get_system_prompt(self) -> str:
         return (
@@ -373,15 +382,99 @@ class NewsCorporateEventsAnalyst(BaseAgent):
                 "Were there significant senior management resignations or CFO changes in the last 12 months?"
             ],
             role_specific_data={"event_category": "Corporate Disclosures & Surveillance"},
+            model_tier="extractor+analyst",
             execution_status="dev_stub"
         )
+
+    async def run(
+        self,
+        company_context: Dict[str, Any],
+        evidence: Optional[Dict[str, Any]] = None,
+        timeout_sec: float = 45.0
+    ) -> AgentOutput:
+        """2-Stage Pipeline: Granite extracts verified facts -> Qwen interprets strategic & governance impact."""
+        start_time = time.time()
+        evidence_dict = evidence or {}
+
+        if not LLMConfig.is_configured():
+            stub = self.get_development_stub(company_context, evidence_dict)
+            stub.execution_duration_sec = 0.85
+            stub.model_tier = "extractor+analyst"
+            return stub
+
+        user_prompt = self.get_user_prompt(company_context, evidence_dict)
+
+        try:
+            # Stage 1: IBM Granite (Extractor) extracts confirmed factual events without PR hype
+            stage1_system = (
+                "You are an enterprise regulatory extraction engine (IBM Granite). "
+                "Extract confirmed factual events, board approvals, dividend dates, and material exchange disclosures. "
+                "Eliminate speculative rumors and conversational spin. Respond strictly in JSON."
+            )
+            stage1_user = f"Extract verified corporate facts from these disclosures:\n{user_prompt}"
+
+            stage1_result = await call_llm(
+                system_prompt=stage1_system,
+                user_prompt=stage1_user,
+                response_format="json",
+                model_tier="extractor",
+                timeout_sec=max(15.0, timeout_sec * 0.4)
+            )
+            extracted_facts = stage1_result.get("findings", [])
+
+            # Stage 2: Qwen (Analyst) interprets governance risks and catalysts from verified facts
+            facts_block = "\n".join([f"- {f}" for f in extracted_facts]) if extracted_facts else "No material events found."
+            stage2_system = self.get_system_prompt()
+            stage2_user = (
+                f"{user_prompt}\n\n"
+                f"VERIFIED CORPORATE FACTS (Audited via Granite Extraction Engine):\n{facts_block}\n\n"
+                "Synthesize governance integrity, management catalysts, and earnings risk strictly grounded in these facts."
+            )
+
+            stage2_result = await call_llm(
+                system_prompt=stage2_system,
+                user_prompt=stage2_user,
+                response_format="json",
+                model_tier="analyst",
+                timeout_sec=max(20.0, timeout_sec * 0.6)
+            )
+
+            duration = round(time.time() - start_time, 3)
+            return AgentOutput(
+                agent_name=self.name,
+                role=self.role,
+                summary=stage2_result.get("summary", "Corporate event monitoring completed."),
+                findings=stage2_result.get("findings", []),
+                supporting_evidence=stage2_result.get("supporting_evidence", []) + [f"Granite Audited Facts: {len(extracted_facts)} events"],
+                assumptions=stage2_result.get("assumptions", []),
+                missing_information=stage2_result.get("missing_information", []),
+                confidence_score=float(stage2_result.get("confidence_score", 0.78)),
+                confidence_explanation=stage2_result.get("confidence_explanation", "Two-stage Granite extraction + Qwen synthesis"),
+                questions_for_investigation=stage2_result.get("questions_for_investigation", []),
+                role_specific_data={"stage1_facts_count": len(extracted_facts), "pipeline": "Granite -> Qwen"},
+                model_tier="extractor+analyst",
+                execution_status="success",
+                execution_duration_sec=duration
+            )
+        except Exception as e:
+            logger.warning(f"2-Stage News execution failed: {e}. Falling back to analytical stub.")
+            stub = self.get_development_stub(company_context, evidence_dict)
+            stub.execution_duration_sec = round(time.time() - start_time, 3)
+            stub.execution_status = "stub_fallback"
+            stub.error_message = str(e)
+            stub.model_tier = "extractor+analyst"
+            return stub
 
 
 class SocialSentimentAnalyst(BaseAgent):
     """Gauges retail sentiment, community buzz, and extreme sentiment divergence."""
 
     def __init__(self):
-        super().__init__(name="Social Sentiment Analyst", role="Social Sentiment Analyst")
+        super().__init__(
+            name="Social Sentiment Analyst",
+            role="Social Sentiment Analyst",
+            model_tier="extractor"
+        )
 
     def get_system_prompt(self) -> str:
         return (

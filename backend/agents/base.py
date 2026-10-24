@@ -21,6 +21,7 @@ class AgentOutput(BaseModel):
     confidence_explanation: str
     questions_for_investigation: List[str] = Field(default_factory=list)
     role_specific_data: Dict[str, Any] = Field(default_factory=dict)
+    model_tier: str = "analyst"
     execution_status: str = "success"  # success, error, dev_stub
     execution_duration_sec: float = 0.0
     error_message: Optional[str] = None
@@ -29,9 +30,10 @@ class AgentOutput(BaseModel):
 class BaseAgent(ABC):
     """Abstract Base Class for all BharatEquity research agents."""
 
-    def __init__(self, name: str, role: str):
+    def __init__(self, name: str, role: str, model_tier: str = "analyst"):
         self.name = name
         self.role = role
+        self.model_tier = model_tier
 
     @abstractmethod
     def get_system_prompt(self) -> str:
@@ -95,7 +97,9 @@ class BaseAgent(ABC):
             raw_result = await call_llm(
                 system_prompt=system_prompt,
                 user_prompt=user_prompt,
-                response_format="json"
+                response_format="json",
+                model_tier=self.model_tier,
+                timeout_sec=timeout_sec
             )
 
             duration = round(time.time() - start_time, 3)
@@ -112,6 +116,7 @@ class BaseAgent(ABC):
                 confidence_explanation=raw_result.get("confidence_explanation", "Standard analysis"),
                 questions_for_investigation=raw_result.get("questions_for_investigation", []),
                 role_specific_data=raw_result.get("role_specific_data", {}),
+                model_tier=self.model_tier,
                 execution_status="success",
                 execution_duration_sec=duration
             )
@@ -122,4 +127,5 @@ class BaseAgent(ABC):
             stub.execution_duration_sec = round(time.time() - start_time, 3)
             stub.execution_status = "stub_fallback"
             stub.error_message = str(err)
+            stub.model_tier = self.model_tier
             return stub
