@@ -1,200 +1,268 @@
 # EquiAgentic - Multi-Agent Architecture & Deliberation Workflow
 
-This document explains in comprehensive detail how the **13 specialized agents** in EquiAgentic (BharatEquity) operate: **where their data originates**, **what each agent receives as input**, **how they process and refine the data**, and **what specific outputs, analytical decisions, and structured execution plans they produce**.
+This document explains in comprehensive detail how the **13 specialized agents** in EquiAgentic (BharatEquity) operate: **where their data originates**, **what each agent receives as input**, **how they process and refine the data**, **which specific models they run on in the heterogeneous multi-model architecture**, and **what analytical decisions and structured execution plans they produce**.
 
 ---
 
 ## 1. The Raw Data Foundation (100% Free, Zero-API-Key Architecture)
 
-Before any agent begins execution, the platform aggregates verified raw data concurrently from five zero-API-key data providers via [`aggregator.py`](file:///c:/Users/Piyush/Desktop/Multi%20Agent%20Stock%20Analyzer/backend/data_providers/aggregator.py):
+Before any agent begins execution, the platform aggregates verified raw data concurrently from zero-API-key data providers via [`aggregator.py`](file:///c:/Users/Piyush/Desktop/Multi%20Agent%20Stock%20Analyzer/backend/data_providers/aggregator.py):
 
 | Source | File / Provider | What is Extracted & Verified |
 | :--- | :--- | :--- |
 | **Official SQLite DB** | [`database.py`](file:///c:/Users/Piyush/Desktop/Multi%20Agent%20Stock%20Analyzer/backend/database.py) | Symbol, Exchange (NSE/BSE), ISIN, Series (EQ/BE/SM), 6-digit Scrip Code (cross-exchange ISIN linked with dual-ISIN resolution), Market Cap category, official company name, and full catalog coverage audit. |
-| **Yahoo Finance (`yfinance`)** | [`yfinance_provider.py`](file:///c:/Users/Piyush/Desktop/Multi%20Agent%20Stock%20Analyzer/backend/data_providers/yfinance_provider.py) | Real-time CMP, 50 & 200 DMA, true 52W High/Low computed deterministically from daily `High.max()` and `Low.min()`, 14-day Average True Range (ATR), 20-day Swing Extremes (Low/High), 20-day Realized Volatility (Annualized %), P/E, P/B, EV/EBITDA, Beta, 30-day average volume, Multi-year Income Statements & Balance Sheets (Revenue, EBITDA, EBIT, PAT, Debt, Equity, Interest Expense, CFO, Capex), Multi-year Margin Stability Spread (`Max EBITDA Margin - Min EBITDA Margin`), and 3-Year EPS CAGR. |
+| **Yahoo Finance (`yfinance`)** | [`yfinance_provider.py`](file:///c:/Users/Piyush/Desktop/Multi%20Agent%20Stock%20Analyzer/backend/data_providers/yfinance_provider.py) | Real-time CMP, 50 & 200 DMA, true 52W High/Low, 14-day Average True Range (ATR), 14-day RSI, 20-day Swing Extremes (Low/High), 20-day Realized Volatility (Annualized %), P/E, P/B, EV/EBITDA, Beta, 30-day average volume, Multi-year Income Statements & Balance Sheets (Revenue, EBITDA, EBIT, PAT, Debt, Equity, Interest Expense, CFO, Capex), Multi-year Margin Stability Spread, true 3-Year Revenue CAGR, and multi-year EPS CAGR. |
+| **NSE Microstructure (`stock-nse-india`)** | [`nse_provider.py`](file:///c:/Users/Piyush/Desktop/Multi%20Agent%20Stock%20Analyzer/backend/data_providers/nse_provider.py) & [`nse_bridge.cjs`](file:///c:/Users/Piyush/Desktop/Multi%20Agent%20Stock%20Analyzer/backend/nse_service/nse_bridge.cjs) | Real-time security-wise **Delivery Position %** (`deliveryToTradedQuantity`), Delivery Volume, Order Book Depth (total buy bids vs total sell asks, **Bid/Ask Ratio**), and official NSE Corporate Announcements and Board Meetings. |
 | **Google News RSS** | [`news_provider.py`](file:///c:/Users/Piyush/Desktop/Multi%20Agent%20Stock%20Analyzer/backend/data_providers/news_provider.py) | Live financial press articles, publication dates, publisher sources, and targeted retail discussion streams scored with positive/caution keyword density ratios. |
-| **Official BSE Public Notices** | [`bse_provider.py`](file:///c:/Users/Piyush/Desktop/Multi%20Agent%20Stock%20Analyzer/backend/data_providers/bse_provider.py) | Official corporate announcements, board meeting outcomes, and regulatory filings (using 6-digit Scrip Code with dual-ISIN resolution and resilient RSS failover for Akamai-blocked environments). |
+| **Official BSE Public Notices** | [`bse_provider.py`](file:///c:/Users/Piyush/Desktop/Multi%20Agent%20Stock%20Analyzer/backend/data_providers/bse_provider.py) | Official BSE corporate announcements, board meeting outcomes, and regulatory filings (using 6-digit Scrip Code with dual-ISIN resolution and RSS failover). |
 | **Sector Peer Benchmarking** | [`peers_provider.py`](file:///c:/Users/Piyush/Desktop/Multi%20Agent%20Stock%20Analyzer/backend/data_providers/peers_provider.py) | Comparative peer valuation table (P/E, P/B, Market Cap) queried dynamically from the catalog with live multiple enrichment and 10-minute in-memory caching. |
-| **Deterministic Math Engine** | [`metrics.py`](file:///c:/Users/Piyush/Desktop/Multi%20Agent%20Stock%20Analyzer/backend/agents/metrics.py) | Python-computed Debt-to-Equity, multi-factor Solvency (`interest_coverage > 2.0` and `debt_to_equity < 2.5`), ROCE-WACC economic spread, 3-Year EPS CAGR, and PEG Ratio (`pe_ratio / eps_cagr_3yr_pct`). Eliminates LLM math hallucinations. |
+| **Deterministic Math Engine** | [`metrics.py`](file:///c:/Users/Piyush/Desktop/Multi%20Agent%20Stock%20Analyzer/backend/agents/metrics.py) | Python-computed Return on Equity (ROE: 45.89%), ROCE (56.29%), Debt-to-Equity, multi-factor Solvency (`equity > 0`, `interest_coverage > 2.0`, `debt_to_equity < 2.5`), ROCE-WACC spread, 3-Year Revenue CAGR, 3-Year EPS CAGR, and PEG Ratio. Eliminates LLM math hallucinations. |
 
 ---
 
 ## 2. High-Level Multi-Agent Workflow Pipeline
 
 ```text
-[ Raw Catalogs + yfinance + Google News + BSE Notices + Sector Peers ]
+[ Raw Catalogs + yfinance + stock-nse-india + Google News + BSE Notices + Sector Peers ]
                                  │
                                  ▼
-                     Stage 0: Research Manager
+                     Stage 0: Research Manager (Qwen 2.5)
                                  │
                                  ▼
-             Stage 1: 7 Foundational Analysts (Parallel)
+         Stage 1: 7 Foundational Analysts (Parallel - Granite & Qwen)
                                  │
                                  ▼ (Aggregated Evidence Pool)
-                 Stage 2: Bull & Bear (Independent)
+             Stage 2: Bull & Bear (Independent - Qwen 2.5)
                                  │
                                  ▼ (Exchange Theses)
-                     Stage 3: Adversarial Rebuttal
+                 Stage 3: Adversarial Rebuttal (Qwen 2.5)
                                  │
                                  ▼
-                Stage 4: Risk Analyst & Trader Agent
+      Stage 4: Risk Analyst (DeepSeek-R1) & Trader Agent (Qwen 2.5)
                                  │
                                  ▼
-                  Stage 5: Portfolio Manager (Verdict)
+       Stage 5: Portfolio Manager (DeepSeek-R1 Challenge -> Qwen Verdict)
 ```
 
 ---
 
-## 3. Detailed Stage-by-Stage Agent Breakdown
+## 3. Heterogeneous Multi-Model Architecture & Agent Mapping
+
+Unlike single-model systems that suffer from sycophancy or factual hallucination, EquiAgentic uses a **tier-dispatched multi-model architecture**:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       EQUIAGENTIC MULTI-MODEL STACK                         │
+├────────────────────────────────┬────────────────────────────────────────────┤
+│ IBM Granite 3.0 (2B / 8B)      │ Zero-hallucination factual extraction,     │
+│ [Extractors & Classifiers]     │ strict constraint adherence, sentiment.    │
+├────────────────────────────────┼────────────────────────────────────────────┤
+│ Qwen 2.5 / 3.5 (7B / 14B)      │ Domain analysis, structured JSON outputs,  │
+│ [Core Analytical Workhorses]   │ financial reasoning, trade desk pacing.    │
+├────────────────────────────────┼────────────────────────────────────────────┤
+│ DeepSeek-R1 (7B / 8B / 14B)    │ High-order adversarial debate challenge,   │
+│ [Adversarial Stress-Testers]   │ stress-testing vulnerabilities, PM critique│
+├────────────────────────────────┼────────────────────────────────────────────┤
+│ Deterministic Python Engine    │ Mathematical truth: ROCE, ROE, 3Y CAGR,   │
+│ [Unbreakable Numerical Anchor] │ RSI-14, ATR, ISIN checksums, Delivery %.   │
+└────────────────────────────────┴────────────────────────────────────────────┘
+```
+
+### The 13 Specialized Agent Roles & Model Mapping
+
+| # | Agent Role | Model Tier | Default Model | Core Function & Advantage |
+| :---: | :--- | :---: | :---: | :--- |
+| **1** | **Research Manager** | `analyst` | **Qwen 2.5** | Scopes investment hypotheses, sets analysis parameters, and coordinates LangGraph state dependencies. |
+| **2** | **Evidence Verification Analyst** | `extractor` | **IBM Granite 3.0** | Audits listing provenance, trading series (`EQ` vs `BE`/`SM`), and ISIN checksums without hallucinating missing records. |
+| **3** | **Fundamentals Analyst** | `analyst` | **Qwen 2.5** + Python | Evaluates business durability using deterministic ROE (45.89%), ROCE (56.29%), and solvency guards. |
+| **4** | **Growth & Industry Analyst** | `analyst` | **Qwen 2.5** | Assesses macro tailwinds (Make in India, PLI schemes, supply-chain formalization) and secular TAM expansion. |
+| **5** | **News & Corporate Events Analyst** | `extractor` $\rightarrow$ `analyst` *(2-Stage)* | **Granite** $\rightarrow$ **Qwen** | **Stage 1 (Granite)** extracts verified facts from official filings $\rightarrow$ **Stage 2 (Qwen)** interprets governance risks and catalysts. |
+| **6** | **Social Sentiment Analyst** | `extractor` | **IBM Granite 3.0** | Calibrated sentiment classification (-1.0 to +1.0) of retail discussion headlines without bias. |
+| **7** | **Market Analyst** | `analyst` | **Qwen 2.5** + Python | Evaluates 14-day RSI, ATR buffer, and live **NSE Delivery %** + order book depth (`stock-nse-india`). |
+| **8** | **Peer & Valuation Analyst** | `analyst` | **Qwen 2.5** + Python | Benchmarks multiples (P/E, P/B, EV/EBITDA, PEG) against peer medians from the SQLite securities master. |
+| **9** | **Bull Researcher** | `analyst` | **Qwen 2.5** | Formulates thesis-driven asymmetric upside case under strict factual rules (e.g. cannot label high multiples as cheap). |
+| **10** | **Bear Researcher** | `analyst` | **Qwen 2.5** | Adversarial downside stress-test attacking multiple compression and deceleration; prohibited from fabricating debt when D/E < 0.3. |
+| **11** | **Trader / Tactical Execution Desk** | `analyst` | **Qwen 2.5** + Python | Formulates concrete institutional execution parameters (`entry_range_low`, `entry_range_high`, `invalidation_stop`, staged tranches). |
+| **12** | **Risk Analyst** | `reasoner` | **DeepSeek-R1** | Uses `<think>` chain-of-thought to attack Bull assumptions, uncover balance-sheet fragility, and define invalidation thresholds. |
+| **13** | **Portfolio Manager** | `reasoner` $\rightarrow$ `analyst` *(2-Stage)* | **DeepSeek-R1** $\rightarrow$ **Qwen** | **Stage 1 (DeepSeek-R1)** conducts an Investment Committee Cross-Examination $\rightarrow$ **Stage 2 (Qwen)** assigns capital conviction (`OVERWEIGHT`, `NEUTRAL`, `UNDERWEIGHT`) and target allocation (0.0% to 10.0%). |
+
+---
+
+## 4. Detailed Stage-by-Stage Agent Breakdown
 
 ---
 
 ### STAGE 0: Planning & Hypothesis Formulation
 
 #### 1. Research Manager Agent
-- **File Reference**: [`analysts.py`](file:///c:/Users/Piyush/Desktop/Multi%20Agent%20Stock%20Analyzer/backend/agents/analysts.py#L32-L113)
+- **Assigned Model**: Qwen 2.5 (`analyst`)
 - **Inputs**:
   - Raw catalog profile (ISIN, Exchange, Symbol, Company Name, Scrip Code).
   - Enriched live market snapshot (CMP, 52W range, P/E ratio, market cap category).
   - Deterministically calculated financial ratios (`debt_to_equity`, `interest_coverage`, `is_solvent`, `roce_wacc_spread`, `eps_cagr_3yr_pct`, `peg_ratio`).
 - **How It Refines & Processes**:
-  - Assesses whether the listing has sufficient corporate data to support institutional research.
-  - Formulates core investment hypotheses (e.g., whether the primary driver is growth, value re-rating, or debt deleveraging).
-  - Scopes priorities and potential blindspots for downstream specialist analysts.
-- **Output Produced**:
-  - Research scope summary, initial hypotheses, list of specific areas for specialists to investigate, and baseline confidence score.
+  - Scopes the core analytical narrative: identifies the primary questions the research committee must answer (e.g., capital allocation sustainability, margin compression risks, competitive moat durability).
+  - Initializes the LangGraph orchestration state and allocates specialist roles.
+- **Output Produced**: Agenda summary, core analytical hypotheses, key questions for investigation, and initial agenda status.
 
 ---
 
-### STAGE 1: Parallel Evidence & Foundational Analysts
-
-*All 7 specialist agents in this stage run concurrently, each consuming only the data relevant to its domain.*
+### STAGE 1: Foundational Evidence & Specialized Research (Executed Concurrently)
 
 #### 2. Evidence Verification Analyst
-- **File Reference**: [`analysts.py`](file:///c:/Users/Piyush/Desktop/Multi%20Agent%20Stock%20Analyzer/backend/agents/analysts.py#L115-L200)
-- **Inputs**: Exchange master data (Symbol, Exchange, ISIN format, Series, Listing Date, Scrip Code, Active Status).
+- **Assigned Model**: IBM Granite 3.0 (`extractor`)
+- **Inputs**: Exchange master records, 12-digit ISIN, trading series, surveillance lists, and BSE scrip metadata.
 - **How It Refines & Processes**:
-  - Runs **Luhn Mod-10 Checksum Algorithm** on the 12-character ISIN code. If the checksum fails (e.g., transcription error `INE002A01019`), flags as `"Checksum Mismatch - Flagged Transcription Error"`. Only valid checksums receive `"Verified Clean"`.
-  - Verifies exchange series (e.g., NSE `EQ` regular trading vs illiquid/surveillance series `BE`/`SM`/`ST`).
-  - Audits cross-exchange linking (NSE ticker to BSE 6-digit Scrip Code).
-- **Output Produced**: Data integrity verification, audit flags on listing parameters, and mathematical checksum validation.
+  - Deterministically audits listing parameters: validates ISIN syntax and Luhn algorithm checksum.
+  - Verifies whether trading is under standard continuous settlement (`EQ`) or surveillance/caution series (`BE`, `BZ`, `SM`, `ST`).
+  - Identifies missing audited statements (e.g., unfiled annual XBRL statements or auditor qualifications).
+- **Output Produced**: Data integrity score (0.0–1.0), listing provenance findings, and surveillance warnings.
 
 #### 3. Fundamentals & Business Quality Analyst
-- **File Reference**: [`analysts.py`](file:///c:/Users/Piyush/Desktop/Multi%20Agent%20Stock%20Analyzer/backend/agents/analysts.py#L202-L287)
-- **Inputs**:
-  - Multi-year financial statements (Revenue, EBITDA, PAT, Total Debt, Stockholders Equity, Operating Cash Flow, Capex).
-  - Multi-year EBITDA Margin stability spread (`max_margin - min_margin`).
-  - Deterministic metrics (`debt_to_equity`, `interest_coverage`, `is_solvent`, `roce_pct`, `net_margin_pct`, `ebitda_margin_pct`).
+- **Assigned Model**: Qwen 2.5 (`analyst`) + Python Math
+- **Inputs**: Multi-year income statements, balance sheets, cash flows, free cash flow, Debt/Equity, Interest Coverage, separate ROE and ROCE, and EBITDA margin spread.
 - **How It Refines & Processes**:
-  - Evaluates solvency, balance sheet durability, debt service capability, and free cash flow generation (`CFO - Capex`).
-  - Analyzes operating margin trends and return on capital employed (`ROCE`) against cost of capital.
-- **Output Produced**: Solvency assessment, operational margin durability, free cash flow profile, and identified balance sheet vulnerabilities.
+  - Evaluates balance-sheet durability, working capital cycles, and capital efficiency.
+  - Cross-references ROCE vs cost of capital (WACC) to establish economic moat persistence.
+  - Solvency check: flags financial distress if total equity $\le 0$.
+- **Output Produced**: Core business quality rating, solvency assessment, and cash conversion durability findings.
 
 #### 4. Growth & Industry Analyst
-- **File Reference**: [`analysts.py`](file:///c:/Users/Piyush/Desktop/Multi%20Agent%20Stock%20Analyzer/backend/agents/analysts.py#L289-L373)
-- **Inputs**: Sector, industry category, multi-year revenue history, EBITDA trajectory, 3-year EPS CAGR, and Free Cash Flow.
+- **Assigned Model**: Qwen 2.5 (`analyst`)
+- **Inputs**: Multi-year revenue trajectory, EBITDA trajectory, sector/industry classification, and market cap categorization.
 - **How It Refines & Processes**:
-  - Contextualizes company revenue against broader Indian macroeconomic catalysts (e.g., Make in India, PLI schemes, domestic consumption, formalization).
-  - Evaluates whether revenue expansion is pricing-driven or volume-driven.
-- **Output Produced**: 3-to-5 year growth runway evaluation, domestic structural tailwinds, and addressable market expansion capacity.
+  - Evaluates secular vs cyclical industry tailwinds (PLI schemes, domestic capex, formalization).
+  - Analyzes volume growth vs pricing power and assesses market share defensibility.
+- **Output Produced**: Secular growth vector identification, TAM expansion runway, and capital expenditure catalysts.
 
-#### 5. News & Corporate Events Analyst
-- **File Reference**: [`analysts.py`](file:///c:/Users/Piyush/Desktop/Multi%20Agent%20Stock%20Analyzer/backend/agents/analysts.py#L375-L459)
-- **Inputs**: Live BSE regulatory disclosures, Board meeting notices, and Google News RSS articles with publication timestamps and publisher metadata.
+#### 5. News, Corporate Events & Earnings-Call Analyst
+- **Assigned Model**: Two-Stage: IBM Granite 3.0 (`extractor`) $\rightarrow$ Qwen 2.5 (`analyst`)
+- **Inputs**: Real-time Google News RSS articles, official BSE regulatory announcements, NSE disclosures, and scheduled board/earnings meetings.
 - **How It Refines & Processes**:
-  - Filters out sensationalist clickbait and extracts material events: dividend declarations, capacity expansions, litigation, senior executive exits, or credit rating actions.
-- **Output Produced**: Material corporate event timeline, regulatory disclosure review, and event risk score.
+  - **Stage 1 (Granite)**: Extracts strictly verified factual disclosures (board meeting outcomes, dividend announcements, plant approvals) without media spin.
+  - **Stage 2 (Qwen)**: Analyzes management changes, capital return policies, pending litigation, and governance catalysts grounded in Granite's audited facts.
+- **Output Produced**: Audited corporate event log, upcoming board meeting catalyst warnings, and governance risk flags.
 
 #### 6. Social Sentiment Analyst
-- **File Reference**: [`analysts.py`](file:///c:/Users/Piyush/Desktop/Multi%20Agent%20Stock%20Analyzer/backend/agents/analysts.py#L461-L545)
-- **Inputs**: Targeted retail discussion stream, headline tone, and deterministic `bullish_signal_ratio`.
+- **Assigned Model**: IBM Granite 3.0 (`extractor`)
+- **Inputs**: Retail discussion streams, market buzz items, and algorithmic sentiment baseline.
 - **How It Refines & Processes**:
-  - Evaluates tone and retail perception of the stock without allowing hype or sentiment to override hard financial facts.
-  - Detects sentiment divergences (e.g. retail euphoria during deteriorating fundamentals).
-- **Output Produced**: Retail sentiment classification (Bullish / Neutral / Bearish), signal ratio, and sentiment momentum.
+  - Classifies retail sentiment without overriding hard fundamental metrics.
+  - Detects sentiment divergence: flags retail euphoria during institutional distribution, or retail panic during institutional accumulation.
+- **Output Produced**: Sentiment label (`Bullish`, `Neutral`, `Cautious`), signal confidence ratio, and narrative risk flags.
 
-#### 7. Market Analyst
-- **File Reference**: [`analysts.py`](file:///c:/Users/Piyush/Desktop/Multi%20Agent%20Stock%20Analyzer/backend/agents/analysts.py#L547-L633)
-- **Inputs**: Current price (CMP), 50-day DMA, 200-day DMA, true 52-week High/Low (from daily `High.max()` and `Low.min()`), 14-day ATR, 20-day swing extremes, 20-day annualized realized volatility, 30-day average trading volume, Beta.
+#### 7. Market & Microstructure Analyst
+- **Assigned Model**: Qwen 2.5 (`analyst`) + Python Math
+- **Inputs**: CMP, 50 & 200 DMA, 52W range, 14-day RSI, 14-day ATR, 20-day realized volatility, 30-day average volume, Beta, and live **NSE Security-wise Delivery Position %** + Order Book Bid/Ask Ratio (`stock-nse-india`).
 - **How It Refines & Processes**:
-  - Compares current price against the 50 DMA and 200 DMA (Golden Cross / Death Cross detection).
-  - Measures price distance from 52-week extremes and identifies volatility compression / expansion regimes.
-  - Assesses institutional liquidity based on 30-day trading volume.
-- **Output Produced**: Trend regime (Bullish / Bearish / Consolidating), volatility regime, price relative to 52W range, and institutional liquidity evaluation.
+  - Evaluates institutional delivery accumulation vs speculative day-trade turnover.
+  - Analyzes trend regime: Golden Cross (50 > 200 DMA) vs Death Cross (50 < 200 DMA) and volatility contraction.
+- **Output Produced**: Microstructure liquidity profile, delivery absorption metrics, and technical momentum findings.
 
 #### 8. Peer Benchmarking & Valuation Analyst
-- **File Reference**: [`analysts.py`](file:///c:/Users/Piyush/Desktop/Multi%20Agent%20Stock%20Analyzer/backend/agents/analysts.py#L635-L724)
-- **Inputs**: Trailing/Forward P/E, P/B, EV/EBITDA, deterministic PEG ratio, ROCE-WACC spread, and Sector Peer Benchmark Table enriched with live peer metrics.
+- **Assigned Model**: Qwen 2.5 (`analyst`) + Python Math
+- **Inputs**: Target stock multiples (P/E, P/B, EV/EBITDA, PEG), dynamic sector peer comparison table, and peer median metrics.
 - **How It Refines & Processes**:
-  - Assesses whether the valuation multiple is justified by the economic value creation spread (`ROCE - WACC > 0`).
-  - Benchmarks the stock against listed sector peers (relative discount or premium).
-- **Output Produced**: Valuation summary (Overvalued / Undervalued / Fairly Valued), PEG assessment, and margin of safety score.
+  - Benchmarks target stock valuation against industry peer group.
+  - Calculates relative premium/discount and establishes margin of safety.
+- **Output Produced**: Relative valuation rating, peer multiple dispersion table, and margin of safety findings.
 
 ---
 
-### STAGE 2: Independent Theses Generation (Zero Cross-Contamination)
-
-*Both researchers receive the complete aggregated `evidence_pool` from Stage 1, but are strictly isolated from seeing each other's work at this stage.*
+### STAGE 2: Independent Thesis Formulation (Zero Cross-Contamination)
 
 #### 9. Bull Researcher Agent
-- **File Reference**: [`decision_makers.py`](file:///c:/Users/Piyush/Desktop/Multi%20Agent%20Stock%20Analyzer/backend/agents/decision_makers.py#L22-L106)
-- **Inputs**: The collective `evidence_pool` (deterministic metrics, verified financials, 3-year EPS CAGR, PEG ratio, growth catalysts, market position, news).
+- **Assigned Model**: Qwen 2.5 (`analyst`)
+- **Inputs**: Entire aggregated Stage 1 evidence pool.
 - **How It Refines & Processes**:
-  - Actively builds the **maximum viable upside thesis**: competitive moats, pricing power, margin expansion leverage, and earnings visibility.
-- **Output Produced**: Structured 3–4 point Bull Case, positive price drivers, and institutional accumulation rationale.
+  - Constructs the maximum viable upside thesis: moat durability, pricing power, operating leverage, and margin expansion.
+  - Strict institutional rule: cannot label elevated valuation multiples (P/E > 30) as "cheap"; must justify valuation through ROCE compounding and earnings visibility.
+- **Output Produced**: Primary Bull Thesis (3–5 points), growth catalysts, and long-term compounding arguments.
 
 #### 10. Bear Researcher Agent
-- **File Reference**: [`decision_makers.py`](file:///c:/Users/Piyush/Desktop/Multi%20Agent%20Stock%20Analyzer/backend/agents/decision_makers.py#L108-L191)
-- **Inputs**: The collective `evidence_pool` (same evidence as the Bull).
+- **Assigned Model**: Qwen 2.5 (`analyst`)
+- **Inputs**: Entire aggregated Stage 1 evidence pool.
 - **How It Refines & Processes**:
-  - Actively builds the **maximum viable downside thesis**: debt vulnerabilities, input-cost margin compression, aggressive competitor pricing, and execution risks.
-- **Output Produced**: Structured 3–4 point Bear Case, downside catalysts, and margin-of-safety deficits.
+  - Constructs the maximum viable downside thesis: input cost inflation, competitive threats, deceleration, and multiples derating.
+  - Strict institutional rule: if Debt-to-Equity is low (< 0.3) or the company is net-debt free, prohibited from fabricating insolvency; must focus on valuation, margin, or operational risks.
+- **Output Produced**: Primary Bear Thesis (3–5 points), downside vulnerability catalysts, and derating risks.
 
 ---
 
-### STAGE 3: Adversarial Rebuttal Round
+### STAGE 3: Adversarial Rebuttal & Cross-Examination
 
-- **File Reference**: [`orchestrator.py`](file:///c:/Users/Piyush/Desktop/Multi%20Agent%20Stock%20Analyzer/backend/agents/orchestrator.py#L137-L191)
-- **Inputs Grounding**: Both agents retain the complete baseline financial metrics and specialist evidence pool alongside the opponent's thesis.
-- **How It Works**:
-  - **Bull Researcher receives the Bear's thesis**: Must answer each downside vulnerability with empirical operational counterpoints.
-  - **Bear Researcher receives the Bull's thesis**: Must stress-test the Bull's assumptions (e.g., challenging whether expected growth is already priced in).
-- **Output Produced**: Defended Bull Thesis, Stress-Tested Bear Thesis, and identification of the **Critical Swing Factors** deciding which side is correct.
+#### Bull & Bear Rebuttal Round
+- The Bull receives the full Bear Thesis; the Bear receives the full Bull Thesis.
+- Both agents execute a single bounded adversarial round:
+  - **Bull Rebuttal**: Defends against the Bear's specific risk points using verified operational data.
+  - **Bear Rebuttal**: Attacks the Bull's growth and moat assumptions using verified financial metrics.
+- **Output Produced**: Refined debate points and **Critical Swing Variables** (the exact triggers that tip the thesis).
 
 ---
 
-### STAGE 4: Risk Audit & Execution Strategy
+### STAGE 4: Risk Audit & Tactical Execution Desk
 
 #### 11. Risk Analyst Agent
-- **File Reference**: [`decision_makers.py`](file:///c:/Users/Piyush/Desktop/Multi%20Agent%20Stock%20Analyzer/backend/agents/decision_makers.py#L273-L354)
+- **Assigned Model**: DeepSeek-R1 (`reasoner`)
 - **Inputs**: Rebuttal debate findings, Bear thesis, debt ratios, interest coverage, and corporate disclosures.
 - **How It Refines & Processes**:
-  - Stress-tests worst-case scenarios: debt maturity schedule, promoter pledging/share dilution, regulatory intervention, and macroeconomic sensitivity (USD/INR, interest rates).
-- **Output Produced**: Ranked downside risk matrix, systemic risk score, and required contingency hedges.
+  - DeepSeek-R1 `<think>` reasoning conducts an adversarial attack on the Bull's assumptions.
+  - Evaluates worst-case scenarios: debt covenant breach, promoter pledging, regulatory penalties, and tail-risk drawdowns.
+- **Output Produced**: Ranked downside risk matrix, systemic risk score, and required invalidation triggers.
 
-#### 12. Trader Agent
-- **File Reference**: [`decision_makers.py`](file:///c:/Users/Piyush/Desktop/Multi%20Agent%20Stock%20Analyzer/backend/agents/decision_makers.py#L193-L271)
-- **Inputs**: CMP, 50/200 DMA, true 52W range, 14-day ATR, 20-day swing extremes, 20-day realized volatility, 30-day volume, and Bull/Bear debate swing factors.
+#### 12. Trader Agent (Tactical Execution Desk)
+- **Assigned Model**: Qwen 2.5 (`analyst`) + Python Math
+- **Inputs**: CMP, 50/200 DMA, 52W range, 14-day ATR, 20-day swing extremes, realized volatility, 30-day volume, and Bull/Bear debate swing factors.
 - **How It Refines & Processes**:
-  - Formulates tactical institutional execution: optimal entry bands (`entry_range_low`, `entry_range_high`), invalidation stop-loss (`invalidation_stop`), ATR volatility buffer (`atr_buffer`), and a 3-tranche staged accumulation schedule (`staged_tranches`).
-- **Output Produced**: Structured `TacticalExecutionPlan` with concrete prices and tranche allocations.
+  - Formulates tactical execution: optimal entry bands (`entry_range_low`, `entry_range_high`), invalidation stop-loss (`invalidation_stop`), ATR volatility buffer (`atr_buffer`), and a 3-tranche staged accumulation schedule (`staged_tranches`).
+- **Output Produced**: Structured `TacticalExecutionPlan` with concrete rupee levels and tranche allocations.
 
 ---
 
-### STAGE 5: Final Conviction Synthesis
+### STAGE 5: Final Conviction Synthesis & Capital Sizing
 
 #### 13. Portfolio Manager Agent
-- **File Reference**: [`decision_makers.py`](file:///c:/Users/Piyush/Desktop/Multi%20Agent%20Stock%20Analyzer/backend/agents/decision_makers.py#L356-L435)
-- **Inputs**: Complete synthesis packet:
-  - Research Manager's original hypotheses.
-  - Defended Bull Case & Stress-Tested Bear Case.
-  - Risk Analyst's downside vulnerability matrix.
-  - Trader's tactical entry parameters & staged tranches.
-  - Deterministic metrics (`debt_to_equity`, `roce_wacc_spread`, `interest_coverage`, `peg_ratio`).
+- **Assigned Model**: Two-Stage: DeepSeek-R1 (`reasoner`) $\rightarrow$ Qwen 2.5 (`analyst`)
+- **Inputs**: Complete synthesis packet (hypotheses, Bull/Bear debate, Risk audit, Trader plan, deterministic metrics).
 - **How It Refines & Processes**:
-  - Acts as the Investment Committee Chair: weighs Bull upside against Bear downside, adjusts for tail-risk warnings, and evaluates whether the risk-to-reward ratio warrants deploying institutional capital.
+  - **Stage 1 (DeepSeek-R1)**: Conducts an Investment Committee Cross-Examination, interrogating both sides to detect false confidence and weigh empirical evidence.
+  - **Stage 2 (Qwen)**: Synthesizes final capital allocation conviction without naive majority voting.
 - **Output Produced**:
   - **Conviction Rating**: Schema-enforced `"OVERWEIGHT"`, `"NEUTRAL"`, or `"UNDERWEIGHT"`.
-  - **Target Portfolio Allocation**: Float percentage (e.g., 2.5% to 5.0%).
+  - **Target Portfolio Allocation**: Float percentage (0.0% to 10.0%).
   - **Executive Investment Synthesis**: Clear, decisive institutional thesis.
   - **Tactical Execution Plan**: Entry ranges, stop loss, and staged tranches attached directly to the research report.
+
+---
+
+## 5. Local Setup & Model Pull Commands
+
+To run the complete heterogeneous multi-model stack locally in Ollama:
+
+```bash
+# 1. Pull the Core Analytical Workhorse:
+ollama pull qwen2.5:7b
+
+# 2. Pull the Factual Extractor & Classifier:
+ollama pull granite3-dense:2b
+
+# 3. Pull the Adversarial Reasoner:
+ollama pull deepseek-r1:7b
+```
+
+Configure in `backend/.env`:
+```dotenv
+LLM_PROVIDER=ollama
+LLM_BASE_URL=http://localhost:11434/v1
+LLM_TEMPERATURE=0.2
+
+# Specialized Model Tier Dispatching:
+LLM_MODEL_ANALYST=qwen2.5:7b
+LLM_MODEL_EXTRACTOR=granite3-dense:2b
+LLM_MODEL_REASONER=deepseek-r1:7b
+
+# Fallback primary model:
+LLM_MODEL=qwen2.5:7b
+```
+
+> **Zero-Crash Resilience**: If any specialized model is not installed, EquiAgentic's internal model router automatically redirects requests to `LLM_MODEL` with a logged warning, ensuring zero downtime.

@@ -7,64 +7,25 @@ An institutional-grade research platform for NSE & BSE Indian equities powered b
 ## What is EquiAgentic?
 
 EquiAgentic moves beyond simple chatbot summaries by simulating an institutional equity research committee:
-- **Heterogeneous Multi-Model AI**: Specialized models assigned to specific tasks based on model strengths (Granite for factual extraction, Qwen for institutional analysis, DeepSeek-R1 for adversarial reasoning).
 - **13 Specialized Agent Roles**: Fundamentals, Growth, News/Events, Sentiment, Market Microstructure, Peer Valuation, Bull/Bear Researchers, Trader Desk, Risk Analyst, and Portfolio Manager.
-- **True Adversarial Debate & Cross-Examination**: Isolated Bull and Bear researchers craft independent theses, followed by a DeepSeek-R1 adversarial challenge and investment committee cross-examination.
+- **True Adversarial Debate & Cross-Examination**: Isolated Bull and Bear researchers craft independent theses, followed by adversarial challenge and investment committee cross-examination.
 - **Deterministic Math Engine**: Eliminates LLM arithmetic hallucinations with Python-calculated Return on Equity (ROE: 45.89%), ROCE (56.29%), 3-year Revenue/EPS CAGRs, 14-day RSI, ATR buffers, and negative-equity solvency guards.
 - **Real NSE & BSE Exchange Data**: Integrated with `stock-nse-india` for security-wise delivery position %, order book market depth (bid/ask ratio), and official exchange regulatory announcements.
 - **7,800+ Official NSE & BSE Catalog**: Real securities database with exchange disambiguation, ISIN lookup, and scrip mapping.
 
----
-
-## Heterogeneous Multi-Model Architecture
-
-Unlike traditional single-model systems that suffer from sycophancy or factual hallucination, EquiAgentic uses a **tier-dispatched multi-model architecture**:
-
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                       EQUIAGENTIC MULTI-MODEL STACK                         │
-├────────────────────────────────┬────────────────────────────────────────────┤
-│ IBM Granite 3.0 (2B / 8B)      │ Zero-hallucination factual extraction,     │
-│ [Extractors & Classifiers]     │ strict constraint adherence, sentiment.    │
-├────────────────────────────────┼────────────────────────────────────────────┤
-│ Qwen 2.5 / 3.5 (7B / 14B)      │ Domain analysis, structured JSON outputs,  │
-│ [Core Analytical Workhorses]   │ financial reasoning, trade desk pacing.    │
-├────────────────────────────────┼────────────────────────────────────────────┤
-│ DeepSeek-R1 (7B / 8B / 14B)    │ High-order adversarial debate challenge,   │
-│ [Adversarial Stress-Testers]   │ stress-testing vulnerabilities, PM critique│
-├────────────────────────────────┼────────────────────────────────────────────┤
-│ Deterministic Python Engine    │ Mathematical truth: ROCE, ROE, 3Y CAGR,   │
-│ [Unbreakable Numerical Anchor] │ RSI-14, ATR, ISIN checksums, Delivery %.   │
-└────────────────────────────────┴────────────────────────────────────────────┘
-```
-
-### The 13 Specialized Agent Roles & Model Mapping
-
-| # | Agent Role | Model Tier | Default Model | Core Function & Advantage |
-| :---: | :--- | :---: | :---: | :--- |
-| **1** | **Research Manager** | `analyst` | **Qwen 2.5** | Scopes investment hypotheses, sets analysis parameters, and coordinates LangGraph state dependencies. |
-| **2** | **Evidence Verification Analyst** | `extractor` | **IBM Granite 3.0** | Audits listing provenance, trading series (`EQ` vs `BE`/`SM`), and ISIN checksums without hallucinating missing records. |
-| **3** | **Fundamentals Analyst** | `analyst` | **Qwen 2.5** + Python | Evaluates business durability using deterministic ROE (45.89%), ROCE (56.29%), and solvency guards. |
-| **4** | **Growth & Industry Analyst** | `analyst` | **Qwen 2.5** | Assesses macro tailwinds (Make in India, PLI schemes, supply-chain formalization) and secular TAM expansion. |
-| **5** | **News & Corporate Events Analyst** | `extractor` $\rightarrow$ `analyst` *(2-Stage)* | **Granite** $\rightarrow$ **Qwen** | **Stage 1 (Granite)** extracts verified facts from official filings $\rightarrow$ **Stage 2 (Qwen)** interprets governance risks and catalysts. |
-| **6** | **Social Sentiment Analyst** | `extractor` | **IBM Granite 3.0** | Calibrated sentiment classification (-1.0 to +1.0) of retail discussion headlines without bias. |
-| **7** | **Market Analyst** | `analyst` | **Qwen 2.5** + Python | Evaluates 14-day RSI, ATR buffer, and live **NSE Delivery %** + order book depth (`stock-nse-india`). |
-| **8** | **Peer & Valuation Analyst** | `analyst` | **Qwen 2.5** + Python | Benchmarks multiples (P/E, P/B, EV/EBITDA, PEG) against peer medians from the SQLite securities master. |
-| **9** | **Bull Researcher** | `analyst` | **Qwen 2.5** | Formulates thesis-driven asymmetric upside case under strict factual rules (e.g. cannot label high multiples as cheap). |
-| **10** | **Bear Researcher** | `analyst` | **Qwen 2.5** | Adversarial downside stress-test attacking multiple compression and deceleration; prohibited from fabricating debt when D/E < 0.3. |
-| **11** | **Trader / Tactical Execution Desk** | `analyst` | **Qwen 2.5** + Python | Formulates concrete institutional execution parameters (`entry_range_low`, `entry_range_high`, `invalidation_stop`, staged tranches). |
-| **12** | **Risk Analyst** | `reasoner` | **DeepSeek-R1** | Uses `<think>` chain-of-thought to attack Bull assumptions, uncover balance-sheet fragility, and define invalidation thresholds. |
-| **13** | **Portfolio Manager** | `reasoner` $\rightarrow$ `analyst` *(2-Stage)* | **DeepSeek-R1** $\rightarrow$ **Qwen** | **Stage 1 (DeepSeek-R1)** conducts an Investment Committee Cross-Examination $\rightarrow$ **Stage 2 (Qwen)** assigns capital conviction (`OVERWEIGHT`, `NEUTRAL`, `UNDERWEIGHT`) and target allocation (0.0% to 10.0%). |
+> 📖 **Deep Multi-Agent Architecture Documentation**:
+> For the comprehensive breakdown of agent workflows, raw data inputs, deterministic calculations, prompt engineering guardrails, and model routing, please see [**`agent_working.md`**](agent_working.md).
 
 ---
 
-## Branch Architecture & Comparison
+## Branches & Architecture
 
 EquiAgentic provides both architectures for direct side-by-side evaluation:
 
 * **`main` (Default Branch)**: **Heterogeneous Multi-Model Architecture**
   * Dispatches tasks to IBM Granite (extraction), Qwen (analysis), and DeepSeek-R1 (adversarial challenge).
   * Includes automatic fallback to the primary model if a specialized model is not loaded.
+  * Full breakdown documented in [**`agent_working.md`**](agent_working.md).
 * **`single-model-architecture` (Alternate Branch)**: **Single Unified Model Baseline**
   * Executes all 13 agents on a single model (e.g. `qwen2.5:7b` or `gpt-4o-mini`).
   * Useful for benchmarking against the multi-model architecture.
