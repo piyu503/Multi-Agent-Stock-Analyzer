@@ -230,16 +230,21 @@ class FundamentalsQualityAnalyst(BaseAgent):
         ebitda_hist = fin.get("ebitda_margin_history") or []
         margin_hist_str = ", ".join([f"{m}%" for m in ebitda_hist]) if ebitda_hist else "Single Period"
 
+        transcripts = company_context.get("transcripts") or {}
+        debt_quotes = transcripts.get("capex_debt_snippets") or []
+        debt_quote_text = ("\n".join([f"> \"{q}\"" for q in debt_quotes])) if debt_quotes else "No transcript debt/capex commentary available."
+
         return (
-            f"Assess fundamental balance sheet durability and business quality for {company_context.get('company_name')} ({company_context.get('symbol')}).\n"
+            f"Assess fundamental balance sheet durability and business quality for {company_context.get('company_name')} ({company_context.get('symbol')}):\n"
             f"Industry: {company_context.get('industry') or market.get('industry') or 'N/A'}.\n"
             f"Solvency & Return Metrics: Return on Equity (ROE): {metrics.get('roe_pct', 'N/A')}%, "
             f"Return on Capital Employed (ROCE): {metrics.get('roce_pct', 'N/A')}%, "
-            f"Debt-to-Equity: {metrics.get('debt_to_equity')}, Interest Coverage: {metrics.get('interest_coverage')}, "
+            f"Debt-to-Equity: {metrics.get('debt_to_equity')} [{metrics.get('debt_to_equity_rating')}], Interest Coverage: {metrics.get('interest_coverage')} [{metrics.get('interest_coverage_rating')}], "
             f"ROCE vs WACC spread: {metrics.get('roce_wacc_spread')}%, EBITDA Margin: {metrics.get('ebitda_margin_pct')}%, "
             f"Revenue 3-Year CAGR: {metrics.get('revenue_cagr_3yr_pct', fin.get('revenue_cagr_3yr_pct', 'N/A'))}%, "
             f"Multi-Year EBITDA Margin History: [{margin_hist_str}] (Max-Min Spread: {margin_spread}%).\n"
             f"Raw Statement Data: Total Debt: {fin.get('total_debt')}, Net Profit (PAT): {fin.get('pat')}, Operating Cash Flow (CFO): {fin.get('cfo')}, Capex: {fin.get('capex')}, Free Cash Flow: {fcf}.\n"
+            f"EARNINGS CALL TRANSCRIPT (Management Debt & Capex Commentary):\n{debt_quote_text}\n\n"
             "CRITICAL METRIC SEMANTICS:\n"
             "- Return on Capital Employed (ROCE) = EBIT / Capital Employed.\n"
             "- Return on Equity (ROE) = PAT / Total Equity.\n"
@@ -297,6 +302,10 @@ class GrowthIndustryAnalyst(BaseAgent):
         ebitda_hist = fin.get("ebitda_history") or []
         ebitda_hist_str = ", ".join([f"INR {e:,.0f}" for e in ebitda_hist]) if ebitda_hist else f"INR {fin.get('ebitda', 'N/A')}"
 
+        transcripts = company_context.get("transcripts") or {}
+        guidance_quotes = transcripts.get("guidance_snippets") or []
+        guidance_text = ("\n".join([f"> \"{g}\"" for g in guidance_quotes])) if guidance_quotes else "No forward management guidance quotes in local transcript store."
+
         return (
             f"Evaluate growth catalysts, TAM expansion, and industry competitive positioning for {company_context.get('company_name')} ({company_context.get('symbol')}):\n"
             f"- Sector / Industry: {company_context.get('sector') or mkt.get('sector')} / {company_context.get('industry') or mkt.get('industry')}\n"
@@ -304,6 +313,7 @@ class GrowthIndustryAnalyst(BaseAgent):
             f"- Multi-Year EBITDA Trajectory: [{ebitda_hist_str}]\n"
             f"- 3-Year EPS CAGR: {fin.get('eps_cagr_3yr_pct', 'N/A')}%\n"
             f"- Free Cash Flow: INR {fin.get('free_cash_flow', 'N/A')}\n"
+            f"EARNINGS CALL TRANSCRIPT (Management Strategic & Growth Guidance):\n{guidance_text}\n\n"
             "Assess volume vs price expansion drivers, capital expenditure plans, and domestic Indian tailwinds (Make in India, formalization)."
         )
 

@@ -122,12 +122,17 @@ class BearResearcherAgent(BaseAgent):
         metrics = evidence.get("calculated_metrics") or company_context.get("calculated_metrics") or {}
         mkt = company_context.get("market_data") or {}
 
+        transcripts = company_context.get("transcripts") or {}
+        risk_qa = transcripts.get("risk_qa_snippets") or []
+        risk_qa_text = ("\n".join([f"> \"{q}\"" for q in risk_qa])) if risk_qa else "No analyst interrogation snippets in local transcript store."
+
         baseline_text = (
             f"Verified Financial & Valuation Baseline:\n"
             f"- CMP: INR {mkt.get('current_price', 'N/A')}, P/E: {mkt.get('pe_ratio', 'N/A')}, EV/EBITDA: {mkt.get('ev_ebitda', 'N/A')}\n"
             f"- D/E: {metrics.get('debt_to_equity', 'N/A')}, Interest Coverage: {metrics.get('interest_coverage', 'N/A')}\n"
             f"- ROE: {metrics.get('roe_pct', 'N/A')}%, ROCE: {metrics.get('roce_pct', 'N/A')}%, ROCE-WACC Spread: {metrics.get('roce_wacc_spread', 'N/A')}%\n"
             f"- 3-Year Rev CAGR: {metrics.get('revenue_cagr_3yr_pct', 'N/A')}%, 3-Year EPS CAGR: {metrics.get('eps_cagr_3yr_pct', 'N/A')}%, PEG Ratio: {metrics.get('peg_ratio', 'N/A')}\n"
+            f"EARNINGS CALL TRANSCRIPT (Analyst Q&A Scrutiny & Risk Commentary):\n{risk_qa_text}\n\n"
             f"Specialist Evidence Pool:\n{findings_block}\n\n"
             "FACTUAL DISCIPLINE RULES:\n"
             "- DEBT CONSISTENCY: If Debt-to-Equity is <= 0.8 (e.g. 0.44), it is MODERATE/LOW gearing. You are STRICTLY PROHIBITED from using headings like 'High Debt-to-Equity Ratio' or asserting solvency distress. Focus on cyclical demand, margin pressure, or capital allocation drag instead.\n"

@@ -11,6 +11,7 @@ from data_providers.bse_provider import fetch_bse_corporate_announcements
 from data_providers.news_provider import fetch_social_sentiment_stream, fetch_stock_recent_news
 from data_providers.nse_provider import fetch_nse_market_microstructure
 from data_providers.peers_provider import format_peer_comparison_text, get_sector_peers_with_multiples
+from data_providers.transcript_provider import fetch_transcript_insights
 from data_providers.yfinance_provider import fetch_stock_market_and_financials
 
 
@@ -21,7 +22,7 @@ async def enrich_company_with_free_sources(company_context: Dict[str, Any]) -> D
     company_name = company_context.get("company_name", symbol)
     scrip_code = str(company_context.get("scrip_code") or "")
 
-    # Execute free fetches concurrently (Yahoo Finance, Google News, BSE RSS/API, and NSE microstructure bridge)
+    # Execute free fetches concurrently (Yahoo Finance, Google News, BSE RSS/API, NSE microstructure, and Earnings Transcripts)
     yf_task = fetch_stock_market_and_financials(symbol, exchange)
     news_task = fetch_stock_recent_news(company_name, symbol, max_items=6)
     sentiment_task = fetch_social_sentiment_stream(company_name, symbol, max_items=6)
@@ -32,9 +33,10 @@ async def enrich_company_with_free_sources(company_context: Dict[str, Any]) -> D
         max_items=5
     )
     nse_task = fetch_nse_market_microstructure(symbol)
+    transcript_task = fetch_transcript_insights(symbol)
 
-    market_data, news_items, sentiment_data, bse_filings, nse_data = await asyncio.gather(
-        yf_task, news_task, sentiment_task, bse_task, nse_task, return_exceptions=True
+    market_data, news_items, sentiment_data, bse_filings, nse_data, transcript_data = await asyncio.gather(
+        yf_task, news_task, sentiment_task, bse_task, nse_task, transcript_task, return_exceptions=True
     )
 
     # Safe defaults if network issues occur
@@ -43,6 +45,7 @@ async def enrich_company_with_free_sources(company_context: Dict[str, Any]) -> D
     safe_sentiment = sentiment_data if isinstance(sentiment_data, dict) else {}
     safe_bse = bse_filings if isinstance(bse_filings, list) else []
     safe_nse = nse_data if isinstance(nse_data, dict) else {}
+    safe_transcripts = transcript_data if isinstance(transcript_data, dict) else {"has_transcripts": False}
 
     # Enrich market data with NSE Delivery Position and Order Book Microstructure
     deliv_pos = safe_nse.get("delivery_position") or {}
@@ -94,6 +97,7 @@ async def enrich_company_with_free_sources(company_context: Dict[str, Any]) -> D
     enriched["social_sentiment"] = safe_sentiment
     enriched["corporate_filings"] = _tag_temporal_status(combined_filings)
     enriched["nse_microstructure"] = safe_nse
+    enriched["transcripts"] = safe_transcripts
 
     # Fetch sector peers enriched with real comparative multiples
     sector_str = company_context.get("sector") or company_context.get("industry") or safe_market.get("sector") or safe_market.get("industry")
