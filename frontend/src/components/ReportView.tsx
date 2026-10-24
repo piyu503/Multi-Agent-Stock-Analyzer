@@ -28,6 +28,15 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
   const isUnderweight = report.conviction?.toUpperCase().includes('UNDERWEIGHT');
   const isNSE = report.exchange === 'NSE';
 
+  const isLiveVerified = report.status === 'generated' && !report.is_prototype_demo;
+  const isFallback = report.status === 'fallback_stub';
+
+  const bullCount = report.bull_vs_bear?.bull_case?.length || 0;
+  const bearCount = report.bull_vs_bear?.bear_case?.length || 0;
+  const totalDebate = bullCount + bearCount;
+  const bullPct = totalDebate > 0 ? Math.round((bullCount / totalDebate) * 100) : 50;
+  const bearPct = 100 - bullPct;
+
   return (
     <div className="space-y-8 max-w-6xl mx-auto pb-20">
       {/* Top Action Bar */}
@@ -44,10 +53,22 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
           <span className="text-[11px] font-mono uppercase tracking-widest text-slate-400 hidden sm:inline">
             REPORT SECURITY TIER: INSTITUTIONAL
           </span>
-          <div className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-mono font-bold flex items-center gap-1.5 shadow-[0_0_10px_rgba(16,185,129,0.2)]">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>SYNTHESIS VERIFIED</span>
-          </div>
+          {isLiveVerified ? (
+            <div className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-mono font-bold flex items-center gap-1.5 shadow-[0_0_10px_rgba(16,185,129,0.2)]">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>SYNTHESIS VERIFIED</span>
+            </div>
+          ) : isFallback ? (
+            <div className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono font-bold flex items-center gap-1.5 shadow-[0_0_10px_rgba(245,158,11,0.2)]">
+              <span className="w-2 h-2 rounded-full bg-amber-400" />
+              <span>FALLBACK AUDIT REPORT</span>
+            </div>
+          ) : (
+            <div className="px-3 py-1 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/30 text-fuchsia-300 text-xs font-mono font-bold flex items-center gap-1.5 shadow-[0_0_10px_rgba(217,70,239,0.2)]">
+              <span className="w-2 h-2 rounded-full bg-fuchsia-400" />
+              <span>LOCAL DEV STUB</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -64,11 +85,10 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
                 {report.symbol}
               </span>
               <span
-                className={`text-xs font-mono font-bold px-2.5 py-1 rounded-md border ${
-                  isNSE
-                    ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/40 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
-                    : 'bg-amber-500/15 text-amber-300 border-amber-500/40'
-                }`}
+                className={`text-xs font-mono font-bold px-2.5 py-1 rounded-md border ${isNSE
+                  ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/40 shadow-[0_0_10px_rgba(6,182,212,0.2)]'
+                  : 'bg-amber-500/15 text-amber-300 border-amber-500/40'
+                  }`}
               >
                 {report.exchange} LISTED
               </span>
@@ -79,18 +99,17 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
               {/* High-Impact Conviction Badge */}
               {report.conviction && (
                 <div
-                  className={`text-xs font-mono font-extrabold px-3 py-1 rounded-lg border flex items-center gap-2 ${
-                    isOverweight
-                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
-                      : isUnderweight
+                  className={`text-xs font-mono font-extrabold px-3 py-1 rounded-lg border flex items-center gap-2 ${isOverweight
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
+                    : isUnderweight
                       ? 'bg-rose-500/20 text-rose-300 border-rose-500/50 shadow-[0_0_15px_rgba(244,63,94,0.3)]'
                       : 'bg-amber-500/20 text-amber-300 border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.3)]'
-                  }`}
+                    }`}
                 >
                   <Flame className="w-3.5 h-3.5" />
                   <span>
                     CONVICTION: {report.conviction}
-                    {report.target_allocation_pct ? ` (${report.target_allocation_pct}% Target Sizing)` : ''}
+                    {report.target_allocation_pct ? ` (${report.target_allocation_pct}% Target Weight)` : ''}
                   </span>
                 </div>
               )}
@@ -105,7 +124,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
             </div>
             <div className="flex items-center gap-1.5 text-slate-400">
               <Calendar className="w-3.5 h-3.5 text-slate-500" />
-              <span>Deliberated: <strong className="text-slate-200">{new Date(report.generated_at).toLocaleString()}</strong></span>
+              <span>Generated: <strong className="text-slate-200">{new Date(report.generated_at).toLocaleString()}</strong></span>
             </div>
             <div className="flex items-center gap-1.5 text-slate-400">
               <Cpu className="w-3.5 h-3.5 text-fuchsia-400" />
@@ -117,12 +136,12 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
         {/* Quick Highlights Bar */}
         <div className="relative z-10 grid grid-cols-2 sm:grid-cols-4 gap-4 pt-6 text-xs">
           <div className="bg-white/[0.03] p-3.5 rounded-xl border border-white/5">
-            <span className="text-slate-400 font-mono block text-[11px] mb-1">DELIBERATION ENGINE</span>
-            <span className="text-white font-bold text-sm">13 Agent Roles</span>
+            <span className="text-slate-400 font-mono block text-[11px] mb-1">RESEARCH COMMITTEE</span>
+            <span className="text-white font-bold text-sm">13 Analyst Roles</span>
           </div>
           <div className="bg-white/[0.03] p-3.5 rounded-xl border border-white/5">
-            <span className="text-slate-400 font-mono block text-[11px] mb-1">ADVERSARIAL STAGES</span>
-            <span className="text-white font-bold text-sm">Draft + 1 Rebuttal Round</span>
+            <span className="text-slate-400 font-mono block text-[11px] mb-1">DEBATE FRAMEWORK</span>
+            <span className="text-white font-bold text-sm">Draft + Rebuttal Review</span>
           </div>
           <div className="bg-white/[0.03] p-3.5 rounded-xl border border-white/5">
             <span className="text-slate-400 font-mono block text-[11px] mb-1">EVIDENCE CITATION</span>
@@ -148,30 +167,36 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
               <Scale className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white font-display">Adversarial Bull vs. Bear Arena</h3>
-              <p className="text-xs text-slate-300">Independent thesis drafting followed by adversarial rebuttal to eliminate confirmation bias.</p>
+              <h3 className="text-lg font-bold text-white font-display">Investment Thesis: Bull vs. Bear Debate</h3>
+              <p className="text-xs text-slate-300">Independent upside and downside analysis followed by cross-examination to eliminate confirmation bias.</p>
             </div>
           </div>
           <span className="text-xs font-mono font-bold px-3 py-1 rounded-full bg-fuchsia-500/15 text-fuchsia-300 border border-fuchsia-500/30 whitespace-nowrap self-start sm:self-auto">
-            1 Bounded Rebuttal Round
+            Cross-Examination &amp; Rebuttal
           </span>
         </div>
 
-        {/* Deliberation Tug-of-War Bar */}
+        {/* Bull vs Bear Balance Bar */}
         <div className="mb-7 bg-[#070b13] p-4 rounded-2xl border border-white/10">
           <div className="flex items-center justify-between text-xs font-mono font-bold mb-2">
             <span className="text-emerald-400 flex items-center gap-1.5">
               <TrendingUp className="w-4 h-4" />
-              <span>BULLISH MOMENTUM ({report.bull_vs_bear.bull_case.length} Points)</span>
+              <span>BULL CASE ({report.bull_vs_bear.bull_case.length} Points)</span>
             </span>
             <span className="text-rose-400 flex items-center gap-1.5">
-              <span>BEARISH SKEPTICISM ({report.bull_vs_bear.bear_case.length} Points)</span>
+              <span>BEAR CASE ({report.bull_vs_bear.bear_case.length} Points)</span>
               <TrendingDown className="w-4 h-4" />
             </span>
           </div>
           <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden flex p-0.5 border border-white/10">
-            <div className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-l-full shadow-[0_0_12px_rgba(16,185,129,0.8)] transition-all" style={{ width: '55%' }} />
-            <div className="bg-gradient-to-r from-rose-500 to-crimson-500 h-full rounded-r-full shadow-[0_0_12px_rgba(244,63,94,0.8)] transition-all" style={{ width: '45%' }} />
+            <div
+              className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-l-full shadow-[0_0_12px_rgba(16,185,129,0.8)] transition-all"
+              style={{ width: `${bullPct}%` }}
+            />
+            <div
+              className="bg-gradient-to-r from-rose-500 to-crimson-500 h-full rounded-r-full shadow-[0_0_12px_rgba(244,63,94,0.8)] transition-all"
+              style={{ width: `${bearPct}%` }}
+            />
           </div>
         </div>
 
@@ -184,7 +209,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
                 <div className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-300">
                   <TrendingUp className="w-4 h-4 stroke-[2.5]" />
                 </div>
-                <span>Maximum Viable Upside Thesis</span>
+                <span>Bull Thesis &amp; Growth Catalysts</span>
               </div>
               <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
                 Bull Case
@@ -207,7 +232,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
                 <div className="w-7 h-7 rounded-lg bg-rose-500/20 border border-rose-500/50 flex items-center justify-center text-rose-300">
                   <TrendingDown className="w-4 h-4 stroke-[2.5]" />
                 </div>
-                <span>Downside Vulnerability Stress-Test</span>
+                <span>Bear Thesis &amp; Downside Risks</span>
               </div>
               <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-bold border border-rose-500/30">
                 Bear Case
@@ -228,16 +253,16 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
         {report.bull_vs_bear.critical_swing_factors.length > 0 && (
           <div className="mt-7 pt-6 border-t border-white/10">
             <div className="flex items-center gap-2 mb-4">
-              <Activity className="w-4 h-4 text-fuchsia-400" />
+              <Activity className="w-4 h-4 text-amber-400" />
               <h4 className="text-xs uppercase font-mono tracking-wider text-slate-200 font-bold">
                 Critical Swing Variables &amp; Invalidation Triggers
               </h4>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
               {report.bull_vs_bear.critical_swing_factors.map((factor, idx) => (
-                <div key={idx} className="bg-[#070b13] p-4 rounded-xl border border-white/10 text-xs text-slate-200 shadow-lg">
-                  <span className="text-fuchsia-300 font-mono text-[11px] font-bold block mb-1.5 flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-fuchsia-400" />
+                <div key={idx} className="bg-[#070b13] p-4 rounded-xl border border-amber-500/30 text-xs text-slate-200 shadow-lg">
+                  <span className="text-amber-400 font-mono text-[11px] font-bold block mb-1.5 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
                     TRIGGER 0{idx + 1}
                   </span>
                   <p className="leading-relaxed text-slate-200 font-sans">{factor}</p>
@@ -262,7 +287,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
               </div>
             </div>
             <span className="text-xs font-mono font-bold px-3 py-1 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
-              Trader Agent Architecture
+              Trade Desk Execution Parameters
             </span>
           </div>
 
@@ -270,25 +295,25 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
             <div className="bg-[#070b13] p-4 rounded-xl border border-white/10">
               <span className="text-[11px] text-slate-400 font-mono block mb-1">OPTIMAL ENTRY (LOW)</span>
               <span className="text-base font-mono font-bold text-white">
-                {report.execution_plan.entry_range_low ? `₹${report.execution_plan.entry_range_low}` : 'Market CMP'}
+                {report.execution_plan?.entry_range_low ? `₹${report.execution_plan.entry_range_low}` : 'Awaiting Desk Entry'}
               </span>
             </div>
             <div className="bg-[#070b13] p-4 rounded-xl border border-white/10">
               <span className="text-[11px] text-slate-400 font-mono block mb-1">OPTIMAL ENTRY (HIGH)</span>
               <span className="text-base font-mono font-bold text-white">
-                {report.execution_plan.entry_range_high ? `₹${report.execution_plan.entry_range_high}` : 'CMP + 1.5%'}
+                {report.execution_plan?.entry_range_high ? `₹${report.execution_plan.entry_range_high}` : 'Awaiting Desk Entry'}
               </span>
             </div>
             <div className="bg-[#070b13] p-4 rounded-xl border border-rose-500/40 bg-rose-950/10 shadow-[0_0_10px_rgba(244,63,94,0.1)]">
               <span className="text-[11px] text-rose-400 font-mono font-bold block mb-1">INVALIDATION STOP</span>
               <span className="text-base font-mono font-bold text-rose-300">
-                {report.execution_plan.invalidation_stop ? `₹${report.execution_plan.invalidation_stop}` : 'Below 200 DMA'}
+                {report.execution_plan?.invalidation_stop ? `₹${report.execution_plan.invalidation_stop}` : 'Awaiting Invalidation Stop'}
               </span>
             </div>
             <div className="bg-[#070b13] p-4 rounded-xl border border-cyan-500/30">
               <span className="text-[11px] text-cyan-400 font-mono font-bold block mb-1">14-DAY ATR BUFFER</span>
               <span className="text-base font-mono font-bold text-cyan-200">
-                {report.execution_plan.atr_buffer ? `₹${report.execution_plan.atr_buffer}` : '2.5%'}
+                {report.execution_plan?.atr_buffer ? `₹${report.execution_plan.atr_buffer}` : 'Awaiting ATR Buffer'}
               </span>
             </div>
           </div>
@@ -423,16 +448,16 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
         </div>
       </div>
 
-      {/* 13-AGENT DELIBERATION AUDIT TRAIL */}
+      {/* 13-STAGE RESEARCH COMMITTEE AUDIT */}
       {report.agent_runs && report.agent_runs.length > 0 && (
         <div className="rounded-3xl bg-[#0c101d]/90 border border-white/15 p-6 sm:p-8 shadow-2xl shadow-black/80">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 border-b border-white/10 mb-6 gap-3">
             <div>
-              <h3 className="text-lg font-bold text-white font-display">Multi-Agent Deliberation Audit (13 Roles)</h3>
-              <p className="text-xs text-slate-300">Deterministic execution traces, confidence ratings, empirical evidence, and identified unknowns.</p>
+              <h3 className="text-lg font-bold text-white font-display">13-Stage Research Committee Audit</h3>
+              <p className="text-xs text-slate-300">Execution traces, analyst confidence scores, verified findings, and audit notes.</p>
             </div>
             <span className="text-xs font-mono font-bold px-3 py-1 rounded-full bg-fuchsia-500/15 text-fuchsia-300 border border-fuchsia-500/30 whitespace-nowrap self-start sm:self-auto">
-              {report.agent_runs.length} Roles Synced
+              {report.agent_runs.length} Roles Verified
             </span>
           </div>
 
@@ -446,13 +471,12 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
                   <div className="flex items-start justify-between gap-2 mb-1.5">
                     <span className="font-bold text-sm text-white font-display">{agent.agent_name}</span>
                     <span
-                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${
-                        agent.execution_status === 'success'
-                          ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40'
-                          : agent.execution_status === 'error'
+                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${agent.execution_status === 'success'
+                        ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40'
+                        : agent.execution_status === 'error'
                           ? 'bg-rose-500/15 text-rose-300 border-rose-500/40'
                           : 'bg-amber-500/15 text-amber-300 border-amber-500/40'
-                      }`}
+                        }`}
                     >
                       {agent.execution_status.toUpperCase()} ({agent.execution_duration_sec}s)
                     </span>
@@ -501,8 +525,8 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
       {/* INSTITUTIONAL COMPLIANCE FOOTER */}
       <div className="pt-6 border-t border-white/10 text-center">
         <p className="text-xs font-mono text-slate-500 max-w-3xl mx-auto leading-relaxed">
-          EQUIAGENTIC CAPITAL INTELLIGENCE • ALL FINDINGS ARE SYNTHESIZED THROUGH A BOUNDED MULTI-AGENT STATEGRAPH
-          DELIBERATION LOOP GROUNDED IN PYTHON FINANCIAL MATH AND OFFICIAL EXCHANGE FILINGS. FOR PROFESSIONAL INVESTOR DUE DILIGENCE.
+          EQUIAGENTIC CAPITAL RESEARCH • ALL FINDINGS ARE SYNTHESIZED THROUGH A 13-STAGE ANALYST FRAMEWORK
+          GROUNDED IN DETERMINISTIC FINANCIAL MATH AND OFFICIAL EXCHANGE FILINGS. FOR PROFESSIONAL DUE DILIGENCE.
         </p>
       </div>
     </div>
