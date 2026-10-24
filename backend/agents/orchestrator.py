@@ -306,7 +306,41 @@ async def orchestrate_stock_research(company_context: Dict[str, Any]) -> Tuple[R
         critical_swing_factors=swing_factors if swing_factors else (risk_out.findings if risk_out else [])
     )
 
-    # Check both dev_stub and stub_fallback so failed LLM calls are transparently reported
+    report = build_final_research_report(
+        symbol=symbol,
+        company_name=company_name,
+        exchange=exchange,
+        now_iso=now_iso,
+        all_agent_runs=all_agent_runs,
+        manager_output=manager_output,
+        fundamentals_out=fundamentals_out,
+        growth_out=growth_out,
+        valuation_out=valuation_out,
+        risk_out=risk_out,
+        debate=debate,
+        pm_output=pm_output,
+        trader_out=trader_out
+    )
+
+    return report, all_agent_runs
+
+
+def build_final_research_report(
+    symbol: str,
+    company_name: str,
+    exchange: str,
+    now_iso: str,
+    all_agent_runs: List[AgentOutput],
+    manager_output: Optional[AgentOutput],
+    fundamentals_out: Optional[AgentOutput],
+    growth_out: Optional[AgentOutput],
+    valuation_out: Optional[AgentOutput],
+    risk_out: Optional[AgentOutput],
+    debate: BullBearDebate,
+    pm_output: Optional[AgentOutput],
+    trader_out: Optional[AgentOutput]
+) -> ResearchReport:
+    """Shared single report-assembly function for both streaming and non-streaming orchestrator paths."""
     is_dev_mode = any(r.execution_status in ("dev_stub", "stub_fallback") for r in all_agent_runs)
     has_fallback = any(r.execution_status == "stub_fallback" for r in all_agent_runs)
 
@@ -333,8 +367,29 @@ async def orchestrate_stock_research(company_context: Dict[str, Any]) -> Tuple[R
     pm_data = pm_output.role_specific_data if (pm_output and pm_output.role_specific_data) else {}
     trader_data = trader_out.role_specific_data if (trader_out and trader_out.role_specific_data) else {}
 
-    conviction = pm_data.get("conviction") or "NEUTRAL"
-    target_alloc = pm_data.get("target_allocation_pct") or 2.5
+    raw_conviction = str(pm_data.get("conviction") or "").upper()
+    if "OVERWEIGHT" in raw_conviction:
+        conviction = "OVERWEIGHT"
+    elif "UNDERWEIGHT" in raw_conviction:
+        conviction = "UNDERWEIGHT"
+    elif "NEUTRAL" in raw_conviction:
+        conviction = "NEUTRAL"
+    else:
+        # Fallback check on PM summary if role_specific_data wasn't parsed
+        pm_summary = (pm_output.summary if pm_output else "").upper()
+        if "OVERWEIGHT" in pm_summary:
+            conviction = "OVERWEIGHT"
+        elif "UNDERWEIGHT" in pm_summary:
+            conviction = "UNDERWEIGHT"
+        else:
+            conviction = "NEUTRAL"
+
+    try:
+        target_alloc = float(pm_data.get("target_allocation_pct") or 2.5)
+        target_alloc = max(0.0, min(10.0, target_alloc))
+    except (ValueError, TypeError):
+        target_alloc = 2.5
+
     execution_plan = TacticalExecutionPlan(
         entry_range_low=trader_data.get("entry_range_low"),
         entry_range_high=trader_data.get("entry_range_high"),
@@ -343,7 +398,9 @@ async def orchestrate_stock_research(company_context: Dict[str, Any]) -> Tuple[R
         staged_tranches=trader_data.get("staged_tranches", [])
     )
 
-    report = ResearchReport(
+    section_status = "generated" if not is_dev_mode else ("fallback_stub" if has_fallback else "stub")
+
+    return ResearchReport(
         report_id=f"AGY-{symbol.upper()}-{int(datetime.now().timestamp())}",
         symbol=symbol.upper(),
         company_name=company_name,
@@ -357,44 +414,43 @@ async def orchestrate_stock_research(company_context: Dict[str, Any]) -> Tuple[R
         execution_plan=execution_plan,
         business_overview=ReportSection(
             title="Business Overview & Evidence Audit",
-            status="generated" if not is_dev_mode else "stub",
+            status=section_status,
             summary=manager_output.summary if manager_output else "",
             key_points=manager_output.findings if manager_output else []
         ),
         financial_analysis=ReportSection(
             title="Fundamentals & Balance Sheet Quality",
-            status="generated",
+            status=section_status,
             summary=fundamentals_out.summary if fundamentals_out else "Fundamentals analysis",
             key_points=fundamentals_out.findings if fundamentals_out else []
         ),
         growth_prospects=ReportSection(
             title="Growth Catalysts & Industry Position",
-            status="generated",
+            status=section_status,
             summary=growth_out.summary if growth_out else "Growth analysis",
             key_points=growth_out.findings if growth_out else []
         ),
         valuation=ReportSection(
             title="Peer Benchmarking & Valuation",
-            status="generated",
+            status=section_status,
             summary=valuation_out.summary if valuation_out else "Valuation analysis",
             key_points=valuation_out.findings if valuation_out else []
         ),
         risks=ReportSection(
             title="Systemic & Regulatory Risks",
-            status="generated",
+            status=section_status,
             summary=risk_out.summary if risk_out else "Risk analysis",
             key_points=risk_out.findings if risk_out else []
         ),
         bull_vs_bear=debate,
         final_assessment=ReportSection(
             title="Portfolio Manager Conviction Synthesis",
-            status="generated",
+            status=section_status,
             summary=pm_output.summary if pm_output else "",
             key_points=pm_output.findings if pm_output else []
-        )
+        ),
+        agent_runs=[r.model_dump() for r in all_agent_runs]
     )
-
-    return report, all_agent_runs
 
 
 async def stream_stock_research(company_context: Dict[str, Any]):
@@ -590,6 +646,7 @@ async def stream_stock_research(company_context: Dict[str, Any]):
     fundamentals_out = find_agent("Fundamentals Analyst")
     growth_out = find_agent("Growth & Industry Analyst")
     valuation_out = find_agent("Valuation Analyst")
+    trader_out = find_agent("Trader") or find_agent("Execution Trader")
 
     bull_case = (bull_initial.findings if bull_initial else []) + (bull_reb.findings if bull_reb else [])
     bear_case = (bear_initial.findings if bear_initial else []) + (bear_reb.findings if bear_reb else [])
@@ -600,63 +657,20 @@ async def stream_stock_research(company_context: Dict[str, Any]):
         critical_swing_factors=risk_out.findings if risk_out else []
     )
 
-    is_dev_mode = any(r.execution_status == "dev_stub" for r in all_agent_runs)
-
-    final_report = ResearchReport(
-        report_id=f"AGY-{symbol.upper()}-{int(datetime.now().timestamp())}",
-        symbol=symbol.upper(),
+    final_report = build_final_research_report(
+        symbol=symbol,
         company_name=company_name,
         exchange=exchange,
-        generated_at=now_iso,
-        status="generated" if not is_dev_mode else "dev_stub",
-        is_prototype_demo=is_dev_mode,
-        disclaimer=(
-            "MULTI-AGENT RESEARCH SYNTHESIS: Generated through a LangGraph 13-agent deliberation loop "
-            "powered by Qwen 2.5 Coder 7B reasoning engine (Orchestration, Evidence Verification, Fundamentals, Growth, "
-            "Valuation, Independent Bull vs Bear Debate, Risk Audit, Execution Trader, and Portfolio Manager). "
-            "Does not constitute personal investment advice."
-            if not is_dev_mode else
-            "DEVELOPMENT STUB REPORT: Generated with explicitly labeled agent analytical stubs because live LLM_API_KEY "
-            "is not configured in backend/.env. Connect Ollama or an API key to activate live reasoning."
-        ),
-        business_overview=ReportSection(
-            title="Business Overview & Evidence Audit",
-            status="generated",
-            summary=manager_output.summary if manager_output else "",
-            key_points=manager_output.findings if manager_output else []
-        ),
-        financial_analysis=ReportSection(
-            title="Fundamentals & Balance Sheet Quality",
-            status="generated",
-            summary=fundamentals_out.summary if fundamentals_out else "Fundamentals analysis",
-            key_points=fundamentals_out.findings if fundamentals_out else []
-        ),
-        growth_prospects=ReportSection(
-            title="Growth Catalysts & Industry Position",
-            status="generated",
-            summary=growth_out.summary if growth_out else "Growth analysis",
-            key_points=growth_out.findings if growth_out else []
-        ),
-        valuation=ReportSection(
-            title="Peer Benchmarking & Valuation",
-            status="generated",
-            summary=valuation_out.summary if valuation_out else "Valuation analysis",
-            key_points=valuation_out.findings if valuation_out else []
-        ),
-        risks=ReportSection(
-            title="Systemic & Regulatory Risks",
-            status="generated",
-            summary=risk_out.summary if risk_out else "Risk analysis",
-            key_points=risk_out.findings if risk_out else []
-        ),
-        bull_vs_bear=debate,
-        final_assessment=ReportSection(
-            title="Portfolio Manager Conviction Synthesis",
-            status="generated",
-            summary=pm_output.summary if pm_output else "",
-            key_points=pm_output.findings if pm_output else []
-        ),
-        agent_runs=[r.model_dump() for r in all_agent_runs]
+        now_iso=now_iso,
+        all_agent_runs=all_agent_runs,
+        manager_output=manager_output,
+        fundamentals_out=fundamentals_out,
+        growth_out=growth_out,
+        valuation_out=valuation_out,
+        risk_out=risk_out,
+        debate=debate,
+        pm_output=pm_output,
+        trader_out=trader_out
     )
 
     yield {

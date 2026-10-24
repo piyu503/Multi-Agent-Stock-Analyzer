@@ -216,10 +216,18 @@ class FundamentalsQualityAnalyst(BaseAgent):
         return (
             f"Assess fundamental balance sheet durability and business quality for {company_context.get('company_name')} ({company_context.get('symbol')}).\n"
             f"Industry: {company_context.get('industry') or market.get('industry') or 'N/A'}.\n"
-            f"Financial Metrics: Debt-to-Equity: {metrics.get('debt_to_equity')}, Interest Coverage: {metrics.get('interest_coverage')}, "
+            f"Solvency & Return Metrics: Return on Equity (ROE): {metrics.get('roe_pct', 'N/A')}%, "
+            f"Return on Capital Employed (ROCE): {metrics.get('roce_pct', 'N/A')}%, "
+            f"Debt-to-Equity: {metrics.get('debt_to_equity')}, Interest Coverage: {metrics.get('interest_coverage')}, "
             f"ROCE vs WACC spread: {metrics.get('roce_wacc_spread')}%, EBITDA Margin: {metrics.get('ebitda_margin_pct')}%, "
+            f"Revenue 3-Year CAGR: {metrics.get('revenue_cagr_3yr_pct', fin.get('revenue_cagr_3yr_pct', 'N/A'))}%, "
             f"Multi-Year EBITDA Margin History: [{margin_hist_str}] (Max-Min Spread: {margin_spread}%).\n"
             f"Raw Statement Data: Total Debt: {fin.get('total_debt')}, Net Profit (PAT): {fin.get('pat')}, Operating Cash Flow (CFO): {fin.get('cfo')}, Capex: {fin.get('capex')}, Free Cash Flow: {fcf}.\n"
+            "CRITICAL METRIC SEMANTICS:\n"
+            "- Return on Capital Employed (ROCE) = EBIT / Capital Employed.\n"
+            "- Return on Equity (ROE) = PAT / Total Equity.\n"
+            "- Never conflate ROCE with ROE.\n"
+            "- If Total Equity is negative, solvency is compromised regardless of positive operating income.\n"
             "Evaluate solvency, cash flow durability, capital allocation efficiency, and margin stability based on these verified figures."
         )
 
@@ -323,18 +331,24 @@ class NewsCorporateEventsAnalyst(BaseAgent):
 
     def get_user_prompt(self, company_context: Dict[str, Any], evidence: Dict[str, Any]) -> str:
         news_list = company_context.get("recent_news") or []
-        bse_filings = company_context.get("corporate_filings") or []
+        exchange_filings = company_context.get("corporate_filings") or []
+        nse_meta = company_context.get("nse_microstructure") or {}
+        meetings = nse_meta.get("board_meetings") or []
+
         headlines = [f"- [{item.get('published', 'Recent')}] {item.get('title')} (Source: {item.get('source', 'Media')})" for item in news_list[:6]]
-        filings = [f"- [{item.get('date', 'Recent')}] {item.get('category', 'Regulatory')}: {item.get('headline')} (Details: {item.get('details', 'Statutory Disclosure')})" for item in bse_filings[:5]]
+        filings = [f"- [{item.get('published') or item.get('time') or item.get('date') or 'Recent'}] {item.get('category', 'Regulatory')}: {item.get('headline')} (Source: {item.get('source', 'Exchange Disclosure')})" for item in exchange_filings[:6]]
+        meetings_lines = [f"- [{m.get('date', 'Scheduled')}] {m.get('purpose')}" for m in meetings[:3]]
 
         news_text = "\n".join(headlines) if headlines else "No recent Google News headlines retrieved."
-        filings_text = "\n".join(filings) if filings else "No recent BSE regulatory filings retrieved."
+        filings_text = "\n".join(filings) if filings else "No recent statutory filings retrieved."
+        meetings_text = "\n".join(meetings_lines) if meetings_lines else "No upcoming board meetings reported on official exchange calendar."
 
         return (
             f"Review recent corporate disclosures and material events for {company_context.get('company_name')} ({company_context.get('symbol')}):\n"
+            f"Official Exchange Disclosures (NSE & BSE):\n{filings_text}\n\n"
+            f"Scheduled Board & Financial Results Meetings:\n{meetings_text}\n\n"
             f"Recent Media Headlines:\n{news_text}\n\n"
-            f"Official BSE Disclosures:\n{filings_text}\n\n"
-            "Identify key corporate governance risks, management catalysts, or litigation items from these disclosures."
+            "Identify key corporate governance risks, management catalysts, capital return actions, or litigation items from these disclosures."
         )
 
     def get_development_stub(self, company_context: Dict[str, Any], evidence: Dict[str, Any]) -> AgentOutput:
@@ -437,39 +451,66 @@ class MarketAnalyst(BaseAgent):
         if dma_50 and dma_200:
             cross_signal = "Golden Cross (50-DMA > 200-DMA)" if dma_50 > dma_200 else "Death Cross (50-DMA < 200-DMA)"
 
+        rsi = mkt.get("rsi_14", "N/A")
+        atr = mkt.get("atr_14", "N/A")
+        vol_20d = mkt.get("realized_vol_20d_pct", "N/A")
+        swing_h = mkt.get("swing_high_20d", "N/A")
+        swing_l = mkt.get("swing_low_20d", "N/A")
+
+        deliv_pct = mkt.get("delivery_pct")
+        deliv_text = f"{deliv_pct}%" if deliv_pct is not None else "Awaiting Daily Settlement File"
+        ratio = mkt.get("order_book_buy_sell_ratio")
+        ratio_text = f"{ratio} (Bids: {mkt.get('total_buy_qty', 'N/A')}, Asks: {mkt.get('total_sell_qty', 'N/A')})" if ratio is not None else "Awaiting Live Book"
+
         return (
             f"Evaluate liquidity profile, technical structure, and momentum for {company_context.get('symbol')} on {company_context.get('exchange')}:\n"
             f"- Current Market Price (CMP): INR {cmp}\n"
             f"- 52-Week Range: Low INR {mkt.get('year_low')} / High INR {mkt.get('year_high')}\n"
             f"- Moving Averages: 50-DMA INR {dma_50}, 200-DMA INR {dma_200} (Regime: {cross_signal})\n"
+            f"- Momentum & Volatility: 14-Day RSI: {rsi}, 14-Day ATR: INR {atr}, 20-Day Realized Volatility: {vol_20d}%\n"
+            f"- 20-Day Range: Swing High INR {swing_h} / Swing Low INR {swing_l}\n"
+            f"- NSE Delivery Position: {deliv_text} (Delivery Qty: {mkt.get('delivery_qty', 'N/A')})\n"
+            f"- Microstructure Order Depth: Bid/Ask Ratio: {ratio_text}\n"
             f"- 30-Day Avg Volume: {mkt.get('avg_volume_30d')}\n"
             f"- Beta: {mkt.get('beta')}\n"
-            "Assess trend strength, relative position vs 50/200 DMA, and institutional absorption capability."
+            "Assess trend strength, relative position vs 50/200 DMA, delivery absorption vs speculative turnover, and institutional order book depth."
         )
 
     def get_development_stub(self, company_context: Dict[str, Any], evidence: Dict[str, Any]) -> AgentOutput:
         exch = company_context.get("exchange", "NSE")
         series = company_context.get("series", "EQ")
         mkt = company_context.get("market_data") or {}
+        rsi = mkt.get("rsi_14", 52.4)
+        atr = mkt.get("atr_14", round(float(mkt.get("current_price", 100) or 100) * 0.018, 2))
+        vol = mkt.get("realized_vol_20d_pct", 18.5)
+
         return AgentOutput(
             agent_name=self.name,
             role=self.role,
-            summary=f"Market liquidity profile verified on {exch} (Series: {series}).",
+            summary=f"Market liquidity profile and technical momentum verified on {exch} (Series: {series}).",
             findings=[
                 f"Listed under trading series '{series}' with continuous standard settlement on {exch}.",
                 f"Price Structure: CMP INR {mkt.get('current_price')} with 50-DMA at INR {mkt.get('dma_50')} and 200-DMA at INR {mkt.get('dma_200')}.",
+                f"Momentum & Volatility: 14-Day RSI at {rsi}, 14-Day ATR buffer at INR {atr}, 20-Day annualized volatility at {vol}%.",
                 f"30-day average liquidity: {mkt.get('avg_volume_30d', 'N/A')} shares with Beta of {mkt.get('beta', 'N/A')}."
             ],
-            supporting_evidence=[f"Exchange Series: {series}", f"Venue: {exch}"],
+            supporting_evidence=[f"Exchange Series: {series}", f"Venue: {exch}", f"14-Day RSI: {rsi}"],
             assumptions=["Order book spread remains within standard institutional tolerance during market hours."],
-            missing_information=["Daily Bhavcopy historical OHLCV and delivery volume time-series."],
-            confidence_score=0.85,
-            confidence_explanation="Technical levels and moving averages calculated deterministically from 1-year OHLCV.",
+            missing_information=["Daily Bhavcopy historical OHLCV delivery volume time-series."],
+            confidence_score=0.88,
+            confidence_explanation="Technical levels, RSI, and ATR calculated deterministically from 1-year OHLCV.",
             questions_for_investigation=[
                 "What is the 30-day average daily delivery volume percentage?",
                 "Does the stock trade at a premium/discount between NSE and BSE order books?"
             ],
-            role_specific_data={"series": series, "dma_50": mkt.get("dma_50"), "dma_200": mkt.get("dma_200")},
+            role_specific_data={
+                "series": series,
+                "dma_50": mkt.get("dma_50"),
+                "dma_200": mkt.get("dma_200"),
+                "rsi_14": rsi,
+                "atr_14": atr,
+                "realized_vol_20d_pct": vol,
+            },
             execution_status="dev_stub"
         )
 

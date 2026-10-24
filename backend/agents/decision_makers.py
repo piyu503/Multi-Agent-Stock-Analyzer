@@ -34,9 +34,13 @@ class BullResearcherAgent(BaseAgent):
             f"Verified Financial & Valuation Baseline:\n"
             f"- CMP: INR {mkt.get('current_price', 'N/A')}, P/E: {mkt.get('pe_ratio', 'N/A')}, EV/EBITDA: {mkt.get('ev_ebitda', 'N/A')}\n"
             f"- D/E: {metrics.get('debt_to_equity', 'N/A')}, Interest Coverage: {metrics.get('interest_coverage', 'N/A')}\n"
-            f"- ROCE: {metrics.get('roce_pct', 'N/A')}%, ROCE-WACC Spread: {metrics.get('roce_wacc_spread', 'N/A')}%\n"
-            f"- 3-Year EPS CAGR: {metrics.get('eps_cagr_3yr_pct', 'N/A')}%, PEG Ratio: {metrics.get('peg_ratio', 'N/A')}\n"
-            f"Specialist Evidence Pool:\n{findings_block}"
+            f"- ROE: {metrics.get('roe_pct', 'N/A')}%, ROCE: {metrics.get('roce_pct', 'N/A')}%, ROCE-WACC Spread: {metrics.get('roce_wacc_spread', 'N/A')}%\n"
+            f"- 3-Year Rev CAGR: {metrics.get('revenue_cagr_3yr_pct', 'N/A')}%, 3-Year EPS CAGR: {metrics.get('eps_cagr_3yr_pct', 'N/A')}%, PEG Ratio: {metrics.get('peg_ratio', 'N/A')}\n"
+            f"Specialist Evidence Pool:\n{findings_block}\n\n"
+            "FACTUAL DISCIPLINE RULES:\n"
+            "- If valuation multiples are elevated (P/E > 30), do not claim the stock is cheap on headline multiples; justify valuation through ROCE compounding, moat durability, and earnings visibility.\n"
+            "- Never conflate ROCE with ROE.\n"
+            "- Ground all upside claims strictly in the verified financial data."
         )
 
         bear_case = evidence.get("bear_thesis")
@@ -117,9 +121,13 @@ class BearResearcherAgent(BaseAgent):
             f"Verified Financial & Valuation Baseline:\n"
             f"- CMP: INR {mkt.get('current_price', 'N/A')}, P/E: {mkt.get('pe_ratio', 'N/A')}, EV/EBITDA: {mkt.get('ev_ebitda', 'N/A')}\n"
             f"- D/E: {metrics.get('debt_to_equity', 'N/A')}, Interest Coverage: {metrics.get('interest_coverage', 'N/A')}\n"
-            f"- ROCE: {metrics.get('roce_pct', 'N/A')}%, ROCE-WACC Spread: {metrics.get('roce_wacc_spread', 'N/A')}%\n"
-            f"- 3-Year EPS CAGR: {metrics.get('eps_cagr_3yr_pct', 'N/A')}%, PEG Ratio: {metrics.get('peg_ratio', 'N/A')}\n"
-            f"Specialist Evidence Pool:\n{findings_block}"
+            f"- ROE: {metrics.get('roe_pct', 'N/A')}%, ROCE: {metrics.get('roce_pct', 'N/A')}%, ROCE-WACC Spread: {metrics.get('roce_wacc_spread', 'N/A')}%\n"
+            f"- 3-Year Rev CAGR: {metrics.get('revenue_cagr_3yr_pct', 'N/A')}%, 3-Year EPS CAGR: {metrics.get('eps_cagr_3yr_pct', 'N/A')}%, PEG Ratio: {metrics.get('peg_ratio', 'N/A')}\n"
+            f"Specialist Evidence Pool:\n{findings_block}\n\n"
+            "FACTUAL DISCIPLINE RULES:\n"
+            "- If Debt-to-Equity is low (< 0.3) or the company is virtually net-debt free, DO NOT fabricate debt crisis or solvency failure. Focus on valuation re-rating, deceleration, margin compression, or competitive threats.\n"
+            "- Never label high ROCE (> 25%) as unviable returns; challenge whether returns will mean-revert.\n"
+            "- Never conflate ROCE with ROE."
         )
 
         bull_case = evidence.get("bull_thesis")
@@ -137,7 +145,7 @@ class BearResearcherAgent(BaseAgent):
             f"INITIAL THESIS: Formulate the independent Bear Thesis for {company_context.get('company_name')} "
             f"({company_context.get('symbol')}), sector: {company_context.get('sector')}.\n"
             f"{baseline_text}\n\n"
-            "Build the maximum viable downside thesis: leverage vulnerabilities, input-cost margin compression, rich multiples, and governance risks. Ground every point in the data provided above."
+            "Build the maximum viable downside thesis: leverage vulnerabilities (if debt is high), input-cost margin compression, rich multiples, and governance risks. Ground every point in the data provided above."
         )
 
     def get_development_stub(self, company_context: Dict[str, Any], evidence: Dict[str, Any]) -> AgentOutput:
@@ -215,31 +223,59 @@ class TraderAgent(BaseAgent):
             "1. Recommended Entry Range / Accumulation Zone (explicit price band relative to CMP & 20-day swing low)\n"
             "2. Tactical Invalidation / Stop-Loss Level (anchored by ATR buffer below support / swing low)\n"
             "3. Staged Tranche Strategy (e.g. 40% initial, 30% on pullback, 30% on confirmed breakout)\n"
-            "4. Impact Cost & Volatility Buffer (derived from 14-day ATR & 20-day realized volatility)"
+            "4. Impact Cost & Volatility Buffer (derived from 14-day ATR & 20-day realized volatility)\n\n"
+            "MANDATORY: In your JSON response under 'role_specific_data', you MUST provide exact numerical fields:\n"
+            '{\n'
+            '  "entry_range_low": <float>,\n'
+            '  "entry_range_high": <float>,\n'
+            '  "invalidation_stop": <float>,\n'
+            '  "atr_buffer": <float>,\n'
+            '  "staged_tranches": ["Tranche 1 (40%): ...", "Tranche 2 (30%): ...", "Tranche 3 (30%): ..."]\n'
+            '}'
         )
 
     def get_development_stub(self, company_context: Dict[str, Any], evidence: Dict[str, Any]) -> AgentOutput:
         exch = company_context.get("exchange", "NSE")
         sym = company_context.get("symbol")
+        mkt = company_context.get("market_data") or {}
+        cmp_val = mkt.get("current_price") or 1000.0
+        atr_val = mkt.get("atr_14")
+        if not isinstance(atr_val, (int, float)) or atr_val <= 0:
+            atr_val = round(cmp_val * 0.02, 2)
+
+        entry_low = round(cmp_val * 0.985, 2)
+        entry_high = round(cmp_val * 1.015, 2)
+        stop_level = round(cmp_val - (2.0 * atr_val), 2)
+
         return AgentOutput(
             agent_name=self.name,
             role=self.role,
-            summary=f"Execution plan formulated for {sym} on {exch}.",
+            summary=f"Execution plan formulated for {sym} on {exch} around CMP INR {cmp_val}.",
             findings=[
                 f"Primary trading liquidity venue: {exch}. Order execution recommended via staged limit orders to minimize market impact.",
-                "Accumulation strategy: Phased tranche buying across 3 to 6 trading weeks rather than lump-sum execution.",
-                "Slippage mitigation: Avoid market orders during market open (9:15-9:45 AM) to guard against opening volatility."
+                f"Optimal accumulation band: INR {entry_low} to {entry_high} with invalidation stop at INR {stop_level}.",
+                f"Volatility buffer: 14-day ATR of INR {atr_val} sets trailing risk boundaries."
             ],
             supporting_evidence=[f"Exchange series: {company_context.get('series', 'EQ')}"],
             assumptions=["Standard market hours order book depth is sufficient for institutional tranche entry."],
             missing_information=["Live tick-by-tick bid/ask spread and order book depth (Level 2)."],
-            confidence_score=0.8,
+            confidence_score=0.85,
             confidence_explanation="Execution rules established based on standard Indian equity microstructure.",
             questions_for_investigation=[
                 "What is the average impact cost for executing a 0.5% portfolio allocation in this scrip?",
                 "Is there substantial arbitrage spread between NSE and BSE order books?"
             ],
-            role_specific_data={"execution_strategy": "Phased Tranche Accumulation", "order_type": "Limit / VWAP"},
+            role_specific_data={
+                "entry_range_low": entry_low,
+                "entry_range_high": entry_high,
+                "invalidation_stop": stop_level,
+                "atr_buffer": float(atr_val),
+                "staged_tranches": [
+                    f"Tranche 1 (40%): Establish initial baseline position at CMP INR {cmp_val}",
+                    f"Tranche 2 (30%): Accumulate on mean reversion pullback towards INR {entry_low}",
+                    f"Tranche 3 (30%): Final allocation upon technical confirmation above INR {entry_high}"
+                ]
+            },
             execution_status="dev_stub"
         )
 
@@ -317,8 +353,15 @@ class PortfolioManagerAgent(BaseAgent):
     def get_user_prompt(self, company_context: Dict[str, Any], evidence: Dict[str, Any]) -> str:
         return (
             f"Synthesize comprehensive investment decision for {company_context.get('company_name')} "
-            f"({company_context.get('symbol')} on {company_context.get('exchange')}). "
-            f"Sub-agent findings summary:\n{evidence.get('synthesis_inputs', {})}"
+            f"({company_context.get('symbol')} on {company_context.get('exchange')}).\n"
+            f"Sub-agent findings summary:\n{evidence.get('synthesis_inputs', {})}\n\n"
+            "MANDATORY: In your JSON response under 'role_specific_data', you MUST provide exact conviction and allocation fields:\n"
+            '{\n'
+            '  "conviction": "OVERWEIGHT" | "NEUTRAL" | "UNDERWEIGHT",\n'
+            '  "target_allocation_pct": <float between 0.0 and 10.0>,\n'
+            '  "investment_horizon": "1-Year",\n'
+            '  "key_catalyst": "Primary thesis driver"\n'
+            '}'
         )
 
     def get_development_stub(self, company_context: Dict[str, Any], evidence: Dict[str, Any]) -> AgentOutput:
@@ -327,7 +370,7 @@ class PortfolioManagerAgent(BaseAgent):
         return AgentOutput(
             agent_name=self.name,
             role=self.role,
-            summary=f"Final portfolio synthesis formulated for {name} ({sym}).",
+            summary=f"Final portfolio synthesis formulated for {name} ({sym}). Conviction: OVERWEIGHT (3.5% Target Weight).",
             findings=[
                 "Strategic Franchise Evaluation: Durable fundamental positioning balanced against realistic cyclical downside risks.",
                 "Divergence Preservation: Bull thesis highlights long-term compounding moat; Bear thesis underscores premium valuation vulnerability.",
@@ -337,17 +380,20 @@ class PortfolioManagerAgent(BaseAgent):
                 "Synthesis of 12 preceding multi-agent analytical evaluations",
                 f"Official security master confirmation on {company_context.get('exchange')}"
             ],
-            assumptions=["Investment horizon is oriented for long-term compounders (3-5+ years)."],
+            assumptions=["Investment horizon is oriented for 1-year earnings momentum and 3-5+ year compounding."],
             missing_information=["Granular quarterly filings and live transcript audio ingest."],
-            confidence_score=0.80,
+            confidence_score=0.85,
             confidence_explanation="Balanced multi-agent synthesis incorporating both upside moats and downside margin stress tests.",
             questions_for_investigation=[
                 "Will management guidance in the upcoming financial quarter validate the margin expansion thesis?",
                 "Are institutional mutual funds increasing or decreasing weight in this scrip?"
             ],
             role_specific_data={
+                "conviction": "OVERWEIGHT",
+                "target_allocation_pct": 3.5,
+                "investment_horizon": "1-Year",
                 "recommendation": "Constructive on Pullbacks",
-                "conviction_tier": "Tier-2 Watchlist / Phased Accumulation",
+                "conviction_tier": "Tier-2 Core Accumulation",
                 "debate_status": "Disagreements preserved regarding valuation margin of safety"
             },
             execution_status="dev_stub"

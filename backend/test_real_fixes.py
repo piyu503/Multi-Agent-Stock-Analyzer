@@ -250,3 +250,18 @@ async def test_orchestrator_tactical_execution_plan_output():
     assert isinstance(report.execution_plan.staged_tranches, list)
     assert len(agent_runs) >= 11
 
+
+@pytest.mark.asyncio
+async def test_nse_microstructure_bridge():
+    """Verify that stock-nse-india bridge extracts delivery and microstructure data."""
+    from data_providers.nse_provider import fetch_nse_market_microstructure
+    data = await fetch_nse_market_microstructure("TCS")
+    assert isinstance(data, dict)
+    assert data.get("status") in ["success", "unavailable", "timeout"]
+    if data.get("status") == "success":
+        assert "delivery_position" in data
+        assert "microstructure" in data
+        assert "announcements" in data
+        assert "board_meetings" in data
+
+

@@ -128,8 +128,13 @@ async def call_llm(
         '  "missing_information": ["Missing data point or limitation"],\n'
         '  "confidence_score": 0.8,\n'
         '  "confidence_explanation": "Rationale for confidence rating",\n'
-        '  "questions_for_investigation": ["Key follow-up question"]\n'
+        '  "questions_for_investigation": ["Key follow-up question"],\n'
+        '  "role_specific_data": {}\n'
         "}\n"
+        "NOTE on 'role_specific_data':\n"
+        "- If you are the Portfolio Manager, include: {\"conviction\": \"OVERWEIGHT\"|\"NEUTRAL\"|\"UNDERWEIGHT\", \"target_allocation_pct\": float (0.0 to 10.0)}.\n"
+        "- If you are the Execution Trader, include: {\"entry_range_low\": float, \"entry_range_high\": float, \"invalidation_stop\": float, \"atr_buffer\": float, \"staged_tranches\": [string]}.\n"
+        "- Otherwise, leave 'role_specific_data' as {}.\n"
         "Do NOT include preamble, conversational remarks, or markdown text outside the JSON block."
     )
 

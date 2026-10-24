@@ -43,7 +43,15 @@ def calculate_financial_metrics(financials: Dict[str, Any], market_data: Optiona
     pat = fin.get("pat") or fin.get("net_profit")
     ebitda = fin.get("ebitda")
 
-    debt_to_equity = safe_div(total_debt, equity)
+    # Deterministic ROE
+    roe = fin.get("roe_pct")
+    if roe is None and pat is not None and equity is not None and equity > 0:
+        roe = round((pat / equity) * 100.0, 2)
+
+    revenue_cagr_3yr = fin.get("revenue_cagr_3yr_pct")
+    revenue_growth_yoy = fin.get("revenue_growth_yoy_pct")
+
+    debt_to_equity = safe_div(total_debt, equity) if (equity is not None and equity > 0) else None
     interest_coverage = safe_div(ebit, interest_expense)
     
     roce_wacc_spread = None
@@ -63,9 +71,11 @@ def calculate_financial_metrics(financials: Dict[str, Any], market_data: Optiona
         ebitda_margin_pct = round((ebitda / revenue) * 100.0, 2)
 
     # Multi-factor solvency assessment
-    # A firm is solvent if it has either no debt, or interest coverage > 2.0 with debt/equity < 2.5
+    # Negative equity is an immediate distress flag. Otherwise require coverage > 2.0 and D/E < 2.5
     is_solvent = None
-    if interest_coverage is not None and debt_to_equity is not None:
+    if equity is not None and equity <= 0:
+        is_solvent = False
+    elif interest_coverage is not None and debt_to_equity is not None:
         is_solvent = bool(interest_coverage > 2.0 and debt_to_equity < 2.5)
     elif interest_coverage is not None:
         is_solvent = bool(interest_coverage > 2.0)
@@ -76,8 +86,11 @@ def calculate_financial_metrics(financials: Dict[str, Any], market_data: Optiona
         "debt_to_equity": round(debt_to_equity, 2) if debt_to_equity is not None else None,
         "interest_coverage": round(interest_coverage, 2) if interest_coverage is not None else None,
         "roce_pct": roce,
+        "roe_pct": roe,
         "estimated_wacc_pct": estimated_wacc,
         "roce_wacc_spread": roce_wacc_spread,
+        "revenue_cagr_3yr_pct": revenue_cagr_3yr,
+        "revenue_growth_yoy_pct": revenue_growth_yoy,
         "eps_cagr_3yr_pct": round(eps_growth_3yr, 2) if eps_growth_3yr is not None else None,
         "peg_ratio": round(peg_ratio, 2) if peg_ratio is not None else None,
         "net_margin_pct": net_margin_pct,

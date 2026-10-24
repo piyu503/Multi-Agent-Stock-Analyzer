@@ -89,6 +89,20 @@ def _fetch_yfinance_data_sync(yf_ticker: str) -> Dict[str, Any]:
                 tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
                 atr_14 = round(float(tr.tail(14).mean()), 2)
 
+            # 14-Day Relative Strength Index (RSI)
+            rsi_14 = None
+            if len(closes) >= 15:
+                delta = closes.diff().dropna()
+                gains = delta.clip(lower=0)
+                losses = -delta.clip(upper=0)
+                avg_gain = gains.tail(14).mean()
+                avg_loss = losses.tail(14).mean()
+                if avg_loss == 0:
+                    rsi_14 = 100.0
+                else:
+                    rs = avg_gain / avg_loss
+                    rsi_14 = round(float(100.0 - (100.0 / (1.0 + rs))), 2)
+
         # Financial Statements Extraction (Most recent fiscal year and multi-year series)
         fin_dict = {}
         try:
@@ -111,7 +125,7 @@ def _fetch_yfinance_data_sync(yf_ticker: str) -> Dict[str, Any]:
                     if k in inc.index:
                         fin_dict["ebit"] = float(inc.loc[k, latest_col])
                         break
-                for k in ["Net Income", "Net Income Common Stockholders"]:
+                for k in ["Net Income", "Net Income Common Stockholders", "Profit After Tax"]:
                     if k in inc.index:
                         fin_dict["pat"] = float(inc.loc[k, latest_col])
                         break
@@ -129,7 +143,7 @@ def _fetch_yfinance_data_sync(yf_ticker: str) -> Dict[str, Any]:
                         break
                 
                 if len(eps_series) >= 4:
-                    # 3-year CAGR: (eps[0] / eps[3])**(1/3) - 1
+                    # True 3-year CAGR: Requires 4 annual periods (3 elapsed intervals)
                     try:
                         latest_eps = eps_series[0]
                         past_eps = eps_series[3]
@@ -138,14 +152,22 @@ def _fetch_yfinance_data_sync(yf_ticker: str) -> Dict[str, Any]:
                             fin_dict["eps_cagr_3yr_pct"] = round(cagr, 2)
                     except Exception:
                         pass
-                elif len(eps_series) >= 2:
+                elif len(eps_series) == 3:
                     try:
                         latest_eps = eps_series[0]
-                        past_eps = eps_series[-1]
-                        years = len(eps_series) - 1
-                        if past_eps > 0 and latest_eps > 0 and years > 0:
-                            cagr = ((latest_eps / past_eps) ** (1.0 / float(years)) - 1.0) * 100.0
-                            fin_dict["eps_cagr_3yr_pct"] = round(cagr, 2)
+                        past_eps = eps_series[2]
+                        if past_eps > 0 and latest_eps > 0:
+                            cagr = ((latest_eps / past_eps) ** (1.0 / 2.0) - 1.0) * 100.0
+                            fin_dict["eps_cagr_2yr_pct"] = round(cagr, 2)
+                    except Exception:
+                        pass
+                elif len(eps_series) == 2:
+                    try:
+                        latest_eps = eps_series[0]
+                        past_eps = eps_series[1]
+                        if past_eps > 0 and latest_eps > 0:
+                            growth_1y = ((latest_eps / past_eps) - 1.0) * 100.0
+                            fin_dict["eps_growth_1yr_pct"] = round(growth_1y, 2)
                     except Exception:
                         pass
 
@@ -177,6 +199,26 @@ def _fetch_yfinance_data_sync(yf_ticker: str) -> Dict[str, Any]:
                 if len(margin_history) >= 2:
                     fin_dict["margin_stability_spread"] = round(max(margin_history) - min(margin_history), 2)
 
+                # True 3-year Revenue CAGR (requires 4 periods, 3 elapsed intervals)
+                if len(rev_history) >= 4:
+                    try:
+                        latest_r = rev_history[0]
+                        past_r = rev_history[3]
+                        if past_r > 0 and latest_r > 0:
+                            rev_cagr = ((latest_r / past_r) ** (1.0 / 3.0) - 1.0) * 100.0
+                            fin_dict["revenue_cagr_3yr_pct"] = round(rev_cagr, 2)
+                    except Exception:
+                        pass
+                elif len(rev_history) >= 2:
+                    try:
+                        latest_r = rev_history[0]
+                        past_r = rev_history[1]
+                        if past_r > 0 and latest_r > 0:
+                            rev_yoy = ((latest_r / past_r) - 1.0) * 100.0
+                            fin_dict["revenue_growth_yoy_pct"] = round(rev_yoy, 2)
+                    except Exception:
+                        pass
+
             if not bs.empty and len(bs.columns) > 0:
                 latest_col = bs.columns[0]
                 for k in ["Total Debt", "Long Term Debt And Capital Lease Obligation"]:
@@ -202,6 +244,14 @@ def _fetch_yfinance_data_sync(yf_ticker: str) -> Dict[str, Any]:
             # Calculate free cash flow if available
             if "cfo" in fin_dict and "capex" in fin_dict:
                 fin_dict["free_cash_flow"] = round(fin_dict["cfo"] - fin_dict["capex"], 2)
+
+            # Deterministic ROE % = PAT / Total Equity
+            if "pat" in fin_dict and "total_equity" in fin_dict:
+                eq_val = fin_dict["total_equity"]
+                if eq_val > 0:
+                    fin_dict["roe_pct"] = round((fin_dict["pat"] / eq_val) * 100.0, 2)
+                elif eq_val < 0:
+                    fin_dict["negative_equity_warning"] = True
 
             # Deterministic ROCE % = EBIT / (Total Debt + Total Equity)
             if "ebit" in fin_dict and "total_equity" in fin_dict:
@@ -241,6 +291,7 @@ def _fetch_yfinance_data_sync(yf_ticker: str) -> Dict[str, Any]:
             "year_low": year_low,
             "dma_50": dma_50,
             "dma_200": dma_200,
+            "rsi_14": rsi_14,
             "avg_volume_30d": vol_avg_30d,
             "atr_14": atr_14,
             "swing_high_20d": swing_high_20d,
