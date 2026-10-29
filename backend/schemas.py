@@ -116,3 +116,60 @@ class ResearchReport(BaseModel):
     bull_vs_bear: BullBearDebate
     final_assessment: ReportSection
     agent_runs: Optional[List[Dict[str, Any]]] = Field(default_factory=list, description="Audit manifest of all 13 specialized agent outputs")
+
+
+# ============================================================================
+# AUTHENTICATION & USER REPORT SCHEMAS
+# ============================================================================
+
+class UserLoginRequest(BaseModel):
+    email: str = Field(..., description="Registered email address")
+    password: str = Field(..., min_length=6, description="User password (min 6 characters)")
+
+
+class UserRegisterRequest(BaseModel):
+    name: str = Field(..., min_length=2, max_length=60, description="Full user name")
+    email: str = Field(..., description="Valid email address")
+    password: str = Field(..., min_length=6, max_length=128, description="Password (min 6 characters)")
+
+
+class GoogleAuthRequest(BaseModel):
+    email: str = Field(..., description="Verified Google account email")
+    name: str = Field(..., description="Google profile name")
+    picture: Optional[str] = Field(None, description="Google profile avatar URL")
+    credential: Optional[str] = Field(None, description="Optional Google ID token credential")
+
+
+class UserProfileResponse(BaseModel):
+    id: int
+    email: str
+    name: str
+    picture: Optional[str] = None
+    auth_provider: str = "local"
+
+
+class AuthTokenResponse(BaseModel):
+    token: str
+    user: UserProfileResponse
+
+
+class SavedReportSummary(BaseModel):
+    id: int
+    user_id: int
+    symbol: str
+    exchange: str
+    company_name: str
+    verdict: str
+    conviction: Optional[str] = None
+    target_price: Optional[str] = None
+    created_at: str
+
+
+class SaveReportRequest(BaseModel):
+    symbol: str
+    exchange: str = "NSE"
+    company_name: str
+    verdict: str
+    conviction: Optional[str] = None
+    target_price: Optional[str] = None
+    report_data: Dict[str, Any]

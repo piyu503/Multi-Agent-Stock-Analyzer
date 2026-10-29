@@ -1,12 +1,30 @@
-import React from 'react';
-import { BarChart3, BookOpen, Layers, Bookmark } from 'lucide-react';
+import React, { useState } from 'react';
+import { BarChart3, Layers, Clock, LogIn, LogOut } from 'lucide-react';
+import type { User } from '../types';
 
 interface NavbarProps {
   onHomeClick: () => void;
+  onHistoryClick: () => void;
   backendHealthy: boolean | null;
+  user: User | null;
+  onOpenAuth: () => void;
+  onLogout: () => void;
+  activeTab?: string;
+  savedCount?: number;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onHomeClick, backendHealthy }) => {
+export const Navbar: React.FC<NavbarProps> = ({
+  onHomeClick,
+  onHistoryClick,
+  backendHealthy,
+  user,
+  onOpenAuth,
+  onLogout,
+  activeTab = 'catalog',
+  savedCount = 0,
+}) => {
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
   return (
     <header className="border-b border-white/10 bg-[#07090e]/90 backdrop-blur-xl sticky top-0 z-40 shadow-2xl shadow-black/60">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
@@ -43,30 +61,50 @@ export const Navbar: React.FC<NavbarProps> = ({ onHomeClick, backendHealthy }) =
           <button
             type="button"
             onClick={onHomeClick}
-            className="px-3.5 py-1.5 rounded-lg text-xs font-medium text-white bg-white/10 shadow-sm border border-white/10 transition-all flex items-center gap-1.5"
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeTab === 'catalog'
+                ? 'text-white bg-white/10 shadow-sm border border-white/10'
+                : 'text-slate-300 hover:text-white'
+            }`}
           >
             <BarChart3 className="w-3.5 h-3.5 text-fuchsia-400" />
             <span>Markets</span>
           </button>
+
           <button
             type="button"
             onClick={onHomeClick}
-            className="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white transition-all flex items-center gap-1.5"
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeTab === 'catalog'
+                ? 'text-slate-300 hover:text-white'
+                : 'text-slate-400 hover:text-white'
+            }`}
           >
             <Layers className="w-3.5 h-3.5 text-slate-400" />
             <span>Stock Catalog</span>
           </button>
-          <span className="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 cursor-not-allowed flex items-center gap-1.5 opacity-60">
-            <Bookmark className="w-3.5 h-3.5" />
-            <span>Watchlist</span>
-          </span>
-          <span className="px-3.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 cursor-not-allowed flex items-center gap-1.5 opacity-60">
-            <BookOpen className="w-3.5 h-3.5" />
-            <span>Research Archive</span>
-          </span>
+
+          {/* Research Archive / History Tab */}
+          <button
+            type="button"
+            onClick={onHistoryClick}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+              activeTab === 'history'
+                ? 'text-white bg-fuchsia-500/20 text-fuchsia-300 shadow-sm border border-fuchsia-500/30'
+                : 'text-slate-300 hover:text-white hover:bg-white/[0.04]'
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5 text-fuchsia-400" />
+            <span>My Reports</span>
+            {savedCount > 0 && (
+              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/40">
+                {savedCount}
+              </span>
+            )}
+          </button>
         </nav>
 
-        {/* Right Section: Live Feed Status & User Pill */}
+        {/* Right Section: Live Feed Status & User Auth Pill */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-slate-200 shadow-inner">
             <span
@@ -78,7 +116,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onHomeClick, backendHealthy }) =
                   : 'bg-amber-400'
               }`}
             />
-            <span className="font-mono text-[11px] font-medium tracking-tight">
+            <span className="font-mono text-[11px] font-medium tracking-tight hidden sm:inline">
               {backendHealthy === true ? (
                 <span className="text-slate-300 font-semibold">FEED ONLINE</span>
               ) : backendHealthy === false ? (
@@ -89,13 +127,74 @@ export const Navbar: React.FC<NavbarProps> = ({ onHomeClick, backendHealthy }) =
             </span>
           </div>
 
-          {/* User Profile Pill */}
-          <div className="flex items-center gap-2 pl-2 border-l border-white/10">
-            <div className="w-7 h-7 rounded-lg bg-fuchsia-500/20 border border-fuchsia-500/40 flex items-center justify-center text-fuchsia-200 font-bold text-xs shadow-sm">
-              P
+          {/* Authentication Component / Profile Pill */}
+          {user ? (
+            <div className="relative pl-2 border-l border-white/10">
+              <button
+                type="button"
+                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                className="flex items-center gap-2 py-1 px-2 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10 transition-all cursor-pointer"
+              >
+                {user.picture ? (
+                  <img
+                    src={user.picture}
+                    alt={user.name}
+                    className="w-7 h-7 rounded-lg object-cover ring-1 ring-fuchsia-500/40"
+                  />
+                ) : (
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-fuchsia-600 to-violet-600 flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                    {user.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <span className="text-xs text-slate-200 font-medium hidden sm:inline max-w-[100px] truncate">
+                  {user.name}
+                </span>
+              </button>
+
+              {/* User Dropdown Menu */}
+              {isUserMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 rounded-xl border border-white/10 bg-[#090d16]/95 backdrop-blur-xl shadow-2xl shadow-black/80 p-1.5 z-50 animate-fade-in">
+                  <div className="px-3 py-2 border-b border-white/5 mb-1">
+                    <p className="text-xs font-semibold text-white truncate">{user.name}</p>
+                    <p className="text-[10px] text-slate-400 font-mono truncate">{user.email}</p>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      onHistoryClick();
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-white/5 transition-all text-left cursor-pointer"
+                  >
+                    <Clock className="w-3.5 h-3.5 text-fuchsia-400" />
+                    <span>Saved Reports</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setIsUserMenuOpen(false);
+                      onLogout();
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-all text-left mt-1 cursor-pointer"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              )}
             </div>
-            <span className="text-xs text-slate-200 font-medium hidden sm:inline">Piyush</span>
-          </div>
+          ) : (
+            <div className="pl-2 border-l border-white/10">
+              <button
+                type="button"
+                onClick={onOpenAuth}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-fuchsia-600/30 to-violet-600/30 hover:from-fuchsia-600/50 hover:to-violet-600/50 border border-fuchsia-500/40 text-fuchsia-200 text-xs font-mono font-medium transition-all shadow-sm cursor-pointer"
+              >
+                <LogIn className="w-3.5 h-3.5 text-fuchsia-400" />
+                <span>SIGN IN</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </header>

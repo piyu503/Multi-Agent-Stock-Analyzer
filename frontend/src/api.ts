@@ -1,6 +1,19 @@
-import type { HealthResponse, ImportSummary, ResearchReport, StockDetail, StocksSearchResponse } from './types';
+import type {
+  AuthResponse,
+  HealthResponse,
+  ImportSummary,
+  ResearchReport,
+  SavedReportDetail,
+  SavedReportSummary,
+  SaveReportPayload,
+  StockDetail,
+  StocksSearchResponse,
+  User
+} from './types';
 
 const API_BASE = '/api';
+const TOKEN_KEY = 'equiagentic_auth_token';
+const USER_KEY = 'equiagentic_auth_user';
 
 export class ApiError extends Error {
   status: number;
@@ -9,6 +22,58 @@ export class ApiError extends Error {
     this.name = 'ApiError';
     this.status = status;
   }
+}
+
+// ============================================================================
+// TOKEN & AUTH SESSION HELPERS
+// ============================================================================
+
+export function getAuthToken(): string | null {
+  try {
+    return localStorage.getItem(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setAuthSession(token: string, user: User): void {
+  try {
+    localStorage.setItem(TOKEN_KEY, token);
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+export function clearAuthSession(): void {
+  try {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+export function getStoredUser(): User | null {
+  try {
+    const raw = localStorage.getItem(USER_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function getAuthHeaders(): HeadersInit {
+  const token = getAuthToken();
+  if (token) {
+    return {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+  }
+  return {
+    'Content-Type': 'application/json'
+  };
 }
 
 async function handleResponse<T>(res: Response): Promise<T> {
@@ -26,6 +91,93 @@ async function handleResponse<T>(res: Response): Promise<T> {
   }
   return res.json() as Promise<T>;
 }
+
+// ============================================================================
+// AUTHENTICATION APIS
+// ============================================================================
+
+export async function loginUser(email: string, password: string): Promise<AuthResponse> {
+  const res = await fetch(`${API_BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await handleResponse<AuthResponse>(res);
+  setAuthSession(data.token, data.user);
+  return data;
+}
+
+export async function registerUser(name: string, email: string, password: string): Promise<AuthResponse> {
+  const res = await fetch(`${API_BASE}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email, password }),
+  });
+  const data = await handleResponse<AuthResponse>(res);
+  setAuthSession(data.token, data.user);
+  return data;
+}
+
+export async function googleAuth(data: { email: string; name: string; picture?: string; credential?: string }): Promise<AuthResponse> {
+  const res = await fetch(`${API_BASE}/auth/google`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+  const authData = await handleResponse<AuthResponse>(res);
+  setAuthSession(authData.token, authData.user);
+  return authData;
+}
+
+export async function fetchCurrentUser(): Promise<User> {
+  const res = await fetch(`${API_BASE}/auth/me`, {
+    headers: getAuthHeaders(),
+  });
+  const user = await handleResponse<User>(res);
+  try {
+    localStorage.setItem(USER_KEY, JSON.stringify(user));
+  } catch {}
+  return user;
+}
+
+// ============================================================================
+// REPORT HISTORY APIS
+// ============================================================================
+
+export async function fetchReportHistory(): Promise<SavedReportSummary[]> {
+  const res = await fetch(`${API_BASE}/reports/history`, {
+    headers: getAuthHeaders(),
+  });
+  return handleResponse<SavedReportSummary[]>(res);
+}
+
+export async function fetchSavedReportDetail(reportId: number): Promise<SavedReportDetail> {
+  const res = await fetch(`${API_BASE}/reports/history/${reportId}`, {
+    headers: getAuthHeaders(),
+  });
+  return handleResponse<SavedReportDetail>(res);
+}
+
+export async function deleteSavedReport(reportId: number): Promise<{ status: string; id: number }> {
+  const res = await fetch(`${API_BASE}/reports/history/${reportId}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+  return handleResponse<{ status: string; id: number }>(res);
+}
+
+export async function saveReportToHistory(payload: SaveReportPayload): Promise<{ status: string; id: number }> {
+  const res = await fetch(`${API_BASE}/reports/save`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(payload),
+  });
+  return handleResponse<{ status: string; id: number }>(res);
+}
+
+// ============================================================================
+// STOCKS & HEALTH APIS
+// ============================================================================
 
 export async function checkBackendHealth(): Promise<HealthResponse> {
   const res = await fetch(`${API_BASE}/health`);
@@ -70,9 +222,7 @@ export async function generateReport(symbol: string, exchange?: string): Promise
   const queryStr = params.toString() ? `?${params.toString()}` : '';
   const res = await fetch(`${API_BASE}/reports/${encodeURIComponent(symbol)}${queryStr}`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    headers: getAuthHeaders(),
   });
   return handleResponse<ResearchReport>(res);
 }

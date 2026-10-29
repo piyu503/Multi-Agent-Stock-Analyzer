@@ -2,28 +2,46 @@
 
 import os
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Any, Dict, List, Optional
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Query, UploadFile, File
+from fastapi import FastAPI, HTTPException, Query, UploadFile, File, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
 from catalog_importer import import_catalog_file
 from database import (
+    create_access_token,
+    create_or_get_google_user,
+    create_user,
+    delete_user_report,
     get_catalog_coverage_summary,
     get_stock_by_symbol,
     get_total_listings_count,
+    get_user_by_email,
+    get_user_by_id,
+    get_user_report_detail,
+    get_user_reports_list,
     init_db,
     is_official_catalog_imported,
+    save_user_report,
     search_stocks,
+    verify_access_token,
+    verify_password,
 )
 from agents.orchestrator import orchestrate_stock_research
 from report_generator import generate_demo_report
 from schemas import (
+    AuthTokenResponse,
+    GoogleAuthRequest,
     HealthResponse,
     ImportSummary,
     ResearchReport,
+    SavedReportSummary,
+    SaveReportRequest,
     StockDetail,
     StocksSearchResponse,
+    UserLoginRequest,
+    UserProfileResponse,
+    UserRegisterRequest,
 )
 
 from contextlib import asynccontextmanager
@@ -56,6 +74,233 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ============================================================================
+# SECURITY & AUTHENTICATION DEPENDENCIES
+# ============================================================================
+
+def get_current_user_optional(authorization: Optional[str] = Header(None)) -> Optional[dict]:
+    """Safely verify bearer token and retrieve user without blocking anonymous requests."""
+    if not authorization:
+        return None
+    token = authorization.strip()
+    if token.lower().startswith("bearer "):
+        token = token[7:].strip()
+    payload = verify_access_token(token)
+    if not payload or "uid" not in payload:
+        return None
+    return get_user_by_id(payload["uid"])
+
+
+def get_current_user_from_token_or_param(
+    authorization: Optional[str] = Header(None),
+    token: Optional[str] = Query(None, description="Optional bearer token for EventSource SSE")
+) -> Optional[dict]:
+    """Extract and verify token from Authorization header or ?token query param."""
+    raw_token = None
+    if authorization:
+        t = authorization.strip()
+        raw_token = t[7:].strip() if t.lower().startswith("bearer ") else t
+    elif token:
+        raw_token = token.strip()
+
+    if not raw_token:
+        return None
+
+    payload = verify_access_token(raw_token)
+    if not payload or "uid" not in payload:
+        return None
+    return get_user_by_id(payload["uid"])
+
+
+def get_current_user_required(
+    authorization: Optional[str] = Header(None),
+    token: Optional[str] = Query(None)
+) -> dict:
+    """Enforce token authentication for protected account, report generation, and history routes."""
+    user = get_current_user_from_token_or_param(authorization, token)
+    if not user:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required. Please sign in to generate or view research reports.",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    return user
+
+
+# ============================================================================
+# AUTHENTICATION ENDPOINTS
+# ============================================================================
+
+@app.post("/api/auth/register", response_model=AuthTokenResponse, tags=["Auth"])
+def register_user(req: UserRegisterRequest):
+    """Register a new user account with secure password hashing."""
+    email_clean = req.email.strip().lower()
+    if "@" not in email_clean or "." not in email_clean.split("@")[-1]:
+        raise HTTPException(status_code=400, detail="Please enter a valid email address.")
+
+    existing = get_user_by_email(email_clean)
+    if existing:
+        raise HTTPException(status_code=400, detail="An account with this email already exists.")
+
+    new_user = create_user(
+        email=email_clean,
+        password=req.password,
+        name=req.name.strip(),
+        auth_provider="local"
+    )
+
+    token = create_access_token(user_id=new_user["id"], email=new_user["email"], name=new_user["name"])
+    return AuthTokenResponse(
+        token=token,
+        user=UserProfileResponse(
+            id=new_user["id"],
+            email=new_user["email"],
+            name=new_user["name"],
+            picture=new_user.get("picture"),
+            auth_provider=new_user["auth_provider"]
+        )
+    )
+
+
+@app.post("/api/auth/login", response_model=AuthTokenResponse, tags=["Auth"])
+def login_user(req: UserLoginRequest):
+    """Authenticate user with email and password."""
+    email_clean = req.email.strip().lower()
+    user = get_user_by_email(email_clean)
+    if not user:
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
+
+    if not user.get("password_hash"):
+        raise HTTPException(
+            status_code=400,
+            detail="This account was created with Google. Please use 'Continue with Google'."
+        )
+
+    if not verify_password(user["password_hash"], req.password):
+        raise HTTPException(status_code=401, detail="Invalid email or password.")
+
+    token = create_access_token(user_id=user["id"], email=user["email"], name=user["name"])
+    return AuthTokenResponse(
+        token=token,
+        user=UserProfileResponse(
+            id=user["id"],
+            email=user["email"],
+            name=user["name"],
+            picture=user.get("picture"),
+            auth_provider=user["auth_provider"]
+        )
+    )
+
+
+@app.post("/api/auth/google", response_model=AuthTokenResponse, tags=["Auth"])
+def google_auth(req: GoogleAuthRequest):
+    """Authenticate or register user via Google direct sign-in."""
+    email_clean = req.email.strip().lower()
+    if "@" not in email_clean:
+        raise HTTPException(status_code=400, detail="Invalid Google account email.")
+
+    # Securely retrieve or register user
+    user = create_or_get_google_user(
+        email=email_clean,
+        name=req.name.strip() if req.name else email_clean.split("@")[0],
+        picture=req.picture
+    )
+
+    token = create_access_token(user_id=user["id"], email=user["email"], name=user["name"])
+    return AuthTokenResponse(
+        token=token,
+        user=UserProfileResponse(
+            id=user["id"],
+            email=user["email"],
+            name=user["name"],
+            picture=user.get("picture"),
+            auth_provider=user["auth_provider"]
+        )
+    )
+
+
+@app.get("/api/auth/me", response_model=UserProfileResponse, tags=["Auth"])
+def get_my_profile(current_user: dict = Depends(get_current_user_required)):
+    """Retrieve current authenticated user profile."""
+    return UserProfileResponse(
+        id=current_user["id"],
+        email=current_user["email"],
+        name=current_user["name"],
+        picture=current_user.get("picture"),
+        auth_provider=current_user.get("auth_provider", "local")
+    )
+
+
+# ============================================================================
+# USER RESEARCH REPORT HISTORY ENDPOINTS
+# ============================================================================
+
+@app.post("/api/reports/save", tags=["Reports"])
+def save_report_for_user(
+    req: SaveReportRequest,
+    current_user: dict = Depends(get_current_user_required)
+):
+    """Save a completed stock report to user's personal research archive."""
+    report_id = save_user_report(
+        user_id=current_user["id"],
+        symbol=req.symbol,
+        exchange=req.exchange,
+        company_name=req.company_name,
+        verdict=req.verdict,
+        conviction=req.conviction,
+        target_price=req.target_price,
+        report_data=req.report_data
+    )
+    return {"status": "saved", "id": report_id, "message": "Report successfully archived to your account."}
+
+
+@app.get("/api/reports/history", response_model=List[SavedReportSummary], tags=["Reports"])
+def list_user_report_history(
+    limit: int = Query(50, ge=1, le=100),
+    current_user: dict = Depends(get_current_user_required)
+):
+    """Retrieve metadata summaries of all past reports generated by the authenticated user."""
+    reports = get_user_reports_list(user_id=current_user["id"], limit=limit)
+    return [
+        SavedReportSummary(
+            id=r["id"],
+            user_id=r["user_id"],
+            symbol=r["symbol"],
+            exchange=r["exchange"],
+            company_name=r["company_name"],
+            verdict=r["verdict"],
+            conviction=r.get("conviction"),
+            target_price=r.get("target_price"),
+            created_at=str(r["created_at"])
+        )
+        for r in reports
+    ]
+
+
+@app.get("/api/reports/history/{report_id}", tags=["Reports"])
+def get_user_saved_report(
+    report_id: int,
+    current_user: dict = Depends(get_current_user_required)
+):
+    """Retrieve full data of a past report by ID with ownership verification (prevents IDOR)."""
+    detail = get_user_report_detail(user_id=current_user["id"], report_id=report_id)
+    if not detail:
+        raise HTTPException(status_code=404, detail="Saved report not found or unauthorized.")
+    return detail
+
+
+@app.delete("/api/reports/history/{report_id}", tags=["Reports"])
+def delete_user_saved_report(
+    report_id: int,
+    current_user: dict = Depends(get_current_user_required)
+):
+    """Delete a saved report from user history with ownership verification."""
+    success = delete_user_report(user_id=current_user["id"], report_id=report_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Report not found or unauthorized.")
+    return {"status": "deleted", "id": report_id}
 
 
 @app.get("/api/health", response_model=HealthResponse, tags=["Health"])
@@ -135,7 +380,8 @@ def get_stock_detail(
 @app.post("/api/reports/{symbol}", response_model=ResearchReport, tags=["Reports"])
 async def create_report(
     symbol: str,
-    exchange: Optional[str] = Query(None, description="Optional exchange identifier (e.g., NSE or BSE)")
+    exchange: Optional[str] = Query(None, description="Optional exchange identifier (e.g., NSE or BSE)"),
+    current_user: dict = Depends(get_current_user_required)
 ):
     """Generate a research report for an Indian stock ticker via the 13-agent deliberation loop."""
     stock = get_stock_by_symbol(symbol, exchange=exchange)
@@ -148,15 +394,36 @@ async def create_report(
 
     report, agent_runs = await orchestrate_stock_research(stock)
     report.agent_runs = [r.model_dump() for r in agent_runs]
+
+    # Auto-archive to user account
+    if current_user:
+        try:
+            target_p = None
+            if report.execution_plan and report.execution_plan.entry_range_high:
+                target_p = f"₹{report.execution_plan.entry_range_high:,.2f}"
+            save_user_report(
+                user_id=current_user["id"],
+                symbol=report.symbol,
+                exchange=report.exchange,
+                company_name=report.company_name,
+                verdict=report.final_assessment.title if report.final_assessment else "COMPLETE",
+                conviction=report.conviction,
+                target_price=target_p,
+                report_data=report.model_dump()
+            )
+        except Exception:
+            pass
+
     return report
 
 
 @app.get("/api/reports/stream/{symbol}", tags=["Reports"])
 async def stream_report(
     symbol: str,
-    exchange: Optional[str] = Query(None, description="Optional exchange identifier (e.g., NSE or BSE)")
+    exchange: Optional[str] = Query(None, description="Optional exchange identifier (e.g., NSE or BSE)"),
+    current_user: dict = Depends(get_current_user_required)
 ):
-    """Stream live 13-agent deliberation progress and ticks via Server-Sent Events (SSE)."""
+    """Stream live 13-agent deliberation progress and ticks via Server-Sent Events (SSE). Requires active authentication."""
     import json
     from fastapi.responses import StreamingResponse
     from agents.orchestrator import stream_stock_research

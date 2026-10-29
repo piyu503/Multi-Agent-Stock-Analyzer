@@ -126,3 +126,52 @@ export interface HealthResponse {
   timestamp: string;
   catalog_coverage?: CatalogCoverage;
 }
+
+
+export interface User {
+  id: number;
+  email: string;
+  name: string;
+  picture?: string | null;
+  auth_provider: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: User;
+}
+
+export interface SavedReportSummary {
+  id: number;
+  user_id: number;
+  symbol: string;
+  exchange: string;
+  company_name: string;
+  verdict: string;
+  conviction?: string | null;
+  target_price?: string | null;
+  created_at: string;
+}
+
+export interface SavedReportDetail {
+  id: number;
+  user_id: number;
+  symbol: string;
+  exchange: string;
+  company_name: string;
+  verdict: string;
+  conviction?: string | null;
+  target_price?: string | null;
+  report: ResearchReport;
+  created_at: string;
+}
+
+export interface SaveReportPayload {
+  symbol: string;
+  exchange: string;
+  company_name: string;
+  verdict: string;
+  conviction?: string | null;
+  target_price?: string | null;
+  report_data: ResearchReport;
+}

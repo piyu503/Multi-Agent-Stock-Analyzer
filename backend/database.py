@@ -1,11 +1,18 @@
 """SQLite Database initialization, migrations, and query interfaces for Indian Stocks (NSE/BSE)."""
 
+import base64
+import hashlib
+import hmac
+import json
 import math
 import os
+import secrets
 import sqlite3
+import time
 from typing import Any, Dict, List, Optional, Tuple
 
 DB_FILE = os.environ.get("DB_FILE", os.path.join(os.path.dirname(__file__), "stocks.db"))
+AUTH_SECRET_KEY = os.environ.get("AUTH_SECRET_KEY", "equiagentic-in-house-secret-key-2026")
 
 
 def get_db_connection() -> sqlite3.Connection:
@@ -74,6 +81,40 @@ def init_db() -> None:
         notes TEXT
     )
     """)
+
+    # Users table for local & Google Auth
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT UNIQUE NOT NULL,
+        password_hash TEXT,
+        name TEXT NOT NULL,
+        picture TEXT,
+        auth_provider TEXT DEFAULT 'local',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)")
+
+    # User Reports table for persisted research history
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS user_reports (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        symbol TEXT NOT NULL,
+        exchange TEXT NOT NULL DEFAULT 'NSE',
+        company_name TEXT NOT NULL,
+        verdict TEXT NOT NULL,
+        conviction TEXT,
+        target_price TEXT,
+        report_data TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_reports_user_id ON user_reports(user_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_reports_symbol ON user_reports(symbol)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_reports_created_at ON user_reports(created_at DESC)")
 
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_stocks_symbol ON stocks(symbol)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_stocks_company ON stocks(company_name)")
@@ -653,3 +694,220 @@ def log_import(
     ))
     conn.commit()
     conn.close()
+
+
+# ============================================================================
+# USER AUTHENTICATION & TOKEN INTERFACES
+# ============================================================================
+
+def hash_password(password: str) -> str:
+    """Hash password using standard PBKDF2-HMAC-SHA256 with 16-byte random salt."""
+    salt = secrets.token_hex(16)
+    key = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), 100_000)
+    return f"{salt}:{key.hex()}"
+
+
+def verify_password(stored_password_hash: str, password: str) -> bool:
+    """Verify password against stored salt:hash string."""
+    if not stored_password_hash or ":" not in stored_password_hash:
+        return False
+    salt, hex_key = stored_password_hash.split(":", 1)
+    test_key = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt.encode("utf-8"), 100_000)
+    return secrets.compare_digest(hex_key, test_key.hex())
+
+
+def create_access_token(user_id: int, email: str, name: str, expires_in_sec: int = 86400 * 30) -> str:
+    """Create a tamper-proof signed bearer token."""
+    payload = {
+        "uid": user_id,
+        "email": email.strip().lower(),
+        "name": name.strip(),
+        "exp": int(time.time()) + expires_in_sec
+    }
+    raw = json.dumps(payload, separators=(',', ':')).encode("utf-8")
+    b64_payload = base64.urlsafe_b64encode(raw).decode("utf-8").rstrip("=")
+    sig = hmac.new(AUTH_SECRET_KEY.encode("utf-8"), b64_payload.encode("utf-8"), hashlib.sha256).hexdigest()
+    return f"{b64_payload}.{sig}"
+
+
+def verify_access_token(token: str) -> Optional[Dict[str, Any]]:
+    """Verify bearer token signature and expiration date."""
+    if not token or "." not in token:
+        return None
+    try:
+        parts = token.strip().split(".")
+        if len(parts) != 2:
+            return None
+        b64_payload, sig = parts
+        expected_sig = hmac.new(AUTH_SECRET_KEY.encode("utf-8"), b64_payload.encode("utf-8"), hashlib.sha256).hexdigest()
+        if not secrets.compare_digest(sig, expected_sig):
+            return None
+
+        # Pad base64 if needed
+        padding = '=' * (-len(b64_payload) % 4)
+        raw = base64.urlsafe_b64decode(b64_payload + padding)
+        payload = json.loads(raw.decode("utf-8"))
+        if payload.get("exp", 0) < int(time.time()):
+            return None
+        return payload
+    except Exception:
+        return None
+
+
+def get_user_by_email(email: str) -> Optional[Dict[str, Any]]:
+    """Fetch user by unique email."""
+    if not email:
+        return None
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE LOWER(email) = LOWER(?)", (email.strip(),))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def get_user_by_id(user_id: int) -> Optional[Dict[str, Any]]:
+    """Fetch user by user_id."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, email, name, picture, auth_provider, created_at FROM users WHERE id = ?", (user_id,))
+    row = cursor.fetchone()
+    conn.close()
+    return dict(row) if row else None
+
+
+def create_user(email: str, password: Optional[str], name: str, picture: Optional[str] = None, auth_provider: str = "local") -> Dict[str, Any]:
+    """Register a new user account."""
+    clean_email = email.strip().lower()
+    clean_name = name.strip()
+    pwd_hash = hash_password(password) if password else None
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    INSERT INTO users (email, password_hash, name, picture, auth_provider)
+    VALUES (?, ?, ?, ?, ?)
+    """, (clean_email, pwd_hash, clean_name, picture, auth_provider))
+    user_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+
+    return {
+        "id": user_id,
+        "email": clean_email,
+        "name": clean_name,
+        "picture": picture,
+        "auth_provider": auth_provider
+    }
+
+
+def create_or_get_google_user(email: str, name: str, picture: Optional[str] = None) -> Dict[str, Any]:
+    """Sign in or register a user authenticating via Google."""
+    existing = get_user_by_email(email)
+    if existing:
+        # Update picture / name if newer
+        if picture and picture != existing.get("picture"):
+            conn = get_db_connection()
+            cursor = conn.cursor()
+            cursor.execute("UPDATE users SET picture = ?, name = ? WHERE id = ?", (picture, name, existing["id"]))
+            conn.commit()
+            conn.close()
+            existing["picture"] = picture
+            existing["name"] = name
+        return existing
+
+    return create_user(
+        email=email,
+        password=None,
+        name=name,
+        picture=picture,
+        auth_provider="google"
+    )
+
+
+# ============================================================================
+# USER RESEARCH REPORT HISTORY INTERFACES
+# ============================================================================
+
+def save_user_report(
+    user_id: int,
+    symbol: str,
+    exchange: str,
+    company_name: str,
+    verdict: str,
+    conviction: Optional[str],
+    target_price: Optional[str],
+    report_data: Any
+) -> int:
+    """Save generated report JSON for user history."""
+    json_str = report_data if isinstance(report_data, str) else json.dumps(report_data)
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    INSERT INTO user_reports (
+        user_id, symbol, exchange, company_name, verdict, conviction, target_price, report_data
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        user_id,
+        symbol.strip().upper(),
+        exchange.strip().upper(),
+        company_name.strip(),
+        verdict.strip().upper(),
+        conviction,
+        str(target_price) if target_price else None,
+        json_str
+    ))
+    report_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return report_id
+
+
+def get_user_reports_list(user_id: int, limit: int = 50) -> List[Dict[str, Any]]:
+    """Retrieve summary cards of all reports generated by user."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    SELECT id, user_id, symbol, exchange, company_name, verdict, conviction, target_price, created_at
+    FROM user_reports
+    WHERE user_id = ?
+    ORDER BY created_at DESC
+    LIMIT ?
+    """, (user_id, limit))
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def get_user_report_detail(user_id: int, report_id: int) -> Optional[Dict[str, Any]]:
+    """Retrieve full report data for a specific saved report."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+    SELECT id, user_id, symbol, exchange, company_name, verdict, conviction, target_price, report_data, created_at
+    FROM user_reports
+    WHERE id = ? AND user_id = ?
+    """, (report_id, user_id))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return None
+
+    res = dict(row)
+    try:
+        res["report"] = json.loads(res["report_data"])
+    except Exception:
+        res["report"] = None
+    return res
+
+
+def delete_user_report(user_id: int, report_id: int) -> bool:
+    """Delete a report from user history."""
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM user_reports WHERE id = ? AND user_id = ?", (report_id, user_id))
+    affected = cursor.rowcount
+    conn.commit()
+    conn.close()
+    return affected > 0

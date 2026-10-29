@@ -1,5 +1,16 @@
 import { useEffect, useState } from 'react';
-import { checkBackendHealth, generateReport, getStockDetail, searchStocks } from './api';
+import {
+  checkBackendHealth,
+  clearAuthSession,
+  fetchCurrentUser,
+  fetchReportHistory,
+  generateReport,
+  getAuthToken,
+  getStoredUser,
+  getStockDetail,
+  saveReportToHistory,
+  searchStocks
+} from './api';
 import { Navbar } from './components/Navbar';
 import { ReportView } from './components/ReportView';
 import { SearchBar } from './components/SearchBar';
@@ -9,11 +20,13 @@ import { StockProfile } from './components/StockProfile';
 import { AnalysisConsole } from './components/AnalysisConsole';
 import { FeatureGrid } from './components/FeatureGrid';
 import { AgentExecutionModal } from './components/AgentExecutionModal';
+import { AuthModal } from './components/AuthModal';
+import { ReportHistoryView } from './components/ReportHistoryView';
 import type { AgentProgressItem } from './components/AgentExecutionModal';
-import type { ResearchReport, StockDetail, StockSummary } from './types';
+import type { ResearchReport, StockDetail, StockSummary, User } from './types';
 import { ChevronLeft, ChevronRight, Database } from 'lucide-react';
 
-type ViewMode = 'catalog' | 'profile' | 'report';
+type ViewMode = 'catalog' | 'profile' | 'report' | 'history';
 
 const INITIAL_13_AGENTS: AgentProgressItem[] = [
   { id: 'manager', name: 'Research Manager', role: 'Research Manager & Orchestrator', stage: 0, status: 'pending' },
@@ -52,6 +65,13 @@ export function App() {
 
   const [backendHealthy, setBackendHealthy] = useState<boolean | null>(null);
 
+  // Authentication State
+  const [user, setUser] = useState<User | null>(getStoredUser());
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authPromptMessage, setAuthPromptMessage] = useState<string | null>(null);
+  const [pendingAnalysisStock, setPendingAnalysisStock] = useState<{ symbol: string; company_name: string; exchange: string } | null>(null);
+  const [savedCount, setSavedCount] = useState(0);
+
   // Live SSE Stepper State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const isGeneratingReport = isModalOpen;
@@ -68,7 +88,28 @@ export function App() {
   useEffect(() => {
     checkHealth();
     fetchStocksList('', '', 1);
+
+    if (getAuthToken()) {
+      fetchCurrentUser()
+        .then((u) => {
+          setUser(u);
+          refreshSavedCount();
+        })
+        .catch(() => {
+          clearAuthSession();
+          setUser(null);
+        });
+    }
   }, []);
+
+  const refreshSavedCount = async () => {
+    try {
+      const history = await fetchReportHistory();
+      setSavedCount(history.length);
+    } catch {
+      // Ignore
+    }
+  };
 
   const checkHealth = async () => {
     try {
@@ -88,21 +129,18 @@ export function App() {
       setTotalMatches(data.total);
       setTotalPages(data.total_pages);
       setCurrentPage(data.page);
-      setBackendHealthy(true);
     } catch (err: any) {
-      setStocksError(err.message || 'Failed to load stock list from backend.');
-      setBackendHealthy(false);
+      setStocksError(err.message || 'Failed to fetch stocks.');
     } finally {
       setIsLoadingStocks(false);
     }
   };
 
   const handleSearch = (query: string, exchange?: string) => {
-    const exch = exchange !== undefined ? exchange : selectedExchange;
     setSearchQuery(query);
-    setSelectedExchange(exch);
+    setSelectedExchange(exchange || '');
     setCurrentPage(1);
-    fetchStocksList(query, exch, 1);
+    fetchStocksList(query, exchange || '', 1);
   };
 
   const handlePageChange = (newPage: number) => {
@@ -115,19 +153,75 @@ export function App() {
   const handleSelectStock = async (symbol: string, exchange: string) => {
     setIsLoadingProfile(true);
     setProfileError(null);
-    setViewMode('profile');
     try {
       const detail = await getStockDetail(symbol, exchange);
       setSelectedStock(detail);
+      setViewMode('profile');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err: any) {
-      setProfileError(err.message || `Failed to fetch profile for ${symbol} on ${exchange}.`);
+      setProfileError(err.message || 'Failed to fetch company profile.');
     } finally {
       setIsLoadingProfile(false);
     }
   };
 
-  // Real-Time SSE Deliberation Stream Handler
-  const handleStartRealtimeAnalysis = (stock: { symbol: string; company_name?: string; exchange: string }) => {
+  // Auto-archive report to user account if logged in (or guest session cache)
+  const autoSaveReport = async (reportData: ResearchReport) => {
+    let targetPrice: string | undefined = undefined;
+    if (reportData.execution_plan && reportData.execution_plan.entry_range_high) {
+      targetPrice = `₹${reportData.execution_plan.entry_range_high.toLocaleString('en-IN')}`;
+    }
+
+    // Save locally for guest access
+    try {
+      const summaryItem = {
+        id: Date.now(),
+        user_id: 0,
+        symbol: reportData.symbol,
+        exchange: reportData.exchange,
+        company_name: reportData.company_name,
+        verdict: reportData.final_assessment?.title || 'ACCUMULATE',
+        conviction: reportData.conviction || 'NEUTRAL',
+        target_price: targetPrice,
+        created_at: new Date().toISOString()
+      };
+
+      const existingGuest = JSON.parse(localStorage.getItem('equiagentic_guest_reports') || '[]');
+      const updatedGuest = [summaryItem, ...existingGuest.filter((r: any) => r.symbol !== reportData.symbol)];
+      localStorage.setItem('equiagentic_guest_reports', JSON.stringify(updatedGuest));
+
+      const existingFull = JSON.parse(localStorage.getItem('equiagentic_guest_reports_full') || '{}');
+      existingFull[summaryItem.id] = reportData;
+      localStorage.setItem('equiagentic_guest_reports_full', JSON.stringify(existingFull));
+    } catch {}
+
+    if (!getAuthToken()) return;
+    try {
+      await saveReportToHistory({
+        symbol: reportData.symbol,
+        exchange: reportData.exchange,
+        company_name: reportData.company_name,
+        verdict: reportData.final_assessment?.title || 'ACCUMULATE',
+        conviction: reportData.conviction || 'NEUTRAL',
+        target_price: targetPrice,
+        report_data: reportData
+      });
+      refreshSavedCount();
+    } catch (err) {
+      console.warn('Auto-save report note:', err);
+    }
+  };
+
+  // Launch the live deliberation SSE process (Guarded by Authentication)
+  const handleStartRealtimeAnalysis = (stock: { symbol: string; company_name: string; exchange: string }) => {
+    // If user is not logged in, prompt sign in and save target stock to run right after authentication
+    if (!user && !getAuthToken()) {
+      setPendingAnalysisStock(stock);
+      setAuthPromptMessage(`Sign in or create a free account to generate institutional research on ${stock.symbol} (${stock.company_name})`);
+      setIsAuthModalOpen(true);
+      return;
+    }
+
     const sym = stock.symbol;
     const exch = stock.exchange || 'NSE';
     const compName = stock.company_name || sym;
@@ -136,10 +230,13 @@ export function App() {
     setAgentProgress(INITIAL_13_AGENTS.map((a) => ({ ...a, status: 'pending', summary: undefined, duration: undefined })));
     setCurrentStage(0);
     setIsDeliberationComplete(false);
+    setCurrentReport(null);
     setReportError(null);
     setIsModalOpen(true);
 
-    const sseUrl = `/api/reports/stream/${encodeURIComponent(sym)}?exchange=${encodeURIComponent(exch)}`;
+    const token = getAuthToken();
+    const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
+    const sseUrl = `/api/reports/stream/${encodeURIComponent(sym)}?exchange=${encodeURIComponent(exch)}${tokenParam}`;
     const eventSource = new EventSource(sseUrl);
 
     eventSource.addEventListener('agent_start', (e: MessageEvent) => {
@@ -185,9 +282,9 @@ export function App() {
         const reportData: ResearchReport = JSON.parse(e.data);
         setCurrentReport(reportData);
         setIsDeliberationComplete(true);
-        // Also ensure all agents in UI are marked complete
         setAgentProgress((prev) => prev.map((a) => ({ ...a, status: 'completed' })));
         eventSource.close();
+        autoSaveReport(reportData);
       } catch (err) {
         console.error('Error parsing report_ready event', err);
       }
@@ -196,7 +293,6 @@ export function App() {
     eventSource.addEventListener('error', (e: any) => {
       console.warn('SSE stream notice, falling back if needed', e);
       eventSource.close();
-      // If report wasn't ready yet, fallback gracefully to standard POST
       if (!isDeliberationComplete) {
         handleFallbackGenerateReport(sym, exch);
       }
@@ -218,18 +314,20 @@ export function App() {
         valuation: 1.08,
         bull: 1.22,
         bear: 1.18,
-        risk: 0.95,
-        trader: 0.72,
-        pm: 1.35
+        risk: 0.72,
+        trader: 0.89,
+        pm: 1.45,
       };
+
       setAgentProgress((prev) =>
-        prev.map((a) => ({
-          ...a,
+        prev.map((item) => ({
+          ...item,
           status: 'completed',
-          duration: a.duration || roleDurations[a.id] || 0.85
+          duration: roleDurations[item.id] || 0.85
         }))
       );
       setIsDeliberationComplete(true);
+      autoSaveReport(report);
     } catch (err: any) {
       setReportError(err.message || 'Report generation error.');
     }
@@ -252,29 +350,73 @@ export function App() {
   };
 
   const handleBackToProfile = () => {
-    setViewMode('profile');
     setIsModalOpen(false);
+    if (selectedStock) {
+      setViewMode('profile');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (currentReport) {
+      // If report was opened directly from History or Hero search, fetch the profile
+      handleSelectStock(currentReport.symbol, currentReport.exchange);
+    } else {
+      setViewMode('catalog');
+    }
   };
 
+  const handleOpenPastReport = (report: ResearchReport) => {
+    setCurrentReport(report);
+    setViewMode('report');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleAuthSuccess = (authenticatedUser: User) => {
+    setUser(authenticatedUser);
+    refreshSavedCount();
+
+    // If an analysis was pending, seamlessly launch it now that user is authenticated!
+    if (pendingAnalysisStock) {
+      const stockToRun = pendingAnalysisStock;
+      setPendingAnalysisStock(null);
+      setAuthPromptMessage(null);
+      setTimeout(() => {
+        handleStartRealtimeAnalysis(stockToRun);
+      }, 200);
+    }
+  };
+
+  const handleLogout = () => {
+    clearAuthSession();
+    setUser(null);
+    setSavedCount(0);
+    if (viewMode === 'history') {
+      setViewMode('catalog');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#06080e] text-slate-100 flex flex-col font-sans selection:bg-fuchsia-500/30 selection:text-fuchsia-200 relative overflow-hidden bg-terminal-grid">
       {/* Ambient background glows */}
       <div className="fixed top-0 left-1/4 w-[600px] h-[600px] bg-fuchsia-600/5 rounded-full blur-[140px] pointer-events-none" />
 
-      <Navbar onHomeClick={handleGoHome} backendHealthy={backendHealthy} />
+      <Navbar
+        onHomeClick={handleGoHome}
+        onHistoryClick={() => setViewMode('history')}
+        backendHealthy={backendHealthy}
+        user={user}
+        onOpenAuth={() => setIsAuthModalOpen(true)}
+        onLogout={handleLogout}
+        activeTab={viewMode}
+        savedCount={savedCount}
+      />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         {/* VIEW 1: CATALOG / DASHBOARD */}
         {viewMode === 'catalog' && (
           <div className="space-y-8">
-            {/* Top SaaS Hero & 3-Step Interactive Analysis Setup */}
             <AnalysisConsole
               onStartAnalysis={(stock) => handleStartRealtimeAnalysis(stock)}
               stocks={stocks}
             />
 
-            {/* Feature Value Props Grid */}
             <FeatureGrid />
 
             {/* Catalog Browser Search Bar & Exchange Selector */}
@@ -299,95 +441,67 @@ export function App() {
               <div className="flex items-center justify-between text-xs text-slate-400 border-b border-white/10 pb-3">
                 <div className="flex items-center gap-2">
                   <Database className="w-4 h-4 text-fuchsia-400" />
-                  <span className="font-semibold text-white font-mono">
-                    {searchQuery
-                      ? `SEARCH MATCHES (${totalMatches})`
-                      : `ACTIVE EQUITIES UNIVERSE (${totalMatches})`}
-                    {selectedExchange && ` • ${selectedExchange}`}
-                  </span>
+                  <span className="font-mono text-slate-300 font-semibold">{totalMatches}</span>
+                  <span>securities indexed across</span>
+                  <span className="font-mono text-fuchsia-300">NSE / BSE</span>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-[11px] text-slate-400 hidden sm:inline">
-                    National &amp; Bombay Stock Exchange
+                {totalPages > 1 && (
+                  <span className="font-mono text-[11px] text-slate-500">
+                    Page {currentPage} of {totalPages}
                   </span>
-                  {totalPages > 1 && (
-                    <span className="font-mono text-[11px] text-fuchsia-400 font-bold">
-                      Page {currentPage} of {totalPages}
-                    </span>
-                  )}
-                </div>
+                )}
               </div>
 
-              {isLoadingStocks && (
-                <StateFeedback
-                  type="loading"
-                  title="Querying Indian Stock Universe..."
-                  message="Searching across trading symbols, company legal names, and ISIN records."
-                />
+              {isLoadingStocks && stocks.length === 0 ? (
+                <div className="py-20">
+                  <StateFeedback type="loading" title="Scanning Exchanges" message="Accessing master securities registry..." />
+                </div>
+              ) : stocksError ? (
+                <div className="py-12">
+                  <StateFeedback
+                    type="error"
+                    title="Registry Sync Unavailable"
+                    message={stocksError}
+                    onRetry={() => fetchStocksList(searchQuery, selectedExchange, currentPage)}
+                  />
+                </div>
+              ) : stocks.length === 0 ? (
+                <div className="py-16 text-center rounded-2xl border border-dashed border-white/10 bg-white/[0.01]">
+                  <p className="text-sm text-slate-400 font-mono">No matching securities found for current query parameters.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {stocks.map((stock) => (
+                    <StockCard
+                      key={`${stock.exchange}-${stock.symbol}`}
+                      stock={stock}
+                      onSelect={(sym, exch) => handleSelectStock(sym, exch)}
+                    />
+                  ))}
+                </div>
               )}
 
-              {stocksError && (
-                <StateFeedback
-                  type="error"
-                  title="Backend API Error"
-                  message={stocksError}
-                  onRetry={() => fetchStocksList(searchQuery, selectedExchange, currentPage)}
-                />
-              )}
-
-              {!isLoadingStocks && !stocksError && stocks.length === 0 && (
-                <StateFeedback
-                  type="no-results"
-                  query={searchQuery}
-                  exchange={selectedExchange}
-                />
-              )}
-
-              {!isLoadingStocks && !stocksError && stocks.length > 0 && (
-                <>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {stocks.map((stock) => (
-                      <StockCard
-                        key={`${stock.exchange}-${stock.symbol}-${stock.id || ''}`}
-                        stock={stock}
-                        onSelect={handleSelectStock}
-                      />
-                    ))}
-                  </div>
-
-                  {/* Pagination Controls */}
-                  {totalPages > 1 && (
-                    <div className="pt-6 border-t border-white/10 flex items-center justify-between text-xs">
-                      <div className="text-slate-400 font-mono">
-                        Showing {(currentPage - 1) * 18 + 1}-{Math.min(currentPage * 18, totalMatches)} of {totalMatches} listings
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handlePageChange(currentPage - 1)}
-                          disabled={currentPage <= 1}
-                          className="inline-flex items-center gap-1 px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer font-mono font-medium"
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                          <span>Previous</span>
-                        </button>
-
-                        <span className="px-3.5 py-1.5 rounded-xl bg-white/10 border border-white/10 font-mono text-white font-bold">
-                          {currentPage} / {totalPages}
-                        </span>
-
-                        <button
-                          onClick={() => handlePageChange(currentPage + 1)}
-                          disabled={currentPage >= totalPages}
-                          className="inline-flex items-center gap-1 px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-slate-200 hover:bg-white/10 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer font-mono font-medium"
-                        >
-                          <span>Next</span>
-                          <ChevronRight className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </>
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 pt-6">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1 || isLoadingStocks}
+                    className="p-2 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <span className="text-xs font-mono text-slate-400 px-3">
+                    {currentPage} / {totalPages}
+                  </span>
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages || isLoadingStocks}
+                    className="p-2 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -396,34 +510,20 @@ export function App() {
         {/* VIEW 2: STOCK PROFILE */}
         {viewMode === 'profile' && (
           <div>
-            {isLoadingProfile && (
-              <StateFeedback
-                type="loading"
-                title="Retrieving Exchange Profile..."
-                message="Loading security master attributes and corporate parameters."
-              />
-            )}
-
-            {profileError && (
-              <StateFeedback
-                type="error"
-                title="Profile Not Available"
-                message={profileError}
-                onRetry={handleGoHome}
-              />
-            )}
-
-            {reportError && (
-              <div className="mb-6">
+            {isLoadingProfile ? (
+              <div className="py-24">
+                <StateFeedback type="loading" title="Retrieving Company Dossier" message="Compiling exchange profile and metadata..." />
+              </div>
+            ) : profileError ? (
+              <div className="py-16">
                 <StateFeedback
                   type="error"
-                  title="Report Synthesis Failed"
-                  message={reportError}
+                  title="Profile Retrieval Error"
+                  message={profileError}
+                  onRetry={() => selectedStock && handleSelectStock(selectedStock.symbol, selectedStock.exchange)}
                 />
               </div>
-            )}
-
-            {!isLoadingProfile && !profileError && selectedStock && (
+            ) : selectedStock && (
               <StockProfile
                 stock={selectedStock}
                 onBack={handleGoHome}
@@ -453,6 +553,16 @@ export function App() {
           </div>
         )}
 
+        {/* VIEW 4: MY REPORTS ARCHIVE */}
+        {viewMode === 'history' && (
+          <ReportHistoryView
+            isAuthenticated={!!user}
+            onOpenReport={handleOpenPastReport}
+            onBackToCatalog={handleGoHome}
+            onRequireAuth={() => setIsAuthModalOpen(true)}
+          />
+        )}
+
         {/* Real-Time Agent Deliberation Modal */}
         <AgentExecutionModal
           isOpen={isModalOpen}
@@ -470,10 +580,21 @@ export function App() {
           isComplete={isDeliberationComplete}
           error={reportError}
         />
+
+        {/* Authentication Modal */}
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => {
+            setIsAuthModalOpen(false);
+            setAuthPromptMessage(null);
+          }}
+          onAuthSuccess={handleAuthSuccess}
+          actionPrompt={authPromptMessage}
+        />
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-white/10 bg-[#04060b] py-6 text-center text-xs text-slate-400 relative z-10">
+      <footer className="no-print border-t border-white/10 bg-[#04060b] py-6 text-center text-xs text-slate-400 relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="font-display font-medium text-slate-300">
             EquiAgentic Intelligence Platform • Professional Multi-Agent Equity Synthesis Terminal
