@@ -4,6 +4,18 @@ A research platform for NSE & BSE Indian equities powered by an adversarial **13
 
 ---
 
+## Recent Updates and Changelog
+
+For the incremental changelog of features and fixes implemented after each Git push, see [**recent-changes.md**](recent-changes.md).
+
+- **Dhan API Pro Provider**: Institutional tick feed, official NSE delivery absorption, Level-2 depth, and exact ATR/RSI/DMA calculation with automatic fallback to standard free sources.
+- **Fast 7B Coder Inference**: Foundational specialists now run on qwen2.5-coder:7b for direct JSON generation without reasoning lag.
+- **Real-Time Per-Agent Stream Ticks**: Specialist agents update on screen the instant each completes, eliminating UI freezing.
+- **Risk-Informed Trade Execution**: Risk Analyst precedes Trader to provide stop-loss and invalidation levels before trade staging.
+- **Full Lifecycle Logging**: Standardized root logging with timestamps and immediate tracebacks.
+
+---
+
 ## What is EquiAgentic?
 
 EquiAgentic moves beyond simple chatbot summaries by simulating an equity research team:
