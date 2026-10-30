@@ -8,6 +8,7 @@ import asyncio
 from typing import Any, Dict
 
 from data_providers.bse_provider import fetch_bse_corporate_announcements
+from data_providers.dhan_provider import fetch_dhan_intelligence
 from data_providers.news_provider import fetch_social_sentiment_stream, fetch_stock_recent_news
 from data_providers.nse_provider import fetch_nse_market_microstructure
 from data_providers.peers_provider import format_peer_comparison_text, get_sector_peers_with_multiples
@@ -16,13 +17,14 @@ from data_providers.yfinance_provider import fetch_stock_market_and_financials
 
 
 async def enrich_company_with_free_sources(company_context: Dict[str, Any]) -> Dict[str, Any]:
-    """Fetch live free data concurrently and enrich company context."""
+    """Fetch live data concurrently, prioritizing Dhan API Pro with automatic fallback to secondary sources."""
     symbol = company_context.get("symbol", "")
     exchange = company_context.get("exchange", "NSE")
     company_name = company_context.get("company_name", symbol)
     scrip_code = str(company_context.get("scrip_code") or "")
 
-    # Execute free fetches concurrently (Yahoo Finance, Google News, BSE RSS/API, NSE microstructure, and Earnings Transcripts)
+    # Execute fetches concurrently: Dhan Pro, Yahoo Finance, Google News, BSE RSS/API, and Earnings Transcripts
+    dhan_task = fetch_dhan_intelligence(symbol, exchange)
     yf_task = fetch_stock_market_and_financials(symbol, exchange)
     news_task = fetch_stock_recent_news(company_name, symbol, max_items=6)
     sentiment_task = fetch_social_sentiment_stream(company_name, symbol, max_items=6)
@@ -32,11 +34,10 @@ async def enrich_company_with_free_sources(company_context: Dict[str, Any]) -> D
         symbol=symbol,
         max_items=5
     )
-    nse_task = fetch_nse_market_microstructure(symbol)
     transcript_task = fetch_transcript_insights(symbol)
 
-    market_data, news_items, sentiment_data, bse_filings, nse_data, transcript_data = await asyncio.gather(
-        yf_task, news_task, sentiment_task, bse_task, nse_task, transcript_task, return_exceptions=True
+    dhan_data, market_data, news_items, sentiment_data, bse_filings, transcript_data = await asyncio.gather(
+        dhan_task, yf_task, news_task, sentiment_task, bse_task, transcript_task, return_exceptions=True
     )
 
     # Safe defaults if network issues occur
@@ -44,20 +45,62 @@ async def enrich_company_with_free_sources(company_context: Dict[str, Any]) -> D
     safe_news = news_items if isinstance(news_items, list) else []
     safe_sentiment = sentiment_data if isinstance(sentiment_data, dict) else {}
     safe_bse = bse_filings if isinstance(bse_filings, list) else []
-    safe_nse = nse_data if isinstance(nse_data, dict) else {}
     safe_transcripts = transcript_data if isinstance(transcript_data, dict) else {"has_transcripts": False}
+    safe_dhan = dhan_data if isinstance(dhan_data, dict) and dhan_data.get("is_active") else None
 
-    # Enrich market data with NSE Delivery Position and Order Book Microstructure
-    deliv_pos = safe_nse.get("delivery_position") or {}
-    microstructure = safe_nse.get("microstructure") or {}
-    if deliv_pos.get("delivery_pct") is not None:
-        safe_market["delivery_pct"] = deliv_pos["delivery_pct"]
-    if deliv_pos.get("delivery_qty") is not None:
-        safe_market["delivery_qty"] = deliv_pos["delivery_qty"]
-    if microstructure.get("buy_sell_ratio") is not None:
-        safe_market["order_book_buy_sell_ratio"] = microstructure["buy_sell_ratio"]
-        safe_market["total_buy_qty"] = microstructure.get("total_buy_qty")
-        safe_market["total_sell_qty"] = microstructure.get("total_sell_qty")
+    # Only invoke slow NSE scraper bridge if Dhan Pro is not active
+    safe_nse = {}
+    if not safe_dhan:
+        try:
+            safe_nse = await fetch_nse_market_microstructure(symbol, timeout_sec=4.0)
+        except Exception:
+            safe_nse = {}
+
+    # Dual-Tier Ingestion: Upgrade market data if Dhan API Pro returned active verified feed
+    if safe_dhan:
+        if safe_dhan.get("ltp"):
+            safe_market["current_price"] = safe_dhan["ltp"]
+        if safe_dhan.get("vwap"):
+            safe_market["vwap"] = safe_dhan["vwap"]
+        if safe_dhan.get("day_high"):
+            safe_market["day_high"] = safe_dhan["day_high"]
+        if safe_dhan.get("day_low"):
+            safe_market["day_low"] = safe_dhan["day_low"]
+        if safe_dhan.get("volume"):
+            safe_market["volume"] = safe_dhan["volume"]
+        if safe_dhan.get("delivery_pct") is not None:
+            safe_market["delivery_pct"] = safe_dhan["delivery_pct"]
+            safe_market["delivery_position"] = {
+                "delivery_pct": safe_dhan["delivery_pct"],
+                "source": "Dhan API Pro (Verified Official NSE Delivery)"
+            }
+        if safe_dhan.get("order_book_pressure"):
+            safe_market["order_book_pressure"] = safe_dhan["order_book_pressure"]
+
+        # Technical indicators computed from daily candles
+        tech = safe_dhan.get("technicals") or {}
+        if tech.get("atr_14") is not None:
+            safe_market["atr_14"] = tech["atr_14"]
+        if tech.get("rsi_14") is not None:
+            safe_market["rsi_14"] = tech["rsi_14"]
+        if tech.get("dma_50") is not None:
+            safe_market["dma_50"] = tech["dma_50"]
+        if tech.get("dma_200") is not None:
+            safe_market["dma_200"] = tech["dma_200"]
+        if tech.get("historical_volatility_pct") is not None:
+            safe_market["historical_volatility_pct"] = tech["historical_volatility_pct"]
+    else:
+        # Fallback to NSE microstructure scraper if Dhan is absent or inactive
+        deliv_pos = safe_nse.get("delivery_position") or {}
+        microstructure = safe_nse.get("microstructure") or {}
+        if deliv_pos.get("delivery_pct") is not None:
+            safe_market["delivery_pct"] = deliv_pos["delivery_pct"]
+        if deliv_pos.get("delivery_qty") is not None:
+            safe_market["delivery_qty"] = deliv_pos["delivery_qty"]
+        if microstructure.get("buy_sell_ratio") is not None:
+            safe_market["order_book_buy_sell_ratio"] = microstructure["buy_sell_ratio"]
+            safe_market["total_buy_qty"] = microstructure.get("total_buy_qty")
+            safe_market["total_sell_qty"] = microstructure.get("total_sell_qty")
 
     # Combine official filings: NSE announcements + BSE filings
     nse_announcements = safe_nse.get("announcements") or []
@@ -92,6 +135,9 @@ async def enrich_company_with_free_sources(company_context: Dict[str, Any]) -> D
     # Merge into enriched context
     enriched = dict(company_context)
     enriched["as_of_date"] = anchor_date_str
+    enriched["data_source_tier"] = "DHAN_PRO_VERIFIED" if safe_dhan else "STANDARD_FREE_FALLBACK"
+    enriched["dhan_technicals"] = safe_dhan.get("technicals", {}) if safe_dhan else {}
+    enriched["fno_sentiment"] = safe_dhan.get("fno_sentiment", {}) if safe_dhan else {}
     enriched["market_data"] = safe_market
     enriched["recent_news"] = _tag_temporal_status(safe_news)
     enriched["social_sentiment"] = safe_sentiment

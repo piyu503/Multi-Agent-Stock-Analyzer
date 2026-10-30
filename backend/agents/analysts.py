@@ -150,7 +150,7 @@ class EvidenceVerificationAnalyst(BaseAgent):
         super().__init__(
             name="Evidence Verification Analyst",
             role="Data & Evidence Verification Analyst",
-            model_tier="extractor"
+            model_tier="specialist"
         )
 
     def get_system_prompt(self) -> str:
@@ -209,7 +209,7 @@ class FundamentalsQualityAnalyst(BaseAgent):
     """Examines balance-sheet durability, cash conversion, and business quality."""
 
     def __init__(self):
-        super().__init__(name="Fundamentals Analyst", role="Fundamentals & Business Quality Analyst")
+        super().__init__(name="Fundamentals Analyst", role="Fundamentals & Business Quality Analyst", model_tier="specialist")
 
     def get_system_prompt(self) -> str:
         return (
@@ -285,7 +285,7 @@ class GrowthIndustryAnalyst(BaseAgent):
     """Evaluates macro trends, TAM expansion, and industry competitive positioning."""
 
     def __init__(self):
-        super().__init__(name="Growth & Industry Analyst", role="Growth & Industry Analyst")
+        super().__init__(name="Growth & Industry Analyst", role="Growth & Industry Analyst", model_tier="specialist")
 
     def get_system_prompt(self) -> str:
         return (
@@ -346,7 +346,7 @@ class NewsCorporateEventsAnalyst(BaseAgent):
     """Scrutinizes exchange disclosures, block deals, and management commentary."""
 
     def __init__(self):
-        super().__init__(name="News & Events Analyst", role="News, Corporate Events & Earnings-Call Analyst")
+        super().__init__(name="News & Events Analyst", role="News, Corporate Events & Earnings-Call Analyst", model_tier="specialist")
 
     def get_system_prompt(self) -> str:
         return (
@@ -413,79 +413,60 @@ class NewsCorporateEventsAnalyst(BaseAgent):
         self,
         company_context: Dict[str, Any],
         evidence: Optional[Dict[str, Any]] = None,
-        timeout_sec: float = 45.0
+        timeout_sec: float = 60.0
     ) -> AgentOutput:
-        """2-Stage Pipeline: Granite extracts verified facts -> Qwen interprets strategic & governance impact."""
+        """Execute high-fidelity factual extraction and strategic governance synthesis."""
         start_time = time.time()
         evidence_dict = evidence or {}
 
         if not LLMConfig.is_configured():
             stub = self.get_development_stub(company_context, evidence_dict)
             stub.execution_duration_sec = 0.85
-            stub.model_tier = "extractor+analyst"
+            stub.model_tier = "analyst"
             return stub
 
         user_prompt = self.get_user_prompt(company_context, evidence_dict)
 
         try:
-            # Stage 1: IBM Granite (Extractor) extracts confirmed factual events without PR hype
-            stage1_system = (
-                "You are an enterprise regulatory extraction engine (IBM Granite). "
-                "Extract confirmed factual events, board approvals, dividend dates, and material exchange disclosures. "
-                "Eliminate speculative rumors and conversational spin. Respond strictly in JSON."
-            )
-            stage1_user = f"Extract verified corporate facts from these disclosures:\n{user_prompt}"
-
-            stage1_result = await call_llm(
-                system_prompt=stage1_system,
-                user_prompt=stage1_user,
+            logger.info(f"[{self.name}] Running regulatory disclosure analysis with {timeout_sec}s timeout...")
+            result = await call_llm(
+                system_prompt=self.get_system_prompt(),
+                user_prompt=user_prompt,
                 response_format="json",
-                model_tier="extractor",
-                timeout_sec=max(15.0, timeout_sec * 0.4)
-            )
-            extracted_facts = stage1_result.get("findings", [])
-
-            # Stage 2: Qwen (Analyst) interprets governance risks and catalysts from verified facts
-            facts_block = "\n".join([f"- {f}" for f in extracted_facts]) if extracted_facts else "No material events found."
-            stage2_system = self.get_system_prompt()
-            stage2_user = (
-                f"{user_prompt}\n\n"
-                f"VERIFIED CORPORATE FACTS (Audited via Granite Extraction Engine):\n{facts_block}\n\n"
-                "Synthesize governance integrity, management catalysts, and earnings risk strictly grounded in these facts."
-            )
-
-            stage2_result = await call_llm(
-                system_prompt=stage2_system,
-                user_prompt=stage2_user,
-                response_format="json",
-                model_tier="analyst",
-                timeout_sec=max(20.0, timeout_sec * 0.6)
+                model_tier="specialist",
+                timeout_sec=timeout_sec
             )
 
             duration = round(time.time() - start_time, 3)
+            logger.info(f"[{self.name}] Completed in {duration}s successfully.")
             return AgentOutput(
                 agent_name=self.name,
                 role=self.role,
-                summary=stage2_result.get("summary", "Corporate event monitoring completed."),
-                findings=stage2_result.get("findings", []),
-                supporting_evidence=stage2_result.get("supporting_evidence", []) + [f"Granite Audited Facts: {len(extracted_facts)} events"],
-                assumptions=stage2_result.get("assumptions", []),
-                missing_information=stage2_result.get("missing_information", []),
-                confidence_score=float(stage2_result.get("confidence_score", 0.78)),
-                confidence_explanation=stage2_result.get("confidence_explanation", "Two-stage Granite extraction + Qwen synthesis"),
-                questions_for_investigation=stage2_result.get("questions_for_investigation", []),
-                role_specific_data={"stage1_facts_count": len(extracted_facts), "pipeline": "Granite -> Qwen"},
-                model_tier="extractor+analyst",
+                summary=result.get("summary", "Corporate event monitoring completed."),
+                findings=result.get("findings", []),
+                supporting_evidence=result.get("supporting_evidence", []),
+                assumptions=result.get("assumptions", []),
+                missing_information=result.get("missing_information", []),
+                confidence_score=float(result.get("confidence_score", 0.80)),
+                confidence_explanation=result.get("confidence_explanation", "Verified regulatory disclosure analysis"),
+                questions_for_investigation=result.get("questions_for_investigation", []),
+                role_specific_data={"event_category": "Corporate Disclosures & Surveillance"},
+                model_tier="analyst",
                 execution_status="success",
                 execution_duration_sec=duration
             )
+
         except Exception as e:
-            logger.warning(f"2-Stage News execution failed: {e}. Falling back to analytical stub.")
+            duration = round(time.time() - start_time, 3)
+            logger.warning(
+                f"[{self.name}] FAILED after {duration}s: {e}. Falling back to analytical stub. "
+                f"Error detail: {type(e).__name__} - {str(e)}"
+            )
             stub = self.get_development_stub(company_context, evidence_dict)
-            stub.execution_duration_sec = round(time.time() - start_time, 3)
+            stub.execution_duration_sec = duration
             stub.execution_status = "stub_fallback"
-            stub.error_message = str(e)
-            stub.model_tier = "extractor+analyst"
+            stub.error_message = f"{type(e).__name__}: {str(e)}"
+            stub.model_tier = "analyst"
             return stub
 
 
@@ -496,7 +477,7 @@ class SocialSentimentAnalyst(BaseAgent):
         super().__init__(
             name="Social Sentiment Analyst",
             role="Social Sentiment Analyst",
-            model_tier="extractor"
+            model_tier="specialist"
         )
 
     def get_system_prompt(self) -> str:
@@ -549,7 +530,7 @@ class MarketAnalyst(BaseAgent):
     """Monitors market microstructure, liquidity, delivery percentage, and technical structure."""
 
     def __init__(self):
-        super().__init__(name="Market Analyst", role="Market Analyst")
+        super().__init__(name="Market Analyst", role="Market Analyst", model_tier="specialist")
 
     def get_system_prompt(self) -> str:
         return (
@@ -577,10 +558,14 @@ class MarketAnalyst(BaseAgent):
         deliv_text = f"{deliv_pct}%" if deliv_pct is not None else "Awaiting Daily Settlement File"
         ratio = mkt.get("order_book_buy_sell_ratio")
         ratio_text = f"{ratio} (Bids: {mkt.get('total_buy_qty', 'N/A')}, Asks: {mkt.get('total_sell_qty', 'N/A')})" if ratio is not None else "Awaiting Live Book"
+        tier = company_context.get("data_source_tier", "STANDARD_FREE_FALLBACK")
+        vwap_val = mkt.get("vwap")
+        vwap_text = f"INR {vwap_val}" if vwap_val is not None else "N/A"
 
         return (
             f"Evaluate liquidity profile, technical structure, and momentum for {company_context.get('symbol')} on {company_context.get('exchange')}:\n"
-            f"- Current Market Price (CMP): INR {cmp}\n"
+            f"- Data Feed Authority: {tier}\n"
+            f"- Current Market Price (CMP): INR {cmp} | Exchange VWAP: {vwap_text}\n"
             f"- 52-Week Range: Low INR {mkt.get('year_low')} / High INR {mkt.get('year_high')}\n"
             f"- Moving Averages: 50-DMA INR {dma_50}, 200-DMA INR {dma_200} (Regime: {cross_signal})\n"
             f"- Momentum & Volatility: 14-Day RSI: {rsi}, 14-Day ATR: INR {atr}, 20-Day Realized Volatility: {vol_20d}%\n"
@@ -638,7 +623,7 @@ class PeerValuationAnalyst(BaseAgent):
     """Evaluates peer multiples, DCF baselines, and historical valuation percentiles."""
 
     def __init__(self):
-        super().__init__(name="Valuation Analyst", role="Peer Benchmarking & Valuation Analyst")
+        super().__init__(name="Valuation Analyst", role="Peer Benchmarking & Valuation Analyst", model_tier="specialist")
 
     def get_system_prompt(self) -> str:
         return (

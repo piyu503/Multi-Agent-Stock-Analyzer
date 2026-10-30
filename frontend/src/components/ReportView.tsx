@@ -82,6 +82,12 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
           <span className="text-[11px] font-mono uppercase tracking-widest text-slate-400 hidden sm:inline">
             REPORT SECURITY TIER: INSTITUTIONAL
           </span>
+          {report.data_source_tier === "DHAN_PRO_VERIFIED" && (
+            <div className="px-3 py-1 rounded-full bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 text-xs font-mono font-bold flex items-center gap-1.5 shadow-[0_0_10px_rgba(6,182,212,0.3)]">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+              <span>⚡ DHAN PRO FEED</span>
+            </div>
+          )}
           {isLiveVerified ? (
             <div className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-mono font-bold flex items-center gap-1.5 shadow-[0_0_10px_rgba(16,185,129,0.2)]">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -174,7 +180,9 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
           </div>
           <div className="bg-white/[0.03] p-3.5 rounded-xl border border-white/5">
             <span className="text-slate-400 font-mono block text-[11px] mb-1">EVIDENCE CITATION</span>
-            <span className="text-emerald-300 font-bold text-sm">BSE Filings + Multi-Year Fin</span>
+            <span className="text-emerald-300 font-bold text-sm">
+              {report.data_source_tier === "DHAN_PRO_VERIFIED" ? "⚡ Dhan Pro + BSE Filings" : "BSE Filings + Multi-Year Fin"}
+            </span>
           </div>
           <div className="bg-white/[0.03] p-3.5 rounded-xl border border-white/5">
             <span className="text-slate-400 font-mono block text-[11px] mb-1">CAPITAL CONVICTION</span>

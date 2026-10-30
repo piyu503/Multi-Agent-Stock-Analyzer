@@ -7,6 +7,7 @@ Supports:
 - Centralized timeout, retry, and connection failure handling
 """
 
+import asyncio
 import json
 import logging
 import os
@@ -15,6 +16,9 @@ from typing import Any, Dict, List, Optional
 import httpx
 
 logger = logging.getLogger("bharatequity.llm")
+
+
+_UNAVAILABLE_MODELS = set()
 
 
 class LLMConfig:
@@ -41,22 +45,30 @@ class LLMConfig:
     @classmethod
     def get_model(cls, tier: Optional[str] = None) -> str:
         provider = cls.get_provider()
-        default_base = "qwen2.5:7b" if provider == "ollama" else "gpt-4o-mini"
+        default_base = "qwen2.5-coder:7b" if provider == "ollama" else "gpt-4o-mini"
         primary_model = os.environ.get("LLM_MODEL", default_base)
 
         tier_clean = (tier or "analyst").lower()
-        if tier_clean in ("extractor", "classifier"):
-            # IBM Granite for strict tabular fact extraction & classification
-            granite_default = "granite3-dense:2b" if provider == "ollama" else primary_model
-            return os.environ.get("LLM_MODEL_EXTRACTOR") or os.environ.get("GRANITE_MODEL") or granite_default
+        if tier_clean in ("extractor", "classifier", "specialist"):
+            # Fast, high-speed coding & structured output engine (non-thinking, instant JSON responses)
+            model_candidate = (
+                os.environ.get("LLM_MODEL_SPECIALIST")
+                or os.environ.get("LLM_MODEL_EXTRACTOR")
+                or "qwen2.5-coder:7b"
+                if provider == "ollama" else primary_model
+            )
         elif tier_clean in ("reasoner", "challenger", "adversarial"):
-            # DeepSeek-R1 for adversarial reasoning and critique
+            # DeepSeek 7B for adversarial rebuttal, critique & stress testing
             deepseek_default = "deepseek-r1:7b" if provider == "ollama" else primary_model
-            return os.environ.get("LLM_MODEL_REASONER") or os.environ.get("DEEPSEEK_MODEL") or deepseek_default
+            model_candidate = os.environ.get("LLM_MODEL_REASONER") or os.environ.get("DEEPSEEK_MODEL") or deepseek_default
         else:
-            # Qwen 2.5/3.5 for standard institutional analysis
-            qwen_default = "qwen2.5:7b" if provider == "ollama" else primary_model
-            return os.environ.get("LLM_MODEL_ANALYST") or os.environ.get("QWEN_MODEL") or primary_model
+            # Qwen 2.5 Coder 7B for standard institutional analysis & final synthesis
+            coder_default = "qwen2.5-coder:7b" if provider == "ollama" else primary_model
+            model_candidate = os.environ.get("LLM_MODEL_ANALYST") or coder_default
+
+        if model_candidate in _UNAVAILABLE_MODELS:
+            return primary_model
+        return model_candidate
 
     @classmethod
     def get_temperature(cls) -> float:
@@ -199,6 +211,9 @@ async def call_llm(
     try:
         return await _execute_request(target_model)
     except Exception as primary_err:
+        if "not found" in str(primary_err).lower() or "404" in str(primary_err):
+            _UNAVAILABLE_MODELS.add(target_model)
+
         if target_model != primary_model:
             logger.warning(
                 f"Specialized model tier '{model_tier}' ({target_model}) failed: {primary_err}. "

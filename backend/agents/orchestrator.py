@@ -13,8 +13,12 @@ Uses Annotated[List[AgentOutput], operator.add] to guarantee safe parallel state
 
 import asyncio
 from datetime import datetime, timezone
+import logging
 import operator
+import os
 from typing import Annotated, Any, Dict, List, Optional, Tuple, TypedDict
+
+logger = logging.getLogger("bharatequity.orchestrator")
 
 from langgraph.graph import END, START, StateGraph
 
@@ -37,6 +41,7 @@ from agents.decision_makers import (
     TraderAgent,
 )
 from agents.metrics import calculate_financial_metrics
+from agents.llm import LLMConfig
 from schemas import BullBearDebate, ReportSection, ResearchReport, TacticalExecutionPlan
 
 
@@ -319,7 +324,8 @@ async def orchestrate_stock_research(company_context: Dict[str, Any]) -> Tuple[R
         risk_out=risk_out,
         debate=debate,
         pm_output=pm_output,
-        trader_out=trader_out
+        trader_out=trader_out,
+        data_source_tier=company_context.get("data_source_tier", "STANDARD_FREE_FALLBACK")
     )
 
     return report, all_agent_runs
@@ -338,7 +344,8 @@ def build_final_research_report(
     risk_out: Optional[AgentOutput],
     debate: BullBearDebate,
     pm_output: Optional[AgentOutput],
-    trader_out: Optional[AgentOutput]
+    trader_out: Optional[AgentOutput],
+    data_source_tier: str = "STANDARD_FREE_FALLBACK"
 ) -> ResearchReport:
     """Shared single report-assembly function for both streaming and non-streaming orchestrator paths."""
     is_dev_mode = any(r.execution_status in ("dev_stub", "stub_fallback") for r in all_agent_runs)
@@ -408,6 +415,7 @@ def build_final_research_report(
         generated_at=now_iso,
         status=report_status,
         is_prototype_demo=is_dev_mode,
+        data_source_tier=data_source_tier,
         disclaimer=disclaimer_text,
         conviction=conviction,
         target_allocation_pct=target_alloc,
@@ -477,6 +485,9 @@ async def stream_stock_research(company_context: Dict[str, Any]):
         "agent_runs": [],
     }
 
+    # Initial state tier defaults to standard fallback until data ingestion verifies it
+    tier_init = "STANDARD_FREE_FALLBACK"
+
     # Yield step 0: Started
     yield {
         "event": "started",
@@ -485,17 +496,28 @@ async def stream_stock_research(company_context: Dict[str, Any]):
             "exchange": exchange,
             "company_name": company_name,
             "total_agents": 13,
+            "data_source_tier": tier_init,
             "message": "Initializing 13-agent deliberation loop..."
         }
     }
 
     # Stage 0: Planning & Live Data Ingestion
-    yield {"event": "agent_start", "data": {"role": "Research Manager & Orchestrator", "agent_name": "Research Manager", "stage": 0}}
+    yield {
+        "event": "agent_start",
+        "data": {
+            "role": "Research Manager & Orchestrator",
+            "agent_name": "Research Manager",
+            "stage": 0,
+            "data_source_tier": tier_init
+        }
+    }
     plan_res = await planning_node(state)
     state["company_context"] = plan_res["company_context"]
     state["deterministic_metrics"] = plan_res["deterministic_metrics"]
     state["manager_output"] = plan_res["manager_output"]
     state["agent_runs"].extend(plan_res["agent_runs"])
+    live_tier = state["company_context"].get("data_source_tier", tier_init)
+
     yield {
         "event": "agent_complete",
         "data": {
@@ -504,28 +526,44 @@ async def stream_stock_research(company_context: Dict[str, Any]):
             "stage": 0,
             "summary": plan_res["manager_output"].summary,
             "confidence": plan_res["manager_output"].confidence_score,
-            "duration": plan_res["manager_output"].execution_duration_sec
+            "duration": plan_res["manager_output"].execution_duration_sec,
+            "data_source_tier": live_tier
         }
     }
 
-    # Stage 1: Parallel Evidence & Foundational Specialists
-    specialists = [
-        ("Evidence Verification Analyst", "Evidence Verification Analyst"),
-        ("Fundamentals Analyst", "Fundamentals & Business Quality Analyst"),
-        ("Growth & Industry Analyst", "Growth & Industry Analyst"),
-        ("News & Events Analyst", "News, Corporate Events & Earnings-Call Analyst"),
-        ("Social Sentiment Analyst", "Social Sentiment Analyst"),
-        ("Market Analyst", "Market Analyst"),
-        ("Valuation Analyst", "Peer Benchmarking & Valuation Analyst")
+    # Stage 1: Foundational Specialists (Real-time Stream Ticking per Agent)
+    specialist_instances = [
+        EvidenceVerificationAnalyst(),
+        FundamentalsQualityAnalyst(),
+        GrowthIndustryAnalyst(),
+        NewsCorporateEventsAnalyst(),
+        SocialSentimentAnalyst(),
+        MarketAnalyst(),
+        PeerValuationAnalyst()
     ]
-    for agent_name, role_name in specialists:
-        yield {"event": "agent_start", "data": {"role": role_name, "agent_name": agent_name, "stage": 1}}
 
-    foundational_res = await foundational_analysts_node(state)
-    state["evidence_pool"] = foundational_res["evidence_pool"]
-    state["agent_runs"].extend(foundational_res["agent_runs"])
+    # Stage 1: Parallel Evidence & Foundational Specialists (True Concurrent Dispatch + Live Individual Ticks)
+    for agent in specialist_instances:
+        yield {"event": "agent_start", "data": {"role": agent.role, "agent_name": agent.name, "stage": 1}}
 
-    for agent_out in foundational_res["agent_runs"]:
+    async def _run_foundational_agent(ag):
+        logger.info(f"[STAGE 1 DISPATCH] Running '{ag.name}' ({ag.role}) | Tier: {ag.model_tier}")
+        t_start = asyncio.get_event_loop().time()
+        res = await ag.run(state["company_context"], timeout_sec=60.0)
+        dur = round(asyncio.get_event_loop().time() - t_start, 2)
+        logger.info(f"[STAGE 1 DONE] '{ag.name}' completed in {dur}s | Status: {res.execution_status}")
+        return res
+
+    tasks = [asyncio.create_task(_run_foundational_agent(ag)) for ag in specialist_instances]
+    foundational_runs = []
+
+    for finished in asyncio.as_completed(tasks):
+        agent_out = await finished
+        foundational_runs.append(agent_out)
+        state["agent_runs"].append(agent_out)
+        logger.info(f"[STAGE 1 SSE TICK] Emitting agent_complete for '{agent_out.agent_name}' ({agent_out.execution_duration_sec}s)")
+
+        # Immediately yield this individual agent's completion tick to SSE
         yield {
             "event": "agent_complete",
             "data": {
@@ -538,35 +576,80 @@ async def stream_stock_research(company_context: Dict[str, Any]):
             }
         }
 
-    # Stage 2: Independent Theses & Stage 3: Adversarial Rebuttal (Bull & Bear)
+    state["evidence_pool"] = {
+        "company": state["company_context"],
+        "calculated_metrics": state.get("deterministic_metrics", {}),
+        "analyst_findings": {r.role: r.findings for r in foundational_runs},
+    }
+
+    # Stage 2: Independent Theses in Parallel (Bull & Bear with Live Ticking)
     yield {"event": "agent_start", "data": {"role": "Bull Researcher", "agent_name": "Bull Researcher", "stage": 2}}
     yield {"event": "agent_start", "data": {"role": "Bear Researcher", "agent_name": "Bear Researcher", "stage": 2}}
 
-    bull_res, bear_res = await asyncio.gather(
-        bull_thesis_node(state),
-        bear_thesis_node(state)
-    )
-    state["bull_initial"] = bull_res["bull_initial"]
-    state["bear_initial"] = bear_res["bear_initial"]
-    state["agent_runs"].extend(bull_res["agent_runs"] + bear_res["agent_runs"])
+    stage2_tasks = [
+        asyncio.create_task(bull_thesis_node(state)),
+        asyncio.create_task(bear_thesis_node(state))
+    ]
+    for finished in asyncio.as_completed(stage2_tasks):
+        node_res = await finished
+        if "bull_initial" in node_res:
+            state["bull_initial"] = node_res["bull_initial"]
+            state["agent_runs"].extend(node_res["agent_runs"])
+            yield {
+                "event": "agent_complete",
+                "data": {
+                    "role": "Bull Researcher",
+                    "agent_name": "Bull Researcher",
+                    "stage": 2,
+                    "summary": node_res["bull_initial"].summary,
+                    "confidence": node_res["bull_initial"].confidence_score,
+                    "duration": node_res["bull_initial"].execution_duration_sec
+                }
+            }
+        elif "bear_initial" in node_res:
+            state["bear_initial"] = node_res["bear_initial"]
+            state["agent_runs"].extend(node_res["agent_runs"])
+            yield {
+                "event": "agent_complete",
+                "data": {
+                    "role": "Bear Researcher",
+                    "agent_name": "Bear Researcher",
+                    "stage": 2,
+                    "summary": node_res["bear_initial"].summary,
+                    "confidence": node_res["bear_initial"].confidence_score,
+                    "duration": node_res["bear_initial"].execution_duration_sec
+                }
+            }
 
-    # Stage 3: Adversarial Rebuttal Round
+    # Stage 3: Adversarial Rebuttal Round between Bull & Bear
+    logger.info("[STAGE 3 DISPATCH] Adversarial Rebuttal: Bull & Bear cross-examining opposing theses...")
+    yield {
+        "event": "rebuttal_start",
+        "data": {
+            "stage": 3,
+            "message": "Adversarial Rebuttal in progress: Bull and Bear researchers cross-examining opposing theses..."
+        }
+    }
+    t_reb_start = asyncio.get_event_loop().time()
     rebuttal_res = await debate_rebuttal_node(state)
+    reb_dur = round(asyncio.get_event_loop().time() - t_reb_start, 2)
+
     state["bull_rebuttal"] = rebuttal_res["bull_rebuttal"]
     state["bear_rebuttal"] = rebuttal_res["bear_rebuttal"]
     state["agent_runs"].extend(rebuttal_res["agent_runs"])
 
-    bull_total_dur = round(bull_res["bull_initial"].execution_duration_sec + rebuttal_res["bull_rebuttal"].execution_duration_sec, 2)
-    bear_total_dur = round(bear_res["bear_initial"].execution_duration_sec + rebuttal_res["bear_rebuttal"].execution_duration_sec, 2)
+    bull_total_dur = round(state["bull_initial"].execution_duration_sec + rebuttal_res["bull_rebuttal"].execution_duration_sec, 2)
+    bear_total_dur = round(state["bear_initial"].execution_duration_sec + rebuttal_res["bear_rebuttal"].execution_duration_sec, 2)
 
+    logger.info(f"[STAGE 3 DONE] Adversarial Rebuttal complete in {reb_dur}s. Updating Bull & Bear syntheses.")
     yield {
         "event": "agent_complete",
         "data": {
             "role": "Bull Researcher",
             "agent_name": "Bull Researcher",
             "stage": 3,
-            "summary": f"Formulated bull case & defended in adversarial rebuttal: {bull_res['bull_initial'].summary}",
-            "confidence": bull_res["bull_initial"].confidence_score,
+            "summary": f"Rebuttal Complete: Defended upside against Bear critique & reinforced valuation moat ({rebuttal_res['bull_rebuttal'].summary})",
+            "confidence": rebuttal_res["bull_rebuttal"].confidence_score,
             "duration": bull_total_dur
         }
     }
@@ -576,20 +659,30 @@ async def stream_stock_research(company_context: Dict[str, Any]):
             "role": "Bear Researcher",
             "agent_name": "Bear Researcher",
             "stage": 3,
-            "summary": f"Formulated bear case & challenged thesis in rebuttal: {bear_res['bear_initial'].summary}",
-            "confidence": bear_res["bear_initial"].confidence_score,
+            "summary": f"Rebuttal Complete: Defended downside risks against Bull claims & reinforced margin threats ({rebuttal_res['bear_rebuttal'].summary})",
+            "confidence": rebuttal_res["bear_rebuttal"].confidence_score,
             "duration": bear_total_dur
         }
     }
 
-    # Stage 4: Risk & Execution
+    # Stage 4: Risk Evaluation (Must complete before Trader to anchor stop-loss & invalidation)
+    logger.info("[STAGE 4 DISPATCH] Starting Risk Analyst evaluation...")
     yield {"event": "agent_start", "data": {"role": "Risk Analyst", "agent_name": "Risk Analyst", "stage": 4}}
-    yield {"event": "agent_start", "data": {"role": "Trader", "agent_name": "Execution Trader", "stage": 4}}
 
-    risk_exec_res = await risk_and_execution_node(state)
-    state["trader_output"] = risk_exec_res["trader_output"]
-    state["risk_output"] = risk_exec_res["risk_output"]
-    state["agent_runs"].extend(risk_exec_res["agent_runs"])
+    evidence_for_s4 = dict(state["evidence_pool"])
+    bull_reb = state.get("bull_rebuttal")
+    bear_reb = state.get("bear_rebuttal")
+    bull_init = state.get("bull_initial")
+    bear_init = state.get("bear_initial")
+
+    evidence_for_s4["bull_rebuttal_points"] = bull_reb.findings if bull_reb else (bull_init.findings if bull_init else [])
+    evidence_for_s4["bear_rebuttal_points"] = bear_reb.findings if bear_reb else (bear_init.findings if bear_init else [])
+
+    risk_agent = RiskAnalystAgent()
+    risk_out = await risk_agent.run(state["company_context"], evidence_for_s4)
+    state["risk_output"] = risk_out
+    state["agent_runs"].append(risk_out)
+    logger.info(f"[STAGE 4 DONE] 'Risk Analyst' completed in {risk_out.execution_duration_sec}s")
 
     yield {
         "event": "agent_complete",
@@ -597,20 +690,34 @@ async def stream_stock_research(company_context: Dict[str, Any]):
             "role": "Risk Analyst",
             "agent_name": "Risk Analyst",
             "stage": 4,
-            "summary": risk_exec_res["risk_output"].summary,
-            "confidence": risk_exec_res["risk_output"].confidence_score,
-            "duration": risk_exec_res["risk_output"].execution_duration_sec
+            "summary": risk_out.summary,
+            "confidence": risk_out.confidence_score,
+            "duration": risk_out.execution_duration_sec
         }
     }
+
+    # Stage 4B: Execution Trader (Directly consumes Risk Analyst downside boundaries)
+    logger.info("[STAGE 4B DISPATCH] Starting Execution Trader (anchored by Risk Analyst findings)...")
+    yield {"event": "agent_start", "data": {"role": "Trader", "agent_name": "Execution Trader", "stage": 4}}
+
+    evidence_for_trader = dict(evidence_for_s4)
+    evidence_for_trader["risk_findings"] = risk_out.findings
+
+    trader_agent = TraderAgent()
+    trader_out = await trader_agent.run(state["company_context"], evidence_for_trader)
+    state["trader_output"] = trader_out
+    state["agent_runs"].append(trader_out)
+    logger.info(f"[STAGE 4B DONE] 'Execution Trader' completed in {trader_out.execution_duration_sec}s")
+
     yield {
         "event": "agent_complete",
         "data": {
             "role": "Trader",
             "agent_name": "Execution Trader",
             "stage": 4,
-            "summary": risk_exec_res["trader_output"].summary,
-            "confidence": risk_exec_res["trader_output"].confidence_score,
-            "duration": risk_exec_res["trader_output"].execution_duration_sec
+            "summary": trader_out.summary,
+            "confidence": trader_out.confidence_score,
+            "duration": trader_out.execution_duration_sec
         }
     }
 
@@ -670,7 +777,8 @@ async def stream_stock_research(company_context: Dict[str, Any]):
         risk_out=risk_out,
         debate=debate,
         pm_output=pm_output,
-        trader_out=trader_out
+        trader_out=trader_out,
+        data_source_tier=state["company_context"].get("data_source_tier", "STANDARD_FREE_FALLBACK")
     )
 
     yield {

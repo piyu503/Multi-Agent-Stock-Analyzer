@@ -20,6 +20,7 @@ class HealthResponse(BaseModel):
     total_listings: int = Field(0, description="Total active listings across exchanges")
     timestamp: str
     catalog_coverage: Optional[CatalogCoverage] = None
+    dhan_pro_active: bool = Field(False, description="Whether Dhan API Pro verified feed is connected")
 
 
 class StockSummary(BaseModel):
@@ -101,6 +102,7 @@ class ResearchReport(BaseModel):
     generated_at: str
     status: str = "demo"
     is_prototype_demo: bool = True
+    data_source_tier: Optional[str] = Field("STANDARD_FREE_FALLBACK", description="DHAN_PRO_VERIFIED or STANDARD_FREE_FALLBACK")
     disclaimer: str = (
         "PROTOTYPE DEMO REPORT: Synthesized for development and interface validation only. "
         "Does not constitute genuine financial advice, live metrics, or verified agent synthesis."

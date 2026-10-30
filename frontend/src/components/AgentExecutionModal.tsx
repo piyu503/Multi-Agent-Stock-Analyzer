@@ -21,6 +21,7 @@ interface AgentExecutionModalProps {
   currentStage: number;
   isComplete: boolean;
   error?: string | null;
+  dataSourceTier?: string;
 }
 
 export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
@@ -30,8 +31,10 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
   companyName,
   exchange,
   agents,
+  currentStage,
   isComplete,
-  error
+  error,
+  dataSourceTier
 }) => {
   if (!isOpen) return null;
 
@@ -56,6 +59,16 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
                 <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-white/10 text-cyan-300 border border-white/10">
                   {exchange}
                 </span>
+                {dataSourceTier === 'DHAN_PRO_VERIFIED' ? (
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center gap-1 shadow-[0_0_8px_rgba(6,182,212,0.3)]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                    ⚡ DHAN PRO FEED
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-white/5 text-slate-400 border border-white/10">
+                    STANDARD FEED
+                  </span>
+                )}
               </div>
               <p className="text-xs text-slate-300 font-medium truncate max-w-md mt-0.5">
                 {companyName}
@@ -104,8 +117,8 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
             const isRunning = agent.status === 'running';
 
             return (
+              <React.Fragment key={agent.id}>
               <div
-                key={agent.id}
                 className={`py-3 px-3.5 rounded-xl flex items-start justify-between gap-3 transition-all ${
                   isRunning
                     ? 'bg-fuchsia-500/10 border border-fuchsia-500/40 shadow-[0_0_15px_rgba(217,70,239,0.15)]'
@@ -149,7 +162,11 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
 
                     {isRunning && (
                       <p className="mt-1 text-xs text-fuchsia-300 font-medium animate-pulse flex items-center gap-1.5 font-mono">
-                        <span>Evaluating financial metrics and filing data...</span>
+                        <span>
+                          {currentStage === 3 && (agent.id === 'bull' || agent.id === 'bear')
+                            ? 'Cross-examining opposing thesis in rebuttal round...'
+                            : 'Evaluating financial metrics and filing data...'}
+                        </span>
                       </p>
                     )}
                   </div>
@@ -169,6 +186,17 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
                   )}
                 </div>
               </div>
+              {agent.id === 'bear' && currentStage === 3 && (
+                <div className="my-2 py-2 px-3 rounded-lg bg-gradient-to-r from-purple-500/10 via-fuchsia-500/15 to-purple-500/10 border border-fuchsia-500/30 flex items-center justify-between text-xs font-mono animate-pulse shadow-[0_0_12px_rgba(217,70,239,0.15)]">
+                  <span className="text-fuchsia-300 font-semibold tracking-wide">
+                    Adversarial Rebuttal in Progress: Bull and Bear researchers cross-examining opposing theses...
+                  </span>
+                  <span className="text-purple-300 font-bold px-2 py-0.5 rounded bg-purple-500/20 text-[10px] tracking-wider uppercase">
+                    Debate Round
+                  </span>
+                </div>
+              )}
+              </React.Fragment>
             );
           })}
         </div>

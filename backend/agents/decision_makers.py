@@ -35,12 +35,16 @@ class BullResearcherAgent(BaseAgent):
         metrics = evidence.get("calculated_metrics") or company_context.get("calculated_metrics") or {}
         mkt = company_context.get("market_data") or {}
 
+        fno = company_context.get("fno_sentiment") or {}
+        fno_line = f"- Institutional F&O Derivatives Flow: {fno.get('buildup_type', 'Neutral')}, PCR: {fno.get('put_call_ratio', 'N/A')}, Active Contracts: {fno.get('open_interest', 'N/A')}\n" if fno.get("buildup_type") else ""
+
         baseline_text = (
             f"Verified Financial & Valuation Baseline:\n"
             f"- CMP: INR {mkt.get('current_price', 'N/A')}, P/E: {mkt.get('pe_ratio', 'N/A')}, EV/EBITDA: {mkt.get('ev_ebitda', 'N/A')}\n"
             f"- D/E: {metrics.get('debt_to_equity', 'N/A')}, Interest Coverage: {metrics.get('interest_coverage', 'N/A')}\n"
             f"- ROE: {metrics.get('roe_pct', 'N/A')}%, ROCE: {metrics.get('roce_pct', 'N/A')}%, ROCE-WACC Spread: {metrics.get('roce_wacc_spread', 'N/A')}%\n"
             f"- 3-Year Rev CAGR: {metrics.get('revenue_cagr_3yr_pct', 'N/A')}%, 3-Year EPS CAGR: {metrics.get('eps_cagr_3yr_pct', 'N/A')}%, PEG Ratio: {metrics.get('peg_ratio', 'N/A')}\n"
+            f"{fno_line}"
             f"Specialist Evidence Pool:\n{findings_block}\n\n"
             "FACTUAL DISCIPLINE RULES:\n"
             "- If valuation multiples are elevated (P/E > 30), do not claim the stock is cheap on headline multiples; justify valuation through ROCE compounding, moat durability, and earnings visibility.\n"
@@ -126,16 +130,20 @@ class BearResearcherAgent(BaseAgent):
         risk_qa = transcripts.get("risk_qa_snippets") or []
         risk_qa_text = ("\n".join([f"> \"{q}\"" for q in risk_qa])) if risk_qa else "No analyst interrogation snippets in local transcript store."
 
+        fno = company_context.get("fno_sentiment") or {}
+        fno_line = f"- Institutional F&O Derivatives Flow: {fno.get('buildup_type', 'Neutral')}, PCR: {fno.get('put_call_ratio', 'N/A')}, Active Contracts: {fno.get('open_interest', 'N/A')}\n" if fno.get("buildup_type") else ""
+
         baseline_text = (
             f"Verified Financial & Valuation Baseline:\n"
             f"- CMP: INR {mkt.get('current_price', 'N/A')}, P/E: {mkt.get('pe_ratio', 'N/A')}, EV/EBITDA: {mkt.get('ev_ebitda', 'N/A')}\n"
             f"- D/E: {metrics.get('debt_to_equity', 'N/A')}, Interest Coverage: {metrics.get('interest_coverage', 'N/A')}\n"
             f"- ROE: {metrics.get('roe_pct', 'N/A')}%, ROCE: {metrics.get('roce_pct', 'N/A')}%, ROCE-WACC Spread: {metrics.get('roce_wacc_spread', 'N/A')}%\n"
             f"- 3-Year Rev CAGR: {metrics.get('revenue_cagr_3yr_pct', 'N/A')}%, 3-Year EPS CAGR: {metrics.get('eps_cagr_3yr_pct', 'N/A')}%, PEG Ratio: {metrics.get('peg_ratio', 'N/A')}\n"
+            f"{fno_line}"
             f"EARNINGS CALL TRANSCRIPT (Analyst Q&A Scrutiny & Risk Commentary):\n{risk_qa_text}\n\n"
             f"Specialist Evidence Pool:\n{findings_block}\n\n"
             "FACTUAL DISCIPLINE RULES:\n"
-            "- DEBT CONSISTENCY: If Debt-to-Equity is <= 0.8 (e.g. 0.44), it is MODERATE/LOW gearing. You are STRICTLY PROHIBITED from using headings like 'High Debt-to-Equity Ratio' or asserting solvency distress. Focus on cyclical demand, margin pressure, or capital allocation drag instead.\n"
+            "- DEBT CONSISTENCY: If Debt-to-Equity is <= 0.8 (e.g. 0.44 or 0.81), it is MODERATE/LOW gearing. You are STRICTLY PROHIBITED from using headings like 'High Debt-to-Equity Ratio' or asserting solvency distress. For banking/financial institutions (e.g. HDFCBANK), deposits are operational assets, not debt distress. Focus on cyclical demand, margin pressure, or capital allocation drag instead.\n"
             "- OFF-BALANCE-SHEET DEBT: Do NOT allege off-balance-sheet debt or contingent liabilities without citing a specific disclosed figure or auditor qualification from the input data.\n"
             "- PEER COMPARISON: If sector peers are missing, DO NOT claim the stock trades 'higher than sector norms'. Report multiples factually.\n"
             "- Never label high ROCE (> 25%) as unviable returns; challenge whether returns will mean-revert.\n"
@@ -219,21 +227,28 @@ class TraderAgent(BaseAgent):
         swing_h = mkt.get("swing_high_20d", "N/A")
         swing_l = mkt.get("swing_low_20d", "N/A")
         vol_20d = mkt.get("realized_vol_20d_pct", "N/A")
+        tier = company_context.get("data_source_tier", "STANDARD_FREE_FALLBACK")
+        atr_source = "Dhan Pro Verified" if tier == "DHAN_PRO_VERIFIED" else "Estimated"
+        vwap = mkt.get("vwap", "N/A")
 
         bull_points = evidence.get("bull_rebuttal_points") or evidence.get("bull_points") or []
         bear_points = evidence.get("bear_rebuttal_points") or evidence.get("bear_points") or []
+        risk_findings = evidence.get("risk_findings") or []
+        risk_context_line = f"- Certified Risk Assessment & Invalidation Triggers:\n" + "\n".join([f"  * {rf}" for rf in risk_findings[:3]]) + "\n" if risk_findings else ""
 
         return (
             f"Formulate optimal execution structure and tactical accumulation strategy for {company_context.get('symbol')} on {company_context.get('exchange')}:\n"
-            f"- Price & Technical Levels: CMP INR {cmp}, 50-DMA INR {dma_50}, 200-DMA INR {dma_200}\n"
+            f"- Data Feed Authority: {tier}\n"
+            f"- Price & Technical Levels: CMP INR {cmp}, VWAP INR {vwap}, 50-DMA INR {dma_50}, 200-DMA INR {dma_200}\n"
             f"- 52-Week Range (Intraday Extrema): Low INR {mkt.get('year_low')} / High INR {mkt.get('year_high')}\n"
-            f"- Volatility & Swing Bands: 14-Day ATR: INR {atr_14}, 20-Day Swing Range: [Low INR {swing_l} - High INR {swing_h}], 20-Day Realized Volatility: {vol_20d}%\n"
+            f"- Volatility & Swing Bands: 14-Day ATR: INR {atr_14} ({atr_source}), 20-Day Swing Range: [Low INR {swing_l} - High INR {swing_h}], 20-Day Realized Volatility: {vol_20d}%\n"
             f"- Liquidity: 30-Day Avg Volume: {vol} shares, Beta: {beta}\n"
+            f"{risk_context_line}"
             f"- Bull Key Catalyst: {bull_points[0] if bull_points else 'Secular earnings visibility'}\n"
             f"- Bear Downside Risk: {bear_points[0] if bear_points else 'Margin compression'}\n\n"
-            "Define an institutional execution plan including:\n"
+            "Define an institutional execution plan factoring in the Risk Analyst's downside boundaries:\n"
             "1. Recommended Entry Range / Accumulation Zone (explicit price band relative to CMP & 20-day swing low)\n"
-            "2. Tactical Invalidation / Stop-Loss Level (anchored by ATR buffer below support / swing low)\n"
+            "2. Tactical Invalidation / Stop-Loss Level (anchored by ATR buffer below Risk Analyst's tail risk / support floor)\n"
             "3. Staged Tranche Strategy (e.g. 40% initial, 30% on pullback, 30% on confirmed breakout)\n"
             "4. Impact Cost & Volatility Buffer (derived from 14-day ATR & 20-day realized volatility)\n\n"
             "MANDATORY: In your JSON response under 'role_specific_data', you MUST provide exact numerical fields:\n"
@@ -316,18 +331,25 @@ class RiskAnalystAgent(BaseAgent):
         fin = company_context.get("financials") or {}
         filings = company_context.get("corporate_filings") or []
         bear_points = evidence.get("bear_rebuttal_points") or evidence.get("bear_points") or []
+        mkt = company_context.get("market_data") or {}
+        tier = company_context.get("data_source_tier", "STANDARD_FREE_FALLBACK")
+        hist_vol = mkt.get("historical_volatility_pct")
+        hist_vol_line = f"- 30-Day Annualized Historical Volatility: {hist_vol}% (Source: Dhan Pro Daily Candles)\n" if hist_vol is not None else ""
 
         filing_snippets = [f"- {f.get('category')}: {f.get('headline')}" for f in filings[:3]]
         filings_text = "\n".join(filing_snippets) if filing_snippets else "No adverse regulatory disclosures in current window."
 
         return (
             f"Perform independent risk and stress-test assessment for {company_context.get('company_name')} ({company_context.get('symbol')}):\n"
+            f"- Data Source Tier: {tier}\n"
+            f"{hist_vol_line}"
             f"- Solvency & Leverage: Total Debt INR {fin.get('total_debt')}, Debt/Equity: {metrics.get('debt_to_equity')} [{metrics.get('debt_to_equity_rating')}], Interest Coverage: {metrics.get('interest_coverage')} [{metrics.get('interest_coverage_rating')}] (Solvent: {metrics.get('is_solvent')})\n"
             f"- Regulatory & Exchange Disclosures:\n{filings_text}\n"
             f"- Debate Downside Points to Stress-Test:\n" + "\n".join([f"- {p}" for p in bear_points[:3]]) + "\n\n"
             "CONSISTENCY & GROUNDING RULES:\n"
             "- Solvency Consistency: If Interest Coverage is >= 4.0x or rated ROBUST/ADEQUATE, DO NOT describe interest coverage as low or precarious. Frame debt risks around capex commitments, refinancing terms, or rate cycles rather than claiming immediate insolvency.\n"
-            "- Leverage Consistency: If Debt/Equity is <= 0.6 or rated MINIMAL/MODERATE, DO NOT describe debt as an existential solvency crisis.\n"
+            "- Financial Sector & Banks: For banking or financial companies (e.g. HDFC Bank, ICICI), standard industrial debt-to-equity (e.g. 0.81) and interest coverage metrics are NOT signs of debt distress because customer deposits represent operational funding rather than corporate leverage. Assess NPA trends, credit costs, and Net Interest Margins (NIM) instead.\n"
+            "- Leverage Consistency: If Debt/Equity is <= 0.8 or rated MINIMAL/MODERATE, DO NOT describe debt as an existential solvency crisis.\n"
             "- Off-Balance-Sheet & Contingent Liabilities: Every material liability claim MUST cite a specific rupee amount or audit disclosure from the data. If specific amounts or auditor qualification notes are missing, label it as 'Unverified contingent risk (unquantified)' and EXCLUDE it from the scored risk assessment.\n"
             "- Temporal Grounding: Do not treat historical filings or completed board meetings as pending tail risks.\n"
             "Evaluate realistic tail risks, cyclical margin sensitivity, regulatory exposure, and produce a ranked risk matrix with required downside mitigations."

@@ -6,6 +6,7 @@ interface NavbarProps {
   onHomeClick: () => void;
   onHistoryClick: () => void;
   backendHealthy: boolean | null;
+  dhanProActive?: boolean;
   user: User | null;
   onOpenAuth: () => void;
   onLogout: () => void;
@@ -17,6 +18,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onHomeClick,
   onHistoryClick,
   backendHealthy,
+  dhanProActive,
   user,
   onOpenAuth,
   onLogout,
@@ -126,6 +128,14 @@ export const Navbar: React.FC<NavbarProps> = ({
               )}
             </span>
           </div>
+
+          {/* Dhan Pro Live Feed Indicator */}
+          {dhanProActive && (
+            <div className="hidden sm:flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 font-mono text-[11px] font-bold shadow-[0_0_10px_rgba(6,182,212,0.25)]">
+              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+              <span>⚡ DHAN PRO</span>
+            </div>
+          )}
 
           {/* Authentication Component / Profile Pill */}
           {user ? (

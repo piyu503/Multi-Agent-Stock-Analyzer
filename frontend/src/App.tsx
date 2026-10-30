@@ -64,6 +64,8 @@ export function App() {
   const [reportError, setReportError] = useState<string | null>(null);
 
   const [backendHealthy, setBackendHealthy] = useState<boolean | null>(null);
+  const [dhanProActive, setDhanProActive] = useState<boolean>(false);
+  const [streamTier, setStreamTier] = useState<string | null>(null);
 
   // Authentication State
   const [user, setUser] = useState<User | null>(getStoredUser());
@@ -113,10 +115,12 @@ export function App() {
 
   const checkHealth = async () => {
     try {
-      await checkBackendHealth();
+      const res = await checkBackendHealth();
       setBackendHealthy(true);
+      setDhanProActive(Boolean(res && res.dhan_pro_active));
     } catch {
       setBackendHealthy(false);
+      setDhanProActive(false);
     }
   };
 
@@ -232,6 +236,7 @@ export function App() {
     setIsDeliberationComplete(false);
     setCurrentReport(null);
     setReportError(null);
+    setStreamTier(dhanProActive ? 'DHAN_PRO_VERIFIED' : null);
     setIsModalOpen(true);
 
     const token = getAuthToken();
@@ -239,17 +244,40 @@ export function App() {
     const sseUrl = `/api/reports/stream/${encodeURIComponent(sym)}?exchange=${encodeURIComponent(exch)}${tokenParam}`;
     const eventSource = new EventSource(sseUrl);
 
+    eventSource.addEventListener('started', (e: MessageEvent) => {
+      try {
+        const payload = JSON.parse(e.data);
+        if (payload.data_source_tier) {
+          setStreamTier(payload.data_source_tier);
+        }
+      } catch (err) {
+        console.error('Error parsing started event', err);
+      }
+    });
+
     eventSource.addEventListener('agent_start', (e: MessageEvent) => {
       try {
         const payload = JSON.parse(e.data);
         setCurrentStage(payload.stage || 0);
+        if (payload.data_source_tier) {
+          setStreamTier(payload.data_source_tier);
+        }
+        const incomingName = (payload.agent_name || '').toLowerCase();
+        const incomingRole = (payload.role || '').toLowerCase();
+
         setAgentProgress((prev) =>
-          prev.map((item) =>
-            item.name.toLowerCase() === (payload.agent_name || '').toLowerCase() ||
-            item.role.toLowerCase() === (payload.role || '').toLowerCase()
-              ? { ...item, status: 'running' }
-              : item
-          )
+          prev.map((item) => {
+            const matches =
+              item.name.toLowerCase() === incomingName ||
+              item.role.toLowerCase() === incomingRole ||
+              incomingRole.includes(item.name.toLowerCase()) ||
+              item.role.toLowerCase().includes(incomingRole);
+            // If already completed with a real duration, never reset it back to running!
+            if (matches && item.status !== 'completed') {
+              return { ...item, status: 'running' };
+            }
+            return item;
+          })
         );
       } catch (err) {
         console.error('Error parsing agent_start event', err);
@@ -259,22 +287,43 @@ export function App() {
     eventSource.addEventListener('agent_complete', (e: MessageEvent) => {
       try {
         const payload = JSON.parse(e.data);
+        if (payload.data_source_tier) {
+          setStreamTier(payload.data_source_tier);
+        }
+        const incomingName = (payload.agent_name || '').toLowerCase();
+        const incomingRole = (payload.role || '').toLowerCase();
+
         setAgentProgress((prev) =>
-          prev.map((item) =>
-            item.name.toLowerCase() === (payload.agent_name || '').toLowerCase() ||
-            item.role.toLowerCase() === (payload.role || '').toLowerCase()
+          prev.map((item) => {
+            const matches =
+              item.name.toLowerCase() === incomingName ||
+              item.role.toLowerCase() === incomingRole ||
+              incomingRole.includes(item.name.toLowerCase()) ||
+              item.role.toLowerCase().includes(incomingRole);
+            return matches
               ? {
                   ...item,
                   status: 'completed',
                   summary: payload.summary,
                   duration: payload.duration
                 }
-              : item
-          )
+              : item;
+          })
         );
       } catch (err) {
         console.error('Error parsing agent_complete event', err);
       }
+    });
+
+    eventSource.addEventListener('rebuttal_start', () => {
+      setCurrentStage(3);
+      setAgentProgress((prev) =>
+        prev.map((item) =>
+          item.id === 'bull' || item.id === 'bear'
+            ? { ...item, status: 'running' }
+            : item
+        )
+      );
     });
 
     eventSource.addEventListener('report_ready', (e: MessageEvent) => {
@@ -282,7 +331,10 @@ export function App() {
         const reportData: ResearchReport = JSON.parse(e.data);
         setCurrentReport(reportData);
         setIsDeliberationComplete(true);
-        setAgentProgress((prev) => prev.map((a) => ({ ...a, status: 'completed' })));
+        // Only mark agents completed if they didn't already have their real duration from the stream
+        setAgentProgress((prev) =>
+          prev.map((a) => (a.status === 'completed' ? a : { ...a, status: 'completed' }))
+        );
         eventSource.close();
         autoSaveReport(reportData);
       } catch (err) {
@@ -290,11 +342,18 @@ export function App() {
       }
     });
 
-    eventSource.addEventListener('error', (e: any) => {
-      console.warn('SSE stream notice, falling back if needed', e);
-      eventSource.close();
-      if (!isDeliberationComplete) {
-        handleFallbackGenerateReport(sym, exch);
+    eventSource.addEventListener('error', (_e: any) => {
+      // EventSource readyState: 0 = CONNECTING, 1 = OPEN, 2 = CLOSED
+      if (eventSource.readyState === 2) {
+        console.warn('SSE stream closed unexpectedly, checking report status...');
+        eventSource.close();
+        // Only trigger fallback if the stream actually closed before report completion
+        if (!isDeliberationComplete) {
+          handleFallbackGenerateReport(sym, exch);
+        }
+      } else {
+        // ReadyState 0 means browser is auto-reconnecting (e.g. temporary network pause), do not wipe state!
+        console.info('SSE stream reconnecting automatically, preserving active deliberations...');
       }
     });
   };
@@ -303,29 +362,40 @@ export function App() {
     try {
       const report = await generateReport(symbol, exchange);
       setCurrentReport(report);
-      const roleDurations: Record<string, number> = {
-        manager: 0.82,
-        evidence: 0.65,
-        fundamentals: 1.15,
-        growth: 0.94,
-        news: 0.78,
-        sentiment: 0.62,
-        market: 0.85,
-        valuation: 1.08,
-        bull: 1.22,
-        bear: 1.18,
-        risk: 0.72,
-        trader: 0.89,
-        pm: 1.45,
-      };
 
-      setAgentProgress((prev) =>
-        prev.map((item) => ({
-          ...item,
-          status: 'completed',
-          duration: roleDurations[item.id] || 0.85
-        }))
-      );
+      // If the report contains real agent runs from the backend, use their exact real metrics!
+      const runs = report.agent_runs || [];
+      if (runs.length > 0) {
+        setAgentProgress((prev) =>
+          prev.map((item) => {
+            const matched = runs.find((r: any) => {
+              const runName = (r.agent_name || '').toLowerCase();
+              const runRole = (r.role || '').toLowerCase();
+              const itemName = item.name.toLowerCase();
+              const itemRole = item.role.toLowerCase();
+              return (
+                runName === itemName ||
+                runRole === itemRole ||
+                runRole.includes(itemName) ||
+                itemRole.includes(runRole)
+              );
+            });
+            return {
+              ...item,
+              status: 'completed',
+              summary: matched?.summary || item.summary,
+              duration: matched?.execution_duration_sec ?? item.duration
+            };
+          })
+        );
+      } else {
+        setAgentProgress((prev) =>
+          prev.map((item) => ({
+            ...item,
+            status: 'completed'
+          }))
+        );
+      }
       setIsDeliberationComplete(true);
       autoSaveReport(report);
     } catch (err: any) {
@@ -401,6 +471,7 @@ export function App() {
         onHomeClick={handleGoHome}
         onHistoryClick={() => setViewMode('history')}
         backendHealthy={backendHealthy}
+        dhanProActive={dhanProActive}
         user={user}
         onOpenAuth={() => setIsAuthModalOpen(true)}
         onLogout={handleLogout}
@@ -529,6 +600,7 @@ export function App() {
                 onBack={handleGoHome}
                 onGenerateReport={handleGenerateReport}
                 isGeneratingReport={isGeneratingReport}
+                dhanProActive={dhanProActive}
               />
             )}
           </div>
@@ -579,6 +651,7 @@ export function App() {
           currentStage={currentStage}
           isComplete={isDeliberationComplete}
           error={reportError}
+          dataSourceTier={streamTier || (dhanProActive ? 'DHAN_PRO_VERIFIED' : 'STANDARD_FREE_FALLBACK')}
         />
 
         {/* Authentication Modal */}

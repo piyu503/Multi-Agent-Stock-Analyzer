@@ -1,11 +1,24 @@
 """FastAPI application for Indian Stock Research Platform backend."""
 
+import logging
 import os
+import sys
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query, UploadFile, File, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
+
+# Initialize institutional-grade root logging for all agents & data providers
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] [%(name)s] %(message)s",
+    datefmt="%H:%M:%S",
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logger = logging.getLogger("bharatequity.api")
 
 from catalog_importer import import_catalog_file
 from database import (
@@ -46,7 +59,8 @@ from schemas import (
 
 from contextlib import asynccontextmanager
 
-load_dotenv()
+dotenv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+load_dotenv(dotenv_path, override=True)
 
 
 @asynccontextmanager
@@ -310,6 +324,14 @@ def health_check():
     catalog_imported = is_official_catalog_imported()
     total_listings = get_total_listings_count()
     coverage_data = get_catalog_coverage_summary()
+    # Dhan Pro is only active if client ID and access token exist, are non-empty, and valid
+    client_id = (os.environ.get("DHAN_CLIENT_ID") or "").strip()
+    access_token = (os.environ.get("DHAN_ACCESS_TOKEN") or "").strip()
+    dhan_active = bool(
+        client_id
+        and access_token
+        and not access_token.startswith("EXPIRED")
+    )
 
     return HealthResponse(
         status="ok",
@@ -319,7 +341,8 @@ def health_check():
         catalog_imported=catalog_imported,
         total_listings=total_listings,
         timestamp=now_iso,
-        catalog_coverage=coverage_data
+        catalog_coverage=coverage_data,
+        dhan_pro_active=dhan_active
     )
 
 
@@ -395,25 +418,8 @@ async def create_report(
     report, agent_runs = await orchestrate_stock_research(stock)
     report.agent_runs = [r.model_dump() for r in agent_runs]
 
-    # Auto-archive to user account
-    if current_user:
-        try:
-            target_p = None
-            if report.execution_plan and report.execution_plan.entry_range_high:
-                target_p = f"₹{report.execution_plan.entry_range_high:,.2f}"
-            save_user_report(
-                user_id=current_user["id"],
-                symbol=report.symbol,
-                exchange=report.exchange,
-                company_name=report.company_name,
-                verdict=report.final_assessment.title if report.final_assessment else "COMPLETE",
-                conviction=report.conviction,
-                target_price=target_p,
-                report_data=report.model_dump()
-            )
-        except Exception:
-            pass
-
+    # Note: Reports are saved explicitly by the client via /api/reports/save when completed.
+    # We avoid duplicate automatic backend saves here.
     return report
 
 
@@ -437,14 +443,42 @@ async def stream_report(
         )
 
     async def event_generator():
+        import asyncio
+
+        queue = asyncio.Queue()
+        is_done = False
+
+        async def worker():
+            nonlocal is_done
+            try:
+                async for update in stream_stock_research(stock):
+                    await queue.put(update)
+            except Exception as e:
+                import traceback
+                error_trace = traceback.format_exc()
+                logger.error(f"[SSE STREAM FATAL ERROR] {e}\n{error_trace}")
+                await queue.put({"event": "error", "data": {"error": str(e), "traceback": error_trace}})
+            finally:
+                is_done = True
+                await queue.put(None)
+
+        task = asyncio.create_task(worker())
+
         try:
-            async for update in stream_stock_research(stock):
-                event_name = update.get("event", "message")
-                data_json = json.dumps(update.get("data", {}))
-                yield f"event: {event_name}\ndata: {data_json}\n\n"
-        except Exception as e:
-            error_data = json.dumps({"error": str(e)})
-            yield f"event: error\ndata: {error_data}\n\n"
+            while not is_done or not queue.empty():
+                try:
+                    update = await asyncio.wait_for(queue.get(), timeout=1.0)
+                    if update is None:
+                        break
+                    event_name = update.get("event", "message")
+                    data_json = json.dumps(update.get("data", {}))
+                    yield f"event: {event_name}\ndata: {data_json}\n\n"
+                except asyncio.TimeoutError:
+                    # Critical SSE keep-alive: keeps browser and proxy connections alive during long LLM calls
+                    yield ": ping\n\n"
+        finally:
+            if not task.done():
+                task.cancel()
 
     return StreamingResponse(
         event_generator(),

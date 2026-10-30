@@ -6,6 +6,7 @@ interface StockProfileProps {
   onBack: () => void;
   onGenerateReport: (symbol: string, exchange: string) => void;
   isGeneratingReport: boolean;
+  dhanProActive?: boolean;
 }
 
 export const StockProfile: React.FC<StockProfileProps> = ({
@@ -13,6 +14,7 @@ export const StockProfile: React.FC<StockProfileProps> = ({
   onBack,
   onGenerateReport,
   isGeneratingReport,
+  dhanProActive,
 }) => {
   const isNSE = stock.exchange === 'NSE';
 
@@ -85,10 +87,17 @@ export const StockProfile: React.FC<StockProfileProps> = ({
               <Sparkles className="w-4 h-4 text-white" />
               <span>{isGeneratingReport ? 'Compiling Research Report...' : 'Generate Full Research Report'}</span>
             </button>
-            <span className="text-[11px] font-mono text-slate-400 flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
-              <span>13-Analyst Comprehensive Evaluation</span>
-            </span>
+            {dhanProActive ? (
+              <span className="text-[11px] font-mono text-cyan-300 flex items-center gap-1.5 bg-cyan-500/10 border border-cyan-500/30 px-3 py-1 rounded-full shadow-[0_0_8px_rgba(6,182,212,0.2)]">
+                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                <span>⚡ Dhan Pro Verified Live Feed Active</span>
+              </span>
+            ) : (
+              <span className="text-[11px] font-mono text-slate-400 flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+                <span>13-Analyst Comprehensive Evaluation</span>
+              </span>
+            )}
           </div>
         </div>
 

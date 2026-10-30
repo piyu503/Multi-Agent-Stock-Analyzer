@@ -54,7 +54,7 @@ class BaseAgent(ABC):
         self,
         company_context: Dict[str, Any],
         evidence: Optional[Dict[str, Any]] = None,
-        timeout_sec: float = 30.0
+        timeout_sec: float = 75.0
     ) -> AgentOutput:
         """Execute agent task with timing, error containment, and stub fallback."""
         start_time = time.time()
@@ -93,16 +93,33 @@ class BaseAgent(ABC):
         system_prompt = self.get_system_prompt()
         user_prompt = self.get_user_prompt(company_context, evidence_dict)
 
+        # Extend timeout for complex reasoning/rebuttal/synthesis agents and concurrent GPU tasks
+        effective_timeout = timeout_sec
+        reasoning_roles = (
+            "Bull Researcher",
+            "Bear Researcher",
+            "Bull Researcher (Rebuttal Round)",
+            "Bear Researcher (Rebuttal Round)",
+            "Risk Analyst",
+            "Portfolio Manager",
+            "Trader",
+        )
+        if any(r.lower() in self.role.lower() for r in reasoning_roles):
+            effective_timeout = max(timeout_sec, 240.0)
+
+        logger.info(f"[{self.name}] Initiating '{self.role}' (tier={self.model_tier}, timeout={effective_timeout}s)...")
+
         try:
             raw_result = await call_llm(
                 system_prompt=system_prompt,
                 user_prompt=user_prompt,
                 response_format="json",
                 model_tier=self.model_tier,
-                timeout_sec=timeout_sec
+                timeout_sec=effective_timeout
             )
 
             duration = round(time.time() - start_time, 3)
+            logger.info(f"[{self.name}] '{self.role}' completed successfully in {duration}s.")
             
             return AgentOutput(
                 agent_name=self.name,
@@ -122,10 +139,14 @@ class BaseAgent(ABC):
             )
 
         except Exception as err:
-            logger.warning(f"Live execution failed for agent {self.name}: {err}. Falling back to analytical stub.")
+            duration = round(time.time() - start_time, 3)
+            logger.warning(
+                f"[{self.name}] '{self.role}' FAILED after {duration}s: {err}. Falling back to analytical stub. "
+                f"Error type: {type(err).__name__} | Error details: {str(err)}"
+            )
             stub = self.get_development_stub(company_context, evidence_dict)
-            stub.execution_duration_sec = round(time.time() - start_time, 3)
+            stub.execution_duration_sec = duration
             stub.execution_status = "stub_fallback"
-            stub.error_message = str(err)
+            stub.error_message = f"{type(err).__name__}: {str(err)}"
             stub.model_tier = self.model_tier
             return stub

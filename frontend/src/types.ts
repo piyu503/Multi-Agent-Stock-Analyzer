@@ -95,6 +95,7 @@ export interface ResearchReport {
   generated_at: string;
   status: string;
   is_prototype_demo: boolean;
+  data_source_tier?: string;
   disclaimer: string;
   conviction?: string;
   target_allocation_pct?: number;
@@ -125,6 +126,7 @@ export interface HealthResponse {
   total_listings: number;
   timestamp: string;
   catalog_coverage?: CatalogCoverage;
+  dhan_pro_active?: boolean;
 }
 
 
