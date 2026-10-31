@@ -85,7 +85,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
           {report.data_source_tier === "DHAN_PRO_VERIFIED" && (
             <div className="px-3 py-1 rounded-full bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 text-xs font-mono font-bold flex items-center gap-1.5 shadow-[0_0_10px_rgba(6,182,212,0.3)]">
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-              <span>⚡ DHAN PRO FEED</span>
+              <span>DHAN PRO FEED</span>
             </div>
           )}
           {isLiveVerified ? (
@@ -181,7 +181,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
           <div className="bg-white/[0.03] p-3.5 rounded-xl border border-white/5">
             <span className="text-slate-400 font-mono block text-[11px] mb-1">EVIDENCE CITATION</span>
             <span className="text-emerald-300 font-bold text-sm">
-              {report.data_source_tier === "DHAN_PRO_VERIFIED" ? "⚡ Dhan Pro + BSE Filings" : "BSE Filings + Multi-Year Fin"}
+              {report.data_source_tier === "DHAN_PRO_VERIFIED" ? "Dhan Pro + BSE Filings" : "BSE Filings + Multi-Year Fin"}
             </span>
           </div>
           <div className="bg-white/[0.03] p-3.5 rounded-xl border border-white/5">
@@ -326,7 +326,7 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
             <div className="flex flex-wrap items-center gap-2">
               {report.execution_plan?.strategy_type && (
                 <span className="text-xs font-mono font-bold px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
-                  ⚡ {report.execution_plan.strategy_type}
+                  {report.execution_plan.strategy_type}
                 </span>
               )}
               {report.execution_plan?.time_horizon && (

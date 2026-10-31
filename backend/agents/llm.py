@@ -21,6 +21,10 @@ logger = logging.getLogger("equiagentic.llm")
 _UNAVAILABLE_MODELS = set()
 
 
+class QuotaExhaustedError(RuntimeError):
+    """Raised when LLM provider returns 429 quota exhaustion or 503 capacity limit."""
+    pass
+
 class LLMConfig:
     @classmethod
     def get_provider(cls) -> str:
@@ -140,6 +144,7 @@ async def call_llm(
 
     base_url = LLMConfig.get_base_url()
     api_key = LLMConfig.get_api_key() or "ollama"
+    provider = LLMConfig.get_provider()
     primary_model = LLMConfig.get_model("analyst")
     target_model = model or LLMConfig.get_model(model_tier)
     temp = temperature if temperature is not None else LLMConfig.get_temperature()
@@ -184,12 +189,25 @@ async def call_llm(
         if response_format == "json":
             payload["response_format"] = {"type": "json_object"}
 
+        logger.info(f"[LLM CALL] Provider: {provider.upper()} | BaseURL: {base_url} | Model: {chosen_model}")
+        print(f"[LLM CALL] Provider: {provider.upper()} | BaseURL: {base_url} | Model: {chosen_model}")
+
         async with httpx.AsyncClient(timeout=timeout_sec) as client:
             response = await client.post(
                 f"{base_url}/chat/completions",
                 headers=headers,
                 json=payload
             )
+            if response.status_code == 429:
+                logger.error(f"[LLM QUOTA EXHAUSTED] Status 429 for {chosen_model}: {response.text}")
+                raise QuotaExhaustedError(
+                    f"Cloud model ({chosen_model}) has exhausted its request/token limit. Please wait 45-60 seconds before generating another report."
+                )
+            if response.status_code == 503:
+                logger.error(f"[LLM 503 OVERLOAD] Status 503 for {chosen_model}: {response.text}")
+                raise QuotaExhaustedError(
+                    f"Cloud model ({chosen_model}) is temporarily overloaded (HTTP 503). Please wait 30 seconds."
+                )
             if response.status_code != 200:
                 raise RuntimeError(
                     f"LLM Provider ({base_url}) returned error {response.status_code} for {chosen_model}: {response.text}"

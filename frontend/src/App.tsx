@@ -85,6 +85,8 @@ export function App() {
   const [agentProgress, setAgentProgress] = useState<AgentProgressItem[]>(INITIAL_13_AGENTS);
   const [currentStage, setCurrentStage] = useState(0);
   const [isDeliberationComplete, setIsDeliberationComplete] = useState(false);
+  const [feedNotice, setFeedNotice] = useState<string | null>(null);
+  const [isQuotaExhausted, setIsQuotaExhausted] = useState(false);
 
   // Check health and load initial stocks on mount
   useEffect(() => {
@@ -236,6 +238,8 @@ export function App() {
     setIsDeliberationComplete(false);
     setCurrentReport(null);
     setReportError(null);
+    setFeedNotice(null);
+    setIsQuotaExhausted(false);
     setStreamTier(dhanProActive ? 'DHAN_PRO_VERIFIED' : null);
     setIsModalOpen(true);
 
@@ -243,6 +247,31 @@ export function App() {
     const tokenParam = token ? `&token=${encodeURIComponent(token)}` : '';
     const sseUrl = `/api/reports/stream/${encodeURIComponent(sym)}?exchange=${encodeURIComponent(exch)}${tokenParam}`;
     const eventSource = new EventSource(sseUrl);
+
+    eventSource.addEventListener('data_feed_notice', (e: MessageEvent) => {
+      try {
+        const payload = JSON.parse(e.data);
+        if (payload.message) {
+          setFeedNotice(payload.message);
+        }
+        if (payload.tier) {
+          setStreamTier(payload.tier);
+        }
+      } catch (err) {
+        console.error('Error parsing data_feed_notice event', err);
+      }
+    });
+
+    eventSource.addEventListener('quota_exceeded', (e: MessageEvent) => {
+      try {
+        const payload = JSON.parse(e.data);
+        setIsQuotaExhausted(true);
+        setReportError(payload.error || 'Cloud model has exhausted its limit.');
+        eventSource.close();
+      } catch (err) {
+        console.error('Error parsing quota_exceeded event', err);
+      }
+    });
 
     eventSource.addEventListener('started', (e: MessageEvent) => {
       try {
@@ -347,8 +376,8 @@ export function App() {
       if (eventSource.readyState === 2) {
         console.warn('SSE stream closed unexpectedly, checking report status...');
         eventSource.close();
-        // Only trigger fallback if the stream actually closed before report completion
-        if (!isDeliberationComplete) {
+        // Do not trigger fallback generator if quota is already exhausted
+        if (!isDeliberationComplete && !isQuotaExhausted) {
           handleFallbackGenerateReport(sym, exch);
         }
       } else {
@@ -669,6 +698,8 @@ export function App() {
           isComplete={isDeliberationComplete}
           error={reportError}
           dataSourceTier={streamTier || (dhanProActive ? 'DHAN_PRO_VERIFIED' : 'STANDARD_FREE_FALLBACK')}
+          feedNotice={feedNotice}
+          isQuotaExhausted={isQuotaExhausted}
         />
 
         {/* Authentication Modal */}

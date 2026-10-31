@@ -90,7 +90,7 @@ export const StockProfile: React.FC<StockProfileProps> = ({
             {dhanProActive ? (
               <span className="text-[11px] font-mono text-cyan-300 flex items-center gap-1.5 bg-cyan-500/10 border border-cyan-500/30 px-3 py-1 rounded-full shadow-[0_0_8px_rgba(6,182,212,0.2)]">
                 <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-                <span>⚡ Dhan Pro Verified Live Feed Active</span>
+                <span>Dhan Pro Verified Live Feed Active</span>
               </span>
             ) : (
               <span className="text-[11px] font-mono text-slate-400 flex items-center gap-1.5">

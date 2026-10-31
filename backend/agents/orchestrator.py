@@ -517,6 +517,16 @@ async def stream_stock_research(company_context: Dict[str, Any]):
     state["manager_output"] = plan_res["manager_output"]
     state["agent_runs"].extend(plan_res["agent_runs"])
     live_tier = state["company_context"].get("data_source_tier", tier_init)
+    fallback_msg = state["company_context"].get("dhan_fallback_reason")
+
+    if live_tier != "DHAN_PRO_VERIFIED" and fallback_msg:
+        yield {
+            "event": "data_feed_notice",
+            "data": {
+                "tier": "STANDARD_FREE_FALLBACK",
+                "message": fallback_msg
+            }
+        }
 
     yield {
         "event": "agent_complete",

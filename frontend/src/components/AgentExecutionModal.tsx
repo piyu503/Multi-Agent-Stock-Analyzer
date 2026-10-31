@@ -22,6 +22,8 @@ interface AgentExecutionModalProps {
   isComplete: boolean;
   error?: string | null;
   dataSourceTier?: string;
+  feedNotice?: string | null;
+  isQuotaExhausted?: boolean;
 }
 
 export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
@@ -34,7 +36,9 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
   currentStage,
   isComplete,
   error,
-  dataSourceTier
+  dataSourceTier,
+  feedNotice,
+  isQuotaExhausted
 }) => {
   if (!isOpen) return null;
 
@@ -62,7 +66,7 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
                 {dataSourceTier === 'DHAN_PRO_VERIFIED' ? (
                   <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center gap-1 shadow-[0_0_8px_rgba(6,182,212,0.3)]">
                     <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                    ⚡ DHAN PRO FEED
+                    DHAN PRO FEED
                   </span>
                 ) : (
                   <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-white/5 text-slate-400 border border-white/10">
@@ -105,7 +109,40 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
 
         {/* Agent Step-by-Step List with Clean Ticks */}
         <div className="p-5 overflow-y-auto divide-y divide-white/5 space-y-1">
-          {error && (
+          {feedNotice && (
+            <div className="p-3.5 mb-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-medium flex items-center justify-between gap-2.5">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-amber-400" />
+                <span>{feedNotice}</span>
+              </div>
+              <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-200">
+                Standard Feed
+              </span>
+            </div>
+          )}
+
+          {isQuotaExhausted && (
+            <div className="p-4 mb-3 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-200 text-xs font-medium space-y-2">
+              <div className="flex items-center gap-2 text-rose-300 font-semibold text-sm">
+                <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>Cloud model has exhausted its limit</span>
+              </div>
+              <p className="text-slate-300 leading-relaxed">
+                The Gemini free tier request or token limit has been reached. Please wait 45-60 seconds before triggering the next report, or switch your provider in backend/.env.
+              </p>
+              <div className="pt-1 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition cursor-pointer"
+                >
+                  Close &amp; Retry in 60s
+                </button>
+              </div>
+            </div>
+          )}
+
+          {error && !isQuotaExhausted && (
             <div className="p-4 mb-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-medium flex items-center gap-2.5">
               <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0" />
               <span>{error}</span>

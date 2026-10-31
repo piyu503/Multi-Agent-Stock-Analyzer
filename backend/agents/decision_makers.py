@@ -514,7 +514,6 @@ class PortfolioManagerAgent(BaseAgent):
             committee_challenge = r1_result.get("findings", [])
 
             # Stage 2: Qwen (Analyst) synthesizes final institutional capital allocation with R1 challenge factored in
-            qwen_system = self.get_system_prompt()
             challenge_block = "\n".join([f"- {c}" for c in committee_challenge]) if committee_challenge else "Debate balanced."
             pm_user = (
                 f"{user_prompt}\n\n"
@@ -524,9 +523,10 @@ class PortfolioManagerAgent(BaseAgent):
                 "inside 'role_specific_data'."
             )
 
+            pm_system = self.get_system_prompt()
             pm_result = await call_llm(
-                system_prompt=qwen_system,
-                user_prompt=qwen_user,
+                system_prompt=pm_system,
+                user_prompt=pm_user,
                 response_format="json",
                 model_tier="analyst",
                 timeout_sec=max(25.0, timeout_sec * 0.5)

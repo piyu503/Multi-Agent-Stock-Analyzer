@@ -455,9 +455,19 @@ async def stream_report(
                     await queue.put(update)
             except Exception as e:
                 import traceback
+                from agents.llm import QuotaExhaustedError
                 error_trace = traceback.format_exc()
                 logger.error(f"[SSE STREAM FATAL ERROR] {e}\n{error_trace}")
-                await queue.put({"event": "error", "data": {"error": str(e), "traceback": error_trace}})
+                if isinstance(e, QuotaExhaustedError):
+                    await queue.put({
+                        "event": "quota_exceeded",
+                        "data": {
+                            "error": str(e),
+                            "is_quota": True
+                        }
+                    })
+                else:
+                    await queue.put({"event": "error", "data": {"error": str(e), "traceback": error_trace}})
             finally:
                 is_done = True
                 await queue.put(None)

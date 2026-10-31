@@ -136,6 +136,10 @@ async def enrich_company_with_free_sources(company_context: Dict[str, Any]) -> D
     enriched = dict(company_context)
     enriched["as_of_date"] = anchor_date_str
     enriched["data_source_tier"] = "DHAN_PRO_VERIFIED" if safe_dhan else "STANDARD_FREE_FALLBACK"
+    if not safe_dhan and isinstance(dhan_data, dict) and dhan_data.get("reason"):
+        enriched["dhan_fallback_reason"] = f"Dhan connection note: {dhan_data.get('reason')}"
+    elif not safe_dhan:
+        enriched["dhan_fallback_reason"] = "Dhan Pro connection unavailable - using Standard Feed"
     enriched["dhan_technicals"] = safe_dhan.get("technicals", {}) if safe_dhan else {}
     enriched["fno_sentiment"] = safe_dhan.get("fno_sentiment", {}) if safe_dhan else {}
     enriched["market_data"] = safe_market

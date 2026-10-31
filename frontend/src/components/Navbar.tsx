@@ -143,7 +143,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           {dhanProActive && (
             <div className="hidden sm:flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 font-mono text-[11px] font-bold shadow-[0_0_10px_rgba(6,182,212,0.25)]">
               <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-              <span>⚡ DHAN PRO</span>
+              <span>DHAN PRO</span>
             </div>
           )}
 
