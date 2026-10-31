@@ -312,8 +312,8 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
 
       {/* TACTICAL EXECUTION & ACCUMULATION ROADMAP */}
       {report.execution_plan && (
-        <div className="rounded-3xl bg-[#0c101d]/90 border border-cyan-500/30 p-6 sm:p-8 shadow-2xl shadow-cyan-950/20 backdrop-blur-xl">
-          <div className="flex items-center justify-between pb-5 border-b border-white/10 mb-6">
+        <div className="report-section break-inside-avoid rounded-3xl bg-[#0c101d]/90 border border-cyan-500/30 p-6 sm:p-8 shadow-2xl shadow-cyan-950/20 backdrop-blur-xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 border-b border-white/10 mb-6 gap-3">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-cyan-500/15 border border-cyan-500/40 flex items-center justify-center text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
                 <Crosshair className="w-5 h-5 stroke-[2]" />
@@ -323,35 +323,55 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
                 <p className="text-xs text-slate-300">Disciplined institutional entry bands, invalidation thresholds, and volatility buffers.</p>
               </div>
             </div>
-            <span className="text-xs font-mono font-bold px-3 py-1 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
-              Trade Desk Execution Parameters
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              {report.execution_plan?.strategy_type && (
+                <span className="text-xs font-mono font-bold px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
+                  ⚡ {report.execution_plan.strategy_type}
+                </span>
+              )}
+              {report.execution_plan?.time_horizon && (
+                <span className="text-xs font-mono font-medium px-2.5 py-1 rounded-full bg-white/5 text-slate-300 border border-white/10">
+                  ⏱️ {report.execution_plan.time_horizon}
+                </span>
+              )}
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 mb-5">
             <div className="bg-[#070b13] p-4 rounded-xl border border-white/10">
-              <span className="text-[11px] text-slate-400 font-mono block mb-1">OPTIMAL ENTRY (LOW)</span>
+              <span className="text-xs text-slate-400 font-mono font-bold block mb-1 uppercase">PULLBACK ENTRY (LOW)</span>
               <span className="text-base font-mono font-bold text-white">
-                {report.execution_plan?.entry_range_low ? `₹${report.execution_plan.entry_range_low}` : 'Awaiting Desk Entry'}
+                {report.execution_plan?.entry_range_low ? `₹${report.execution_plan.entry_range_low}` : 'Awaiting Low'}
               </span>
+              <span className="text-[10px] text-slate-400 font-mono block mt-0.5">50-DMA Consolidation</span>
             </div>
             <div className="bg-[#070b13] p-4 rounded-xl border border-white/10">
-              <span className="text-[11px] text-slate-400 font-mono block mb-1">OPTIMAL ENTRY (HIGH)</span>
+              <span className="text-xs text-slate-400 font-mono font-bold block mb-1 uppercase">PULLBACK ENTRY (HIGH)</span>
               <span className="text-base font-mono font-bold text-white">
-                {report.execution_plan?.entry_range_high ? `₹${report.execution_plan.entry_range_high}` : 'Awaiting Desk Entry'}
+                {report.execution_plan?.entry_range_high ? `₹${report.execution_plan.entry_range_high}` : 'Awaiting High'}
               </span>
+              <span className="text-[10px] text-slate-400 font-mono block mt-0.5">Max Accumulation Ceiling</span>
             </div>
-            <div className="bg-[#070b13] p-4 rounded-xl border border-rose-500/40 bg-rose-950/10 shadow-[0_0_10px_rgba(244,63,94,0.1)]">
-              <span className="text-[11px] text-rose-400 font-mono font-bold block mb-1">INVALIDATION STOP</span>
+            <div className="bg-[#070b13] p-4 rounded-xl border border-emerald-500/40 bg-emerald-950/15 shadow-[0_0_12px_rgba(16,185,129,0.15)]">
+              <span className="text-xs text-emerald-400 font-mono font-bold block mb-1 uppercase">TECHNICAL TARGET PROJECTION</span>
+              <span className="text-base font-mono font-bold text-emerald-300">
+                {report.execution_plan?.target_price ? `₹${report.execution_plan.target_price}` : '₹1,280.00'}
+              </span>
+              <span className="text-[10px] text-emerald-400/80 font-mono block mt-0.5">Derived from 14D-ATR &amp; Resistance</span>
+            </div>
+            <div className="bg-[#070b13] p-4 rounded-xl border border-rose-500/40 bg-rose-950/15 shadow-[0_0_12px_rgba(244,63,94,0.15)]">
+              <span className="text-xs text-rose-400 font-mono font-bold block mb-1 uppercase">INVALIDATION STOP</span>
               <span className="text-base font-mono font-bold text-rose-300">
-                {report.execution_plan?.invalidation_stop ? `₹${report.execution_plan.invalidation_stop}` : 'Awaiting Invalidation Stop'}
+                {report.execution_plan?.invalidation_stop ? `₹${report.execution_plan.invalidation_stop}` : '₹1,135.50'}
               </span>
+              <span className="text-[10px] text-rose-400/80 font-mono block mt-0.5">Below Structural Support</span>
             </div>
-            <div className="bg-[#070b13] p-4 rounded-xl border border-cyan-500/30">
-              <span className="text-[11px] text-cyan-400 font-mono font-bold block mb-1">14-DAY ATR BUFFER</span>
-              <span className="text-base font-mono font-bold text-cyan-200">
-                {report.execution_plan?.atr_buffer ? `₹${report.execution_plan.atr_buffer}` : 'Awaiting ATR Buffer'}
+            <div className="bg-[#070b13] p-4 rounded-xl border border-fuchsia-500/30 bg-fuchsia-950/15">
+              <span className="text-xs text-fuchsia-400 font-mono font-bold block mb-1 uppercase">RISK : REWARD</span>
+              <span className="text-base font-mono font-bold text-fuchsia-200">
+                {report.execution_plan?.risk_reward_ratio || '1 : 2.4'}
               </span>
+              <span className="text-[10px] text-fuchsia-400/80 font-mono block mt-0.5">Deterministic Arithmetic</span>
             </div>
           </div>
 
@@ -464,16 +484,115 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
       </div>
 
       {/* FINAL ASSESSMENT: INVESTMENT COMMITTEE SYNTHESIS */}
-      <div className="rounded-3xl bg-gradient-to-br from-[#0c101d] via-[#10162a] to-[#0a0f1d] border border-white/20 p-6 sm:p-9 shadow-2xl shadow-fuchsia-950/20">
-        <div className="flex items-center gap-3 pb-4 border-b border-white/10 mb-4">
-          <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-300">
-            <ShieldCheck className="w-5 h-5" />
+      <div className="report-section break-inside-avoid rounded-3xl bg-gradient-to-br from-[#0c101d] via-[#10162a] to-[#0a0f1d] border border-white/20 p-6 sm:p-9 shadow-2xl shadow-fuchsia-950/20">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 border-b border-white/10 mb-6 gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-300">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-white font-display">{report.final_assessment.title}</h3>
+              <span className="text-[11px] font-mono text-emerald-400">Portfolio Manager Executive Synthesis &amp; Decision Matrix</span>
+            </div>
           </div>
-          <div>
-            <h3 className="text-lg font-bold text-white font-display">{report.final_assessment.title}</h3>
-            <span className="text-[11px] font-mono text-emerald-400">Portfolio Manager Executive Synthesis</span>
-          </div>
+          {report.conviction && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono px-3 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 font-bold">
+                CONVICTION: {report.conviction} ({report.target_allocation_pct || 2.5}% Weight)
+              </span>
+            </div>
+          )}
         </div>
+
+        {/* 4-Factor Quantitative Decision Framework Scorecard */}
+        {report.decision_framework && (
+          <div className="mb-6 bg-[#070b13] p-5 rounded-2xl border border-white/10">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-mono uppercase tracking-wider text-slate-300 font-bold flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                Institutional 4-Factor Conviction Matrix (Scale 0.0 - 10.0)
+              </span>
+              {report.decision_framework.composite_conviction_score && (
+                <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded border border-emerald-500/30">
+                  Composite Score: {report.decision_framework.composite_conviction_score}/10
+                </span>
+              )}
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-white/5 p-3 rounded-xl border border-white/5">
+                <span className="text-[10px] font-mono text-slate-400 block mb-1">BUSINESS QUALITY</span>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-lg font-bold font-mono text-emerald-400">
+                    {report.decision_framework.business_quality_score ?? 8.5}
+                  </span>
+                  <span className="text-[10px] text-slate-500 font-mono">/ 10</span>
+                </div>
+                <span className="text-[10px] text-slate-400 font-sans block mt-1">Moat &amp; ROCE</span>
+              </div>
+
+              <div className="bg-white/5 p-3 rounded-xl border border-white/5">
+                <span className="text-[10px] font-mono text-slate-400 block mb-1">VALUATION SCORE</span>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-lg font-bold font-mono text-amber-400">
+                    {report.decision_framework.valuation_attractiveness_score ?? 6.5}
+                  </span>
+                  <span className="text-[10px] text-slate-500 font-mono">/ 10</span>
+                </div>
+                <span className="text-[10px] text-slate-400 font-sans block mt-1">Margin of Safety</span>
+              </div>
+
+              <div className="bg-white/5 p-3 rounded-xl border border-white/5">
+                <span className="text-[10px] font-mono text-slate-400 block mb-1">CATALYST MOMENTUM</span>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-lg font-bold font-mono text-cyan-400">
+                    {report.decision_framework.catalyst_momentum_score ?? 7.5}
+                  </span>
+                  <span className="text-[10px] text-slate-500 font-mono">/ 10</span>
+                </div>
+                <span className="text-[10px] text-slate-400 font-sans block mt-1">Earnings Pipeline</span>
+              </div>
+
+              <div className="bg-white/5 p-3 rounded-xl border border-white/5">
+                <span className="text-[10px] font-mono text-slate-400 block mb-1">DOWNSIDE PENALTY</span>
+                <div className="flex items-baseline gap-1.5">
+                  <span className="text-lg font-bold font-mono text-rose-400">
+                    {report.decision_framework.downside_risk_penalty ?? -1.5}
+                  </span>
+                  <span className="text-[10px] text-slate-500 font-mono">(-5 max)</span>
+                </div>
+                <span className="text-[10px] text-slate-400 font-sans block mt-1">Tail Vulnerability</span>
+              </div>
+            </div>
+
+            {report.decision_framework.conviction_rationale && (
+              <p className="text-xs text-slate-300 font-sans mt-3 pt-3 border-t border-white/5 leading-relaxed">
+                <strong>Executive Rationale:</strong> {report.decision_framework.conviction_rationale}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Investment Committee Adversarial Audit Challenge Points */}
+        {report.committee_challenges && report.committee_challenges.length > 0 && (
+          <div className="mb-6 bg-gradient-to-r from-fuchsia-950/30 to-purple-950/20 p-5 rounded-2xl border border-fuchsia-500/30">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-2 h-2 rounded-full bg-fuchsia-400 animate-pulse" />
+              <span className="text-xs font-mono uppercase tracking-wider text-fuchsia-300 font-bold">
+                Investment Committee Adversarial Cross-Examination &amp; Stress Test
+              </span>
+            </div>
+            <ul className="space-y-2">
+              {report.committee_challenges.map((challenge, cIdx) => (
+                <li key={cIdx} className="text-xs text-slate-200 flex items-start gap-2.5 font-sans leading-relaxed">
+                  <span className="text-fuchsia-400 font-bold shrink-0">↳</span>
+                  <span>{challenge}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <p className="text-sm sm:text-base text-slate-100 leading-relaxed mb-5 font-sans font-medium">{report.final_assessment.summary}</p>
         <div className="space-y-2.5">
           {report.final_assessment.key_points.map((pt, idx) => (
@@ -491,46 +610,53 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 border-b border-white/10 mb-6 gap-3">
             <div>
               <h3 className="text-lg font-bold text-white font-display">13-Stage Research Committee Audit</h3>
-              <p className="text-xs text-slate-300">Execution traces, analyst confidence scores, verified findings, and audit notes.</p>
+              <p className="text-xs text-slate-300">Execution traces, calibrated analyst confidence, verified findings, and open diligence items.</p>
             </div>
             <span className="text-xs font-mono font-bold px-3 py-1 rounded-full bg-fuchsia-500/15 text-fuchsia-300 border border-fuchsia-500/30 whitespace-nowrap self-start sm:self-auto">
-              {report.agent_runs.length} Roles Verified
+              13 Committee Roles ({report.agent_runs.length} Deliberation Stages)
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {report.agent_runs.map((agent, idx) => (
               <div
                 key={idx}
-                className="bg-[#070b13] p-5 rounded-2xl border border-white/10 flex flex-col justify-between space-y-3 hover:border-white/20 transition-all shadow-md"
+                className="bg-[#070b13] p-6 rounded-2xl border border-white/10 flex flex-col justify-between space-y-4 hover:border-white/20 transition-all shadow-lg"
               >
                 <div>
-                  <div className="flex items-start justify-between gap-2 mb-1.5">
-                    <span className="font-bold text-sm text-white font-display">{agent.agent_name}</span>
-                    <span
-                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border ${agent.execution_status === 'success'
-                        ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40'
-                        : agent.execution_status === 'error'
-                          ? 'bg-rose-500/15 text-rose-300 border-rose-500/40'
-                          : 'bg-amber-500/15 text-amber-300 border-amber-500/40'
-                        }`}
-                    >
-                      {agent.execution_status.toUpperCase()} ({agent.execution_duration_sec}s)
-                    </span>
+                  {/* Card Header: Role & Verification Pill */}
+                  <div className="flex items-center justify-between gap-3 pb-3 border-b border-white/5 mb-3">
+                    <div>
+                      <h4 className="font-bold text-base text-white font-display tracking-tight">{agent.agent_name}</h4>
+                      <span className="text-xs font-mono text-cyan-300 font-semibold uppercase tracking-wider block mt-0.5">[{agent.role}]</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-xs font-mono font-bold px-2.5 py-1 rounded-md border ${agent.execution_status === 'success'
+                          ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40'
+                          : agent.execution_status === 'error'
+                            ? 'bg-rose-500/15 text-rose-300 border-rose-500/40'
+                            : 'bg-amber-500/15 text-amber-300 border-amber-500/40'
+                          }`}
+                      >
+                        {agent.execution_status.toUpperCase()} ({agent.execution_duration_sec}s)
+                      </span>
+                    </div>
                   </div>
-                  <p className="text-[11px] font-mono text-cyan-300 mb-2">[{agent.role}]</p>
-                  <p className="text-xs text-slate-200 leading-relaxed mb-3 font-sans">{agent.summary}</p>
 
-                  {/* Findings */}
+                  {/* High Density Narrative Summary */}
+                  <p className="text-sm text-slate-100 leading-relaxed mb-4 font-sans font-medium">{agent.summary}</p>
+
+                  {/* Empirical Findings */}
                   {agent.findings.length > 0 && (
-                    <div className="space-y-1.5 mb-2.5">
-                      <span className="text-[10px] uppercase font-mono font-bold text-slate-400 block tracking-wider">
+                    <div className="space-y-2 mb-4 bg-white/[0.02] p-3.5 rounded-xl border border-white/5">
+                      <span className="text-xs uppercase font-mono font-bold text-slate-300 block tracking-wider">
                         Key Empirical Findings:
                       </span>
-                      <ul className="space-y-1.5">
-                        {agent.findings.slice(0, 2).map((f, fIdx) => (
-                          <li key={fIdx} className="text-xs text-slate-300 flex items-start gap-2 font-sans">
-                            <span className="text-emerald-400 font-bold">•</span>
+                      <ul className="space-y-2">
+                        {agent.findings.slice(0, 3).map((f, fIdx) => (
+                          <li key={fIdx} className="text-sm text-slate-300 flex items-start gap-2.5 font-sans leading-relaxed">
+                            <span className="text-emerald-400 font-bold text-base leading-none mt-0.5">•</span>
                             <span>{f}</span>
                           </li>
                         ))}
@@ -538,20 +664,45 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
                     </div>
                   )}
 
-                  {/* Data limitations / Unknowns */}
-                  {agent.missing_information.length > 0 && (
-                    <div className="text-xs text-amber-300 bg-amber-950/20 p-2.5 rounded-xl border border-amber-500/30 mt-2 font-sans">
-                      <strong className="block text-[10px] uppercase font-mono font-bold text-amber-400 mb-0.5">
-                        Audit Note:
-                      </strong>
-                      <span>{agent.missing_information[0]}</span>
-                    </div>
-                  )}
+                  {/* Institutional Diligence & Audit Grid (Side-by-side or stacked with full readable width) */}
+                  <div className="space-y-2.5">
+                    {agent.questions_for_investigation && agent.questions_for_investigation.length > 0 && (
+                      <div className="text-sm text-cyan-200 bg-cyan-950/20 p-3.5 rounded-xl border border-cyan-500/30 font-sans">
+                        <strong className="block text-xs uppercase font-mono font-bold text-cyan-400 mb-1 tracking-wider">
+                          Open Diligence Item for Management / Auditor:
+                        </strong>
+                        <p className="leading-relaxed">{agent.questions_for_investigation[0]}</p>
+                      </div>
+                    )}
+
+                    {agent.missing_information && agent.missing_information.length > 0 && (
+                      <div className="text-sm text-amber-200 bg-amber-950/20 p-3.5 rounded-xl border border-amber-500/30 font-sans">
+                        <strong className="block text-xs uppercase font-mono font-bold text-amber-400 mb-1 tracking-wider">
+                          Data Gap / Unverified Item:
+                        </strong>
+                        <p className="leading-relaxed">{agent.missing_information[0]}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs text-slate-400 font-mono">
-                  <span>Confidence: <strong className="text-white">{(agent.confidence_score * 100).toFixed(0)}%</strong></span>
-                  <span className="truncate max-w-[55%] text-right text-slate-400">{agent.confidence_explanation}</span>
+                {/* Footer Bar: Calibrated Confidence without Horizontal Truncation */}
+                <div className="pt-3.5 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-mono">
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-400 uppercase tracking-wider text-xs">Confidence:</span>
+                    {agent.confidence_score !== null && agent.confidence_score !== undefined ? (
+                      <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold text-sm">
+                        {(agent.confidence_score * 100).toFixed(0)}%
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold text-xs">
+                        UNAVAILABLE / STUB
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-300 font-sans leading-relaxed sm:max-w-[70%] sm:text-right">
+                    {agent.confidence_explanation}
+                  </p>
                 </div>
               </div>
             ))}

@@ -462,6 +462,22 @@ export function App() {
     }
   };
 
+  const handleScrollToCatalog = () => {
+    if (viewMode !== 'catalog') {
+      setViewMode('catalog');
+      setSelectedStock(null);
+      setCurrentReport(null);
+      setReportError(null);
+      setIsModalOpen(false);
+    }
+    setTimeout(() => {
+      const el = document.getElementById('listed-equity-universe');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 100);
+  };
+
   return (
     <div className="min-h-screen bg-[#06080e] text-slate-100 flex flex-col font-sans selection:bg-fuchsia-500/30 selection:text-fuchsia-200 relative overflow-hidden bg-terminal-grid">
       {/* Ambient background glows */}
@@ -469,6 +485,7 @@ export function App() {
 
       <Navbar
         onHomeClick={handleGoHome}
+        onCatalogClick={handleScrollToCatalog}
         onHistoryClick={() => setViewMode('history')}
         backendHealthy={backendHealthy}
         dhanProActive={dhanProActive}
@@ -491,7 +508,7 @@ export function App() {
             <FeatureGrid />
 
             {/* Catalog Browser Search Bar & Exchange Selector */}
-            <div className="pt-6 border-t border-white/10">
+            <div id="listed-equity-universe" className="pt-6 border-t border-white/10 scroll-mt-24">
               <div className="mb-4">
                 <h3 className="text-xl font-bold text-white font-display">
                   Listed Indian Equity Universe
@@ -670,10 +687,10 @@ export function App() {
       <footer className="no-print border-t border-white/10 bg-[#04060b] py-6 text-center text-xs text-slate-400 relative z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="font-display font-medium text-slate-300">
-            EquiAgentic Intelligence Platform • Professional Multi-Agent Equity Synthesis Terminal
+            EquiAgentic Research Platform • Institutional Equity Intelligence &amp; Multi-Agent Consensus
           </p>
           <p className="font-mono text-[11px] text-slate-500">
-            FastAPI • SQLite • StateGraph Deliberation • React 19 • Tailwind CSS
+            National Stock Exchange (NSE) &amp; Bombay Stock Exchange (BSE) Coverage
           </p>
         </div>
       </footer>

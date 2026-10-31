@@ -16,7 +16,7 @@ from typing import Any, Dict, List, Optional
 from agents.base import BaseAgent, AgentOutput
 from agents.llm import LLMConfig, call_llm
 
-logger = logging.getLogger("bharatequity.analysts")
+logger = logging.getLogger("equiagentic.analysts")
 
 
 def verify_isin_and_listing(company_context: Dict[str, Any]) -> Dict[str, Any]:
@@ -88,7 +88,7 @@ class ResearchManagerAgent(BaseAgent):
 
     def get_system_prompt(self) -> str:
         return (
-            "You are the Research Manager & Orchestrator for BharatEquity, an institutional Indian equity platform. "
+            "You are the Research Manager & Orchestrator for EquiAgentic, an institutional Indian equity platform. "
             "Your job is to define the research scope, outline critical investigation hypotheses, "
             "and identify key analytical bottlenecks based on company profile and available exchange data. "
             "Respond strictly in JSON matching the AgentOutput schema."
@@ -155,7 +155,7 @@ class EvidenceVerificationAnalyst(BaseAgent):
 
     def get_system_prompt(self) -> str:
         return (
-            "You are the Data & Evidence Verification Analyst at BharatEquity. "
+            "You are the Data & Evidence Verification Analyst at EquiAgentic. "
             "You rigorously audit data integrity, distinguish official exchange disclosures from media claims, "
             "and explicitly flag data limitations, unverified assumptions, and missing filings. "
             "Never fabricate financial numbers. Respond strictly in JSON matching the AgentOutput schema."
@@ -213,7 +213,7 @@ class FundamentalsQualityAnalyst(BaseAgent):
 
     def get_system_prompt(self) -> str:
         return (
-            "You are the Fundamentals & Business Quality Analyst at BharatEquity. "
+            "You are the Fundamentals & Business Quality Analyst at EquiAgentic. "
             "Analyze business durability, return on capital employed (ROCE), debt solvency, working capital cycles, "
             "and free cash flow conversion. State clearly when audited numbers are unavailable. "
             "Respond strictly in JSON matching AgentOutput."
@@ -289,7 +289,7 @@ class GrowthIndustryAnalyst(BaseAgent):
 
     def get_system_prompt(self) -> str:
         return (
-            "You are the Growth & Industry Analyst at BharatEquity. "
+            "You are the Growth & Industry Analyst at EquiAgentic. "
             "Analyze market tailwinds, total addressable market (TAM), regulatory tailwinds (e.g. PLI schemes, Make in India), "
             "and sectoral growth vectors. Respond strictly in JSON matching AgentOutput."
         )
@@ -350,7 +350,7 @@ class NewsCorporateEventsAnalyst(BaseAgent):
 
     def get_system_prompt(self) -> str:
         return (
-            "You are the News, Corporate Events & Earnings-Call Analyst at BharatEquity. "
+            "You are the News, Corporate Events & Earnings-Call Analyst at EquiAgentic. "
             "Analyze material disclosures, insider transactions (PIT regulations), board changes, and conference calls. "
             "Never fabricate news articles. If live feeds are absent, state the limitation clearly. "
             "Respond strictly in JSON matching AgentOutput."
@@ -482,7 +482,7 @@ class SocialSentimentAnalyst(BaseAgent):
 
     def get_system_prompt(self) -> str:
         return (
-            "You are the Social Sentiment Analyst at BharatEquity. "
+            "You are the Social Sentiment Analyst at EquiAgentic. "
             "Analyze retail vs institutional sentiment, retail hype indicators, and contrarian sentiment divergences. "
             "Respond strictly in JSON matching AgentOutput."
         )
@@ -534,7 +534,7 @@ class MarketAnalyst(BaseAgent):
 
     def get_system_prompt(self) -> str:
         return (
-            "You are the Market Analyst at BharatEquity. "
+            "You are the Market Analyst at EquiAgentic. "
             "Analyze trading liquidity, delivery volume percentage, beta, institutional absorption, and market microstructure. "
             "Respond strictly in JSON matching AgentOutput."
         )
@@ -627,7 +627,7 @@ class PeerValuationAnalyst(BaseAgent):
 
     def get_system_prompt(self) -> str:
         return (
-            "You are the Peer Benchmarking & Valuation Analyst at BharatEquity. "
+            "You are the Peer Benchmarking & Valuation Analyst at EquiAgentic. "
             "Analyze price-to-earnings (P/E), EV/EBITDA, price-to-book (P/B), and margin of safety against sector norms. "
             "Respond strictly in JSON matching AgentOutput."
         )

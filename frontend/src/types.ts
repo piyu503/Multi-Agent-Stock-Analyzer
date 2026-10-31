@@ -69,7 +69,7 @@ export interface AgentOutput {
   supporting_evidence: string[];
   assumptions: string[];
   missing_information: string[];
-  confidence_score: number;
+  confidence_score: number | null;
   confidence_explanation: string;
   questions_for_investigation: string[];
   role_specific_data?: Record<string, any>;
@@ -80,11 +80,25 @@ export interface AgentOutput {
 }
 
 export interface TacticalExecutionPlan {
+  strategy_type?: string;
   entry_range_low?: number;
   entry_range_high?: number;
+  target_price?: number;
   invalidation_stop?: number;
+  risk_reward_ratio?: string;
+  win_probability_pct?: number;
+  time_horizon?: string;
   atr_buffer?: number;
   staged_tranches?: string[];
+}
+
+export interface DecisionFramework {
+  business_quality_score?: number;
+  valuation_attractiveness_score?: number;
+  catalyst_momentum_score?: number;
+  downside_risk_penalty?: number;
+  composite_conviction_score?: number;
+  conviction_rationale?: string;
 }
 
 export interface ResearchReport {
@@ -99,6 +113,9 @@ export interface ResearchReport {
   disclaimer: string;
   conviction?: string;
   target_allocation_pct?: number;
+  investment_horizon?: string;
+  decision_framework?: DecisionFramework;
+  committee_challenges?: string[];
   execution_plan?: TacticalExecutionPlan;
   business_overview: ReportSection;
   financial_analysis: ReportSection;

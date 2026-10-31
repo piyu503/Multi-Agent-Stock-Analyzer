@@ -11,7 +11,7 @@ from typing import Any, Dict, List, Optional
 import feedparser
 import httpx
 
-logger = logging.getLogger("bharatequity.data.bse")
+logger = logging.getLogger("equiagentic.data.bse")
 
 
 def _fetch_regulatory_rss_sync(query: str, max_items: int = 6) -> List[Dict[str, Any]]:

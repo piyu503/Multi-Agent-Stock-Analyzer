@@ -13,7 +13,7 @@ from typing import Any, Dict, Optional
 import pandas as pd
 import yfinance as yf
 
-logger = logging.getLogger("bharatequity.data.market")
+logger = logging.getLogger("equiagentic.data.market")
 
 
 def get_yfinance_symbol(symbol: str, exchange: str = "NSE") -> str:

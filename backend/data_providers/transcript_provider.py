@@ -10,7 +10,7 @@ import logging
 import os
 from typing import Any, Dict, List, Optional
 
-logger = logging.getLogger("bharatequity.data.transcripts")
+logger = logging.getLogger("equiagentic.data.transcripts")
 
 _RAG_ENGINE_INSTANCE = None
 _RAG_INITIALIZED = False

@@ -1,4 +1,4 @@
-"""Deterministic Financial Calculations Module for BharatEquity.
+"""Deterministic Financial Calculations Module for EquiAgentic.
 
 Ensures LLMs (e.g. Qwen3 4B) receive verified ratios and metrics rather
 than computing multi-step arithmetic prone to hallucination.

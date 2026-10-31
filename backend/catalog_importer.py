@@ -202,6 +202,12 @@ def import_catalog_file(
                 invalid_rows += 1
                 continue
 
+            # Filter out Mutual Funds / ETF units: EquiAgentic specializes exclusively in operating corporate equities
+            upper_name = raw_name.upper()
+            if "MUTUAL FUND" in upper_name:
+                records_skipped += 1
+                continue
+
             # Check duplicate within same file
             batch_key = (raw_symbol.upper(), exchange)
             if batch_key in seen_in_batch:
@@ -215,6 +221,11 @@ def import_catalog_file(
                 val = row[col_map["isin"]].strip()
                 if val and val.lower() != "nan" and val.lower() != "null":
                     raw_isin = val.upper()
+
+            # Filter out Mutual Fund / ETF ISINs (INF series)
+            if raw_isin and raw_isin.startswith("INF"):
+                records_skipped += 1
+                continue
 
             raw_scrip = None
             if "scrip_code" in col_map and col_map["scrip_code"] < len(row):

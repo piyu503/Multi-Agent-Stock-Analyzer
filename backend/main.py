@@ -18,7 +18,7 @@ logging.basicConfig(
         logging.StreamHandler(sys.stdout)
     ]
 )
-logger = logging.getLogger("bharatequity.api")
+logger = logging.getLogger("equiagentic.api")
 
 from catalog_importer import import_catalog_file
 from database import (
@@ -517,6 +517,34 @@ async def upload_catalog_file(
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
+
+
+# ============================================================================
+# PRODUCTION SPA FRONTEND SERVING (Option 1: Unified Render Deployment)
+# ============================================================================
+
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+frontend_dist_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "frontend", "dist")
+frontend_assets_dir = os.path.join(frontend_dist_dir, "assets")
+
+if os.path.exists(frontend_assets_dir):
+    app.mount("/assets", StaticFiles(directory=frontend_assets_dir), name="assets")
+
+if os.path.exists(frontend_dist_dir):
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_spa_frontend(full_path: str):
+        # Do not intercept API routes
+        if full_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="API endpoint not found")
+        
+        file_candidate = os.path.join(frontend_dist_dir, full_path)
+        if os.path.isfile(file_candidate):
+            return FileResponse(file_candidate)
+        
+        # SPA catch-all fallback to index.html
+        return FileResponse(os.path.join(frontend_dist_dir, "index.html"))
 
 
 if __name__ == "__main__":

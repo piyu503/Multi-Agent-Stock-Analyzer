@@ -405,7 +405,11 @@ def search_stocks(
     cleaned_q = query.strip()
     param = f"%{cleaned_q}%"
 
-    where_clauses = ["is_active = 1"]
+    where_clauses = [
+        "is_active = 1",
+        "isin NOT LIKE 'INF%'",
+        "UPPER(company_name) NOT LIKE '%MUTUAL FUND%'"
+    ]
     params: List[Any] = []
 
     # Exchange filter

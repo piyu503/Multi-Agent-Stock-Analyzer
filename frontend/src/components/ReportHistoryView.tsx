@@ -63,8 +63,9 @@ export const ReportHistoryView: React.FC<ReportHistoryViewProps> = ({
     try {
       if (isAuthenticated) {
         const detail = await fetchSavedReportDetail(reportId);
-        if (detail && detail.report) {
-          onOpenReport(detail.report);
+        const reportToOpen = (detail as any)?.report || (detail as any)?.report_data;
+        if (reportToOpen) {
+          onOpenReport(reportToOpen);
         }
       } else {
         // Open from guest session cache
@@ -166,7 +167,7 @@ export const ReportHistoryView: React.FC<ReportHistoryViewProps> = ({
             </span>
           </h1>
           <p className="text-xs text-slate-400 font-mono mt-1">
-            Instantly reload comprehensive multi-agent investment memos without re-running models
+            Instantly reload comprehensive multi-agent investment memos from your archive
           </p>
         </div>
 

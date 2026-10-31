@@ -18,7 +18,7 @@ import os
 import urllib.request
 from typing import Any, Dict, List, Optional, Tuple
 
-logger = logging.getLogger("bharatequity.data.dhan")
+logger = logging.getLogger("equiagentic.data.dhan")
 
 DHAN_BASE_URL = "https://api.dhan.co/v2"
 _INSTRUMENTS_CACHE: Optional[Dict[str, Any]] = None

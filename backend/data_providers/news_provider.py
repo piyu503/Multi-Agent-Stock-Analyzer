@@ -9,7 +9,7 @@ from typing import Any, Dict, List
 import urllib.parse
 import feedparser
 
-logger = logging.getLogger("bharatequity.data.news")
+logger = logging.getLogger("equiagentic.data.news")
 
 
 def _fetch_google_news_rss_sync(query: str, max_items: int = 10) -> List[Dict[str, Any]]:

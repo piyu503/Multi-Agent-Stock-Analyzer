@@ -119,19 +119,43 @@
     display: none !important;
   }
 
-  /* Convert dark container cards to clean white institutional document cards */
+  /* Convert all dark container cards to clean white institutional document cards */
   .trader-card,
+  .report-section,
   .bg-\[\#07090e\],
   .bg-\[\#06080e\],
   .bg-\[\#0c101d\],
+  .bg-\[\#0c101d\]\/90,
   .bg-\[\#090d18\],
+  .bg-\[\#070b13\],
+  .bg-\[\#060810\],
+  .bg-\[\#070d14\],
+  .bg-black\/40,
+  .bg-black\/50,
   .bg-gradient-to-br,
-  .bg-gradient-to-tr {
+  .bg-gradient-to-tr,
+  .bg-gradient-to-b,
+  .bg-gradient-to-r {
     background: #ffffff !important;
+    background-color: #ffffff !important;
+    background-image: none !important;
     color: #0f172a !important;
-    border: 1px solid #e2e8f0 !important;
+    border: 1px solid #cbd5e1 !important;
     box-shadow: none !important;
     text-shadow: none !important;
+  }
+
+  /* Force inner boxes inside sections to clean light gray */
+  .bg-\[\#070b13\],
+  .bg-white\/5,
+  .bg-white\/10,
+  .bg-white\/\[0\.02\],
+  .bg-white\/\[0\.03\],
+  .bg-white\/\[0\.04\] {
+    background: #f8fafc !important;
+    background-color: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #1e293b !important;
   }
 
   /* Text color corrections for white paper printing */

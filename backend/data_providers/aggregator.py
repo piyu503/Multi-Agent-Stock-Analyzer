@@ -1,4 +1,4 @@
-"""Unified Free Data Provider Aggregator for BharatEquity.
+"""Unified Free Data Provider Aggregator for EquiAgentic.
 
 Combines Yahoo Finance, BSE Public Announcements, and Google News RSS into a single
 standardized context dictionary ready for ingestion by the 13 research agents.

@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 
 from agents.llm import LLMConfig, call_llm
 
-logger = logging.getLogger("bharatequity.agents")
+logger = logging.getLogger("equiagentic.agents")
 
 
 class AgentOutput(BaseModel):
@@ -28,7 +28,7 @@ class AgentOutput(BaseModel):
 
 
 class BaseAgent(ABC):
-    """Abstract Base Class for all BharatEquity research agents."""
+    """Abstract Base Class for all EquiAgentic research agents."""
 
     def __init__(self, name: str, role: str, model_tier: str = "analyst"):
         self.name = name

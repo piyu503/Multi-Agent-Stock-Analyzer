@@ -13,7 +13,7 @@ import os
 import shutil
 from typing import Any, Dict, Optional
 
-logger = logging.getLogger("bharatequity.data.nse")
+logger = logging.getLogger("equiagentic.data.nse")
 
 # Locate node executable
 NODE_EXE = shutil.which("node") or "node"

@@ -4,6 +4,7 @@ import type { User } from '../types';
 
 interface NavbarProps {
   onHomeClick: () => void;
+  onCatalogClick?: () => void;
   onHistoryClick: () => void;
   backendHealthy: boolean | null;
   dhanProActive?: boolean;
@@ -16,6 +17,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({
   onHomeClick,
+  onCatalogClick,
   onHistoryClick,
   backendHealthy,
   dhanProActive,
@@ -26,6 +28,14 @@ export const Navbar: React.FC<NavbarProps> = ({
   savedCount = 0,
 }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+
+  const handleCatalogNav = () => {
+    if (onCatalogClick) {
+      onCatalogClick();
+    } else {
+      onHomeClick();
+    }
+  };
 
   return (
     <header className="border-b border-white/10 bg-[#07090e]/90 backdrop-blur-xl sticky top-0 z-40 shadow-2xl shadow-black/60">
@@ -75,7 +85,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           <button
             type="button"
-            onClick={onHomeClick}
+            onClick={handleCatalogNav}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'catalog'
                 ? 'text-slate-300 hover:text-white'

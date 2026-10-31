@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional
 from agents.base import BaseAgent, AgentOutput
 from agents.llm import LLMConfig, call_llm
 
-logger = logging.getLogger("bharatequity.decision_makers")
+logger = logging.getLogger("equiagentic.decision_makers")
 
 
 class BullResearcherAgent(BaseAgent):
@@ -23,7 +23,7 @@ class BullResearcherAgent(BaseAgent):
 
     def get_system_prompt(self) -> str:
         return (
-            "You are the Bull Researcher at BharatEquity. "
+            "You are the Bull Researcher at EquiAgentic. "
             "Your objective is to identify asymmetric upside potential, competitive advantages (economic moats), "
             "operating leverage, and expansion catalysts. You argue rigorously based on fundamental evidence. "
             "Never fabricate numbers. Respond strictly in JSON matching AgentOutput."
@@ -114,7 +114,7 @@ class BearResearcherAgent(BaseAgent):
 
     def get_system_prompt(self) -> str:
         return (
-            "You are the Bear Researcher at BharatEquity. "
+            "You are the Bear Researcher at EquiAgentic. "
             "Your objective is to stress-test vulnerabilities, uncover hidden debt, analyze margin compression risks, "
             "governance concerns, and valuation overextension. Argue rigorously based on risk factors. "
             "Never fabricate numbers. Respond strictly in JSON matching AgentOutput."
@@ -211,7 +211,7 @@ class TraderAgent(BaseAgent):
 
     def get_system_prompt(self) -> str:
         return (
-            "You are the Execution Trader at BharatEquity. "
+            "You are the Execution Trader at EquiAgentic. "
             "Analyze trade timing, liquidity constraints, order execution strategy (TWAP/VWAP), "
             "and portfolio accumulation pacing. Respond strictly in JSON matching AgentOutput."
         )
@@ -319,7 +319,7 @@ class RiskAnalystAgent(BaseAgent):
 
     def get_system_prompt(self) -> str:
         return (
-            "You are the Lead Risk & Adversarial Challenger at BharatEquity powered by DeepSeek-R1 reasoning. "
+            "You are the Lead Risk & Adversarial Challenger at EquiAgentic. "
             "You operate with strict independence. Your primary objective is to aggressively stress-test the Bull's "
             "growth claims, uncover hidden balance-sheet fragility, analyze cyclical margin compression, and identify "
             "the precise mathematical trigger condition that invalidates the investment thesis. "
@@ -392,7 +392,7 @@ class PortfolioManagerAgent(BaseAgent):
 
     def get_system_prompt(self) -> str:
         return (
-            "You are the Portfolio Manager at BharatEquity. "
+            "You are the Portfolio Manager at EquiAgentic. "
             "Synthesize all agent inputs, balance the Bull vs Bear adversarial debate, preserve unresolvable "
             "conflicts when evidence is insufficient, and assign capital allocation conviction without resorting "
             "to a naive majority vote. Respond strictly in JSON matching AgentOutput."
@@ -465,7 +465,7 @@ class PortfolioManagerAgent(BaseAgent):
                 "recommendation": "Constructive on Pullbacks",
                 "conviction_tier": "Tier-2 Core Accumulation",
                 "debate_status": "Disagreements preserved regarding valuation margin of safety",
-                "committee_challenge": "DeepSeek-R1 cross-examination resolved in favor of moat durability"
+                "committee_challenge": "Adversarial cross-examination resolved in favor of moat durability"
             },
             model_tier="reasoner+analyst",
             execution_status="dev_stub"
@@ -477,7 +477,7 @@ class PortfolioManagerAgent(BaseAgent):
         evidence: Optional[Dict[str, Any]] = None,
         timeout_sec: float = 60.0
     ) -> AgentOutput:
-        """2-Stage PM Synthesis: DeepSeek-R1 challenges both sides -> Qwen finalizes allocation conviction."""
+        """2-Stage PM Synthesis: Adversarial committee challenges both sides -> Portfolio Manager finalizes allocation conviction."""
         start_time = time.time()
         evidence_dict = evidence or {}
 
@@ -490,9 +490,9 @@ class PortfolioManagerAgent(BaseAgent):
         user_prompt = self.get_user_prompt(company_context, evidence_dict)
 
         try:
-            # Stage 1: DeepSeek-R1 (Reasoner) conducts Adversarial Cross-Examination of Bull and Bear cases
+            # Stage 1: Adversarial Cross-Examination of Bull and Bear cases
             r1_system = (
-                "You are the Senior Investment Committee Adversarial Challenger powered by DeepSeek-R1 reasoning. "
+                "You are the Senior Investment Committee Adversarial Challenger "
                 "Aggressively interrogate both the Bull Thesis and the Bear Thesis presented below. "
                 "Challenge false confidence, detect unverified leaps of logic, evaluate asymmetric payoff asymmetry, "
                 "and identify which argument has stronger empirical evidence."
@@ -516,15 +516,15 @@ class PortfolioManagerAgent(BaseAgent):
             # Stage 2: Qwen (Analyst) synthesizes final institutional capital allocation with R1 challenge factored in
             qwen_system = self.get_system_prompt()
             challenge_block = "\n".join([f"- {c}" for c in committee_challenge]) if committee_challenge else "Debate balanced."
-            qwen_user = (
+            pm_user = (
                 f"{user_prompt}\n\n"
-                f"INVESTMENT COMMITTEE ADVERSARIAL CROSS-EXAMINATION (DeepSeek-R1 Audit):\n{challenge_block}\n\n"
+                f"INVESTMENT COMMITTEE ADVERSARIAL CROSS-EXAMINATION (Adversarial Audit):\n{challenge_block}\n\n"
                 "Synthesize the final institutional capital allocation decision factoring in this adversarial audit. "
                 "Set definitive 'conviction' (OVERWEIGHT, NEUTRAL, or UNDERWEIGHT) and 'target_allocation_pct' (0.0 to 10.0) "
                 "inside 'role_specific_data'."
             )
 
-            qwen_result = await call_llm(
+            pm_result = await call_llm(
                 system_prompt=qwen_system,
                 user_prompt=qwen_user,
                 response_format="json",
@@ -532,23 +532,23 @@ class PortfolioManagerAgent(BaseAgent):
                 timeout_sec=max(25.0, timeout_sec * 0.5)
             )
 
-            role_data = qwen_result.get("role_specific_data", {})
+            role_data = pm_result.get("role_specific_data", {})
             if committee_challenge:
                 role_data["committee_challenge_points"] = committee_challenge[:3]
-                role_data["pipeline"] = "DeepSeek-R1 Cross-Examination -> Qwen Synthesis"
+                role_data["pipeline"] = "Committee Cross-Examination -> PM Synthesis"
 
             duration = round(time.time() - start_time, 3)
             return AgentOutput(
                 agent_name=self.name,
                 role=self.role,
-                summary=qwen_result.get("summary", "Portfolio Manager conviction synthesized."),
-                findings=qwen_result.get("findings", []),
-                supporting_evidence=qwen_result.get("supporting_evidence", []) + [f"DeepSeek-R1 Adversarial Critique: {len(committee_challenge)} points assessed"],
-                assumptions=qwen_result.get("assumptions", []),
-                missing_information=qwen_result.get("missing_information", []),
-                confidence_score=float(qwen_result.get("confidence_score", 0.85)),
-                confidence_explanation=qwen_result.get("confidence_explanation", "Two-stage DeepSeek-R1 adversarial critique + Qwen PM allocation"),
-                questions_for_investigation=qwen_result.get("questions_for_investigation", []),
+                summary=pm_result.get("summary", "Portfolio Manager conviction synthesized."),
+                findings=pm_result.get("findings", []),
+                supporting_evidence=pm_result.get("supporting_evidence", []) + [f"Committee Adversarial Critique: {len(committee_challenge)} points assessed"],
+                assumptions=pm_result.get("assumptions", []),
+                missing_information=pm_result.get("missing_information", []),
+                confidence_score=float(pm_result.get("confidence_score", 0.85)),
+                confidence_explanation=pm_result.get("confidence_explanation", "Two-stage adversarial committee critique + PM allocation"),
+                questions_for_investigation=pm_result.get("questions_for_investigation", []),
                 role_specific_data=role_data,
                 model_tier="reasoner+analyst",
                 execution_status="success",

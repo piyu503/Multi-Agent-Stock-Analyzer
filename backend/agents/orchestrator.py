@@ -1,4 +1,4 @@
-"""LangGraph StateGraph Multi-Agent Orchestrator for BharatEquity Platform.
+"""LangGraph StateGraph Multi-Agent Orchestrator for EquiAgentic Platform.
 
 Orchestrates all 13 specialized agents using LangGraph's StateGraph:
 - Stage 0: Research Manager & Planning
@@ -18,7 +18,7 @@ import operator
 import os
 from typing import Annotated, Any, Dict, List, Optional, Tuple, TypedDict
 
-logger = logging.getLogger("bharatequity.orchestrator")
+logger = logging.getLogger("equiagentic.orchestrator")
 
 from langgraph.graph import END, START, StateGraph
 

@@ -1,4 +1,4 @@
-"""Centralized LLM Client for BharatEquity Multi-Agent System.
+"""Centralized LLM Client for EquiAgentic Multi-Agent System.
 
 Supports:
 - Local Ollama (e.g. Qwen3 4B)
@@ -15,7 +15,7 @@ import re
 from typing import Any, Dict, List, Optional
 import httpx
 
-logger = logging.getLogger("bharatequity.llm")
+logger = logging.getLogger("equiagentic.llm")
 
 
 _UNAVAILABLE_MODELS = set()
