@@ -20,6 +20,9 @@ def get_yfinance_symbol(symbol: str, exchange: str = "NSE") -> str:
     """Map Indian exchange ticker to yfinance ticker suffix."""
     clean_sym = symbol.strip().upper()
     exch_clean = exchange.strip().upper() if exchange else "NSE"
+    # Tata Motors is tracked under TMCV (or TMPV) on yfinance
+    if clean_sym in ("TATAMOTORS", "TATAMTRDVR"):
+        return f"TMCV.NS"
     if exch_clean == "BSE":
         return f"{clean_sym}.BO"
     return f"{clean_sym}.NS"

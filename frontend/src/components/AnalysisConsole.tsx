@@ -69,11 +69,12 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
     { symbol: 'INFY', exchange: 'NSE' },
     { symbol: 'HDFCBANK', exchange: 'NSE' },
     { symbol: 'ICICIBANK', exchange: 'NSE' },
-    { symbol: 'TATAMOTORS', exchange: 'NSE' }
+    { symbol: 'TATAMOTORS', exchange: 'BSE' }
   ];
 
   const handleQuickPick = async (qp: { symbol: string; exchange: string }) => {
-    const matched = stocks.find((s) => s.symbol === qp.symbol && s.exchange === qp.exchange);
+    const matched = stocks.find((s) => s.symbol === qp.symbol && s.exchange === qp.exchange) 
+      || stocks.find((s) => s.symbol === qp.symbol);
     if (matched) {
       handleSelect(matched);
       return;
@@ -83,30 +84,37 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
       const found = res.items.find((s) => s.symbol === qp.symbol) || res.items[0];
       if (found) {
         handleSelect(found);
-      } else {
-        handleSelect({
-          id: 0,
-          symbol: qp.symbol,
-          company_name: qp.symbol,
-          exchange: qp.exchange,
-          sector: 'General',
-          industry: 'General',
-          isin: 'INE000000000',
-          series: 'EQ',
-          is_active: true,
-          is_prototype_data: false
-        });
+        return;
       }
+      // Fallback without exchange filter
+      const anyRes = await searchStocks(qp.symbol, '', 1, 5);
+      const anyFound = anyRes.items.find((s) => s.symbol === qp.symbol) || anyRes.items[0];
+      if (anyFound) {
+        handleSelect(anyFound);
+        return;
+      }
+      handleSelect({
+        id: 7909,
+        symbol: qp.symbol,
+        company_name: 'Tata Motors Ltd',
+        exchange: qp.exchange || 'BSE',
+        sector: 'Automobiles - LCVs & HCVs',
+        industry: 'Automobile',
+        isin: 'INE155A01022',
+        series: 'A',
+        is_active: true,
+        is_prototype_data: false
+      });
     } catch {
       handleSelect({
-        id: 0,
+        id: 7909,
         symbol: qp.symbol,
-        company_name: qp.symbol,
-        exchange: qp.exchange,
-        sector: 'General',
-        industry: 'General',
-        isin: 'INE000000000',
-        series: 'EQ',
+        company_name: 'Tata Motors Ltd',
+        exchange: qp.exchange || 'BSE',
+        sector: 'Automobiles - LCVs & HCVs',
+        industry: 'Automobile',
+        isin: 'INE155A01022',
+        series: 'A',
         is_active: true,
         is_prototype_data: false
       });
@@ -133,12 +141,12 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
         </p>
       </div>
 
-      {/* 3-Step Interactive Card */}
-      <div className="rounded-2xl bg-[#0c101c]/90 border border-white/10 p-5 sm:p-7 shadow-2xl shadow-black/60 backdrop-blur-md">
+      {/* 3-Step Interactive Card - Enlarged & Enhanced */}
+      <div className="rounded-2xl bg-[#0c101c]/95 border border-white/15 p-6 sm:p-8 lg:p-9 shadow-2xl shadow-black/70 backdrop-blur-md">
         {/* Step 1: Stock Selection */}
-        <div className="mb-6" ref={dropdownRef}>
-          <div className="flex items-center gap-2 mb-2.5 text-xs font-semibold uppercase tracking-wider text-slate-200">
-            <span className="w-5 h-5 rounded-full bg-fuchsia-500/20 border border-fuchsia-500/40 text-fuchsia-300 text-xs flex items-center justify-center font-mono font-bold">
+        <div className="mb-7" ref={dropdownRef}>
+          <div className="flex items-center gap-2.5 mb-3 text-sm sm:text-base font-bold uppercase tracking-wider text-slate-100">
+            <span className="w-6 h-6 rounded-full bg-fuchsia-500/20 border border-fuchsia-500/40 text-fuchsia-300 text-xs sm:text-sm flex items-center justify-center font-mono font-bold">
               1
             </span>
             <span>Security Selection</span>
@@ -146,7 +154,7 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
 
           <div className="relative">
             <div className="relative flex items-center">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 pointer-events-none" />
+              <Search className="w-5 h-5 text-slate-400 absolute left-4 pointer-events-none" />
               <input
                 type="text"
                 value={searchTerm}
@@ -157,48 +165,48 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
                 }}
                 onFocus={() => setIsDropdownOpen(true)}
                 placeholder="Search symbol, legal name, or ISIN (e.g. RELIANCE, TCS, ZOMATO, HDFCBANK)..."
-                className="w-full bg-[#060911] border border-white/10 focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/30 rounded-xl pl-10 pr-10 py-3.5 text-sm text-white placeholder-slate-400 outline-none transition-all shadow-inner font-sans"
+                className="w-full bg-[#060911] border border-white/15 focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/30 rounded-xl pl-12 pr-12 py-4 text-base sm:text-lg text-white placeholder-slate-400 outline-none transition-all shadow-inner font-sans"
               />
               {isSearching && (
-                <Loader2 className="w-4 h-4 text-fuchsia-400 absolute right-3.5 animate-spin" />
+                <Loader2 className="w-5 h-5 text-fuchsia-400 absolute right-4 animate-spin" />
               )}
             </div>
 
             {/* Autocomplete Dropdown across all stocks */}
             {isDropdownOpen && searchResults.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-[#0d1322] border border-white/15 rounded-xl shadow-2xl z-50 overflow-hidden divide-y divide-white/5 max-h-72 overflow-y-auto">
-                <div className="px-3 py-1.5 bg-[#080d18] text-[11px] font-mono text-slate-300 uppercase tracking-wider flex items-center justify-between border-b border-white/10">
+                <div className="px-4 py-2 bg-[#080d18] text-xs font-mono text-slate-300 uppercase tracking-wider flex items-center justify-between border-b border-white/10">
                   <span>NSE &amp; BSE Universe Matches</span>
-                  <span className="text-fuchsia-400">{searchResults.length} results</span>
+                  <span className="text-fuchsia-400 font-semibold">{searchResults.length} results</span>
                 </div>
                 {searchResults.map((s) => (
                   <button
                     key={`${s.exchange}-${s.symbol}`}
                     type="button"
                     onClick={() => handleSelect(s)}
-                    className="w-full text-left px-4 py-3 flex items-center justify-between hover:bg-white/5 transition-colors group cursor-pointer"
+                    className="w-full text-left px-4 py-3.5 flex items-center justify-between hover:bg-white/5 transition-colors group cursor-pointer"
                   >
                     <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-white text-sm group-hover:text-fuchsia-400 transition-colors">
+                      <div className="flex items-center gap-2.5">
+                        <span className="font-mono font-bold text-white text-base group-hover:text-fuchsia-400 transition-colors">
                           {s.symbol}
                         </span>
-                        <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-white/5 text-slate-300 border border-white/10">
+                        <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-white/5 text-slate-200 border border-white/10">
                           {s.exchange}
                         </span>
                         {s.series && (
-                          <span className="text-[11px] font-mono text-slate-400">
+                          <span className="text-xs font-mono text-slate-400">
                             [{s.series}]
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-slate-300 mt-0.5 truncate max-w-md">
+                      <p className="text-sm text-slate-300 mt-1 truncate max-w-md">
                         {s.company_name}
                       </p>
                     </div>
                     <div className="text-right">
                       <span className="text-xs font-mono text-slate-300 block">{s.isin}</span>
-                      <span className="text-[11px] text-slate-400">{s.sector || 'Listed Equity'}</span>
+                      <span className="text-xs text-slate-400">{s.sector || 'Listed Equity'}</span>
                     </div>
                   </button>
                 ))}
@@ -207,14 +215,14 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
           </div>
 
           {/* Quick Ticker Chips */}
-          <div className="flex items-center gap-2 mt-3 flex-wrap">
-            <span className="text-xs text-slate-400 font-medium font-mono">POPULAR:</span>
+          <div className="flex items-center gap-2.5 mt-3.5 flex-wrap">
+            <span className="text-xs sm:text-sm text-slate-300 font-bold font-mono tracking-wider">POPULAR:</span>
             {quickPicks.map((qp) => (
               <button
                 key={`${qp.exchange}-${qp.symbol}`}
                 type="button"
                 onClick={() => handleQuickPick(qp)}
-                className="px-2.5 py-1 rounded-md text-xs font-mono font-medium bg-white/5 border border-white/10 hover:border-fuchsia-500/50 hover:bg-white/10 text-slate-200 hover:text-fuchsia-300 transition-all cursor-pointer shadow-sm"
+                className="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-mono font-bold bg-white/5 border border-white/10 hover:border-fuchsia-500/50 hover:bg-white/10 text-slate-200 hover:text-fuchsia-300 transition-all cursor-pointer shadow-sm"
               >
                 {qp.symbol}
               </button>
@@ -223,101 +231,111 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
         </div>
 
         {/* Step 2 & Step 3: Horizon & Research Depth */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-7">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {/* Step 2: Investment Horizon */}
-          <div className="rounded-xl bg-[#070a12] border border-white/5 p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-200">
-                <span className="w-5 h-5 rounded-full bg-fuchsia-500/20 border border-fuchsia-500/40 text-fuchsia-300 text-xs flex items-center justify-center font-mono font-bold">
+          <div className="rounded-xl bg-[#070a14] border border-white/10 p-5 sm:p-6 flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2.5 text-sm sm:text-base font-bold uppercase tracking-wider text-slate-100">
+                <span className="w-6 h-6 rounded-full bg-fuchsia-500/20 border border-fuchsia-500/40 text-fuchsia-300 text-xs sm:text-sm flex items-center justify-center font-mono font-bold">
                   2
                 </span>
                 <span>Investment Horizon</span>
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2.5">
-              <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3 text-center opacity-40 cursor-not-allowed select-none">
-                <div className="text-xs font-semibold text-slate-400">Short-Term</div>
-                <div className="text-xs text-slate-500 mt-0.5">1-3 Months</div>
-                <span className="inline-block mt-2 text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-white/5 text-slate-400 border border-white/10">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+              <div className="rounded-xl border border-white/10 bg-white/[0.02] px-2.5 sm:px-3 py-3.5 text-center opacity-45 cursor-not-allowed select-none flex flex-col justify-between min-h-[110px]">
+                <div>
+                  <div className="text-xs sm:text-sm font-bold text-slate-300 whitespace-nowrap">Short-Term</div>
+                  <div className="text-xs text-slate-400 mt-1 whitespace-nowrap">1-3 Months</div>
+                </div>
+                <span className="inline-block mt-2.5 text-xs uppercase font-mono px-2 py-0.5 rounded bg-white/5 text-slate-400 border border-white/10 mx-auto">
                   SOON
                 </span>
               </div>
 
-              {/* Medium-Term Active (No checkmark tick) */}
-              <div className="rounded-xl border border-fuchsia-500/50 bg-fuchsia-500/10 p-3 text-center ring-1 ring-fuchsia-500/30 cursor-pointer shadow-lg shadow-fuchsia-950/30">
-                <div className="text-xs font-bold text-fuchsia-300">
-                  Medium-Term
+              {/* Medium-Term Active - Guaranteed Single Line */}
+              <div className="rounded-xl border-2 border-fuchsia-500 bg-fuchsia-500/15 px-2.5 sm:px-3 py-3.5 text-center ring-2 ring-fuchsia-500/30 cursor-pointer shadow-xl shadow-fuchsia-950/40 flex flex-col justify-between min-h-[110px]">
+                <div>
+                  <div className="text-xs sm:text-sm md:text-base font-extrabold text-white whitespace-nowrap">
+                    Medium-Term
+                  </div>
+                  <div className="text-xs sm:text-sm text-fuchsia-200 font-semibold mt-1 whitespace-nowrap">1 Year Outlook</div>
                 </div>
-                <div className="text-xs text-fuchsia-200/90 font-medium mt-0.5">1 Year Outlook</div>
-                <span className="inline-block mt-2 text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/40">
+                <span className="inline-block mt-2.5 text-xs uppercase font-mono font-bold px-2.5 py-0.5 rounded bg-fuchsia-500/30 text-white border border-fuchsia-400/50 mx-auto">
                   Active
                 </span>
               </div>
 
-              <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3 text-center opacity-40 cursor-not-allowed select-none">
-                <div className="text-xs font-semibold text-slate-400">Long-Term</div>
-                <div className="text-xs text-slate-500 mt-0.5">3+ Years</div>
-                <span className="inline-block mt-2 text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-white/5 text-slate-400 border border-white/10">
+              <div className="rounded-xl border border-white/10 bg-white/[0.02] px-2.5 sm:px-3 py-3.5 text-center opacity-45 cursor-not-allowed select-none flex flex-col justify-between min-h-[110px]">
+                <div>
+                  <div className="text-xs sm:text-sm font-bold text-slate-300 whitespace-nowrap">Long-Term</div>
+                  <div className="text-xs text-slate-400 mt-1 whitespace-nowrap">3+ Years</div>
+                </div>
+                <span className="inline-block mt-2.5 text-xs uppercase font-mono px-2 py-0.5 rounded bg-white/5 text-slate-400 border border-white/10 mx-auto">
                   SOON
                 </span>
               </div>
             </div>
-            <p className="mt-2.5 text-xs text-slate-400 leading-relaxed">
+            <p className="mt-3.5 text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
               Focuses on 1-year earnings momentum, balance sheet durability, and industry tailwinds.
             </p>
           </div>
 
           {/* Step 3: Research Depth */}
-          <div className="rounded-xl bg-[#070a12] border border-white/5 p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-200">
-                <span className="w-5 h-5 rounded-full bg-fuchsia-500/20 border border-fuchsia-500/40 text-fuchsia-300 text-xs flex items-center justify-center font-mono font-bold">
+          <div className="rounded-xl bg-[#070a14] border border-white/10 p-5 sm:p-6 flex flex-col justify-between">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2.5 text-sm sm:text-base font-bold uppercase tracking-wider text-slate-100">
+                <span className="w-6 h-6 rounded-full bg-fuchsia-500/20 border border-fuchsia-500/40 text-fuchsia-300 text-xs sm:text-sm flex items-center justify-center font-mono font-bold">
                   3
                 </span>
                 <span>Research Scope</span>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-2.5">
-              {/* Standard Review Active (No checkmark tick, matching fuchsia theme) */}
-              <div className="rounded-xl border border-fuchsia-500/50 bg-fuchsia-500/10 p-3 text-center ring-1 ring-fuchsia-500/30 cursor-pointer shadow-lg shadow-fuchsia-950/30">
-                <div className="text-xs font-bold text-fuchsia-300">
-                  Full 13-Analyst Review
+            <div className="grid grid-cols-2 gap-3">
+              {/* Standard Review Active */}
+              <div className="rounded-xl border-2 border-fuchsia-500 bg-fuchsia-500/15 p-4 text-center ring-2 ring-fuchsia-500/30 cursor-pointer shadow-xl shadow-fuchsia-950/40 flex flex-col justify-between min-h-[110px]">
+                <div>
+                  <div className="text-sm sm:text-base font-extrabold text-white">
+                    Full 13-Analyst Review
+                  </div>
+                  <div className="text-xs sm:text-sm text-fuchsia-200 font-semibold mt-1">Bull vs Bear Debate</div>
                 </div>
-                <div className="text-xs text-fuchsia-200/90 font-medium mt-0.5">Bull vs Bear Debate</div>
-                <span className="inline-block mt-2 text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/40">
+                <span className="inline-block mt-2.5 text-xs uppercase font-mono font-bold px-2.5 py-0.5 rounded bg-fuchsia-500/30 text-white border border-fuchsia-400/50 mx-auto">
                   Active
                 </span>
               </div>
 
-              <div className="rounded-xl border border-white/5 bg-white/[0.02] p-3 text-center opacity-40 cursor-not-allowed select-none">
-                <div className="flex items-center justify-center gap-1 text-xs font-semibold text-slate-400">
-                  <Lock className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Multi-Stage Review</span>
+              <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4 text-center opacity-45 cursor-not-allowed select-none flex flex-col justify-between min-h-[110px]">
+                <div>
+                  <div className="flex items-center justify-center gap-1.5 text-sm font-bold text-slate-300">
+                    <Lock className="w-4 h-4 text-slate-400" />
+                    <span>Multi-Stage Review</span>
+                  </div>
+                  <div className="text-xs sm:text-sm text-slate-400 mt-1">3 Debate Rounds</div>
                 </div>
-                <div className="text-xs text-slate-500 mt-0.5">3 Debate Rounds</div>
-                <span className="inline-block mt-2 text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-white/5 text-slate-400 border border-white/10">
+                <span className="inline-block mt-2.5 text-xs uppercase font-mono px-2 py-0.5 rounded bg-white/5 text-slate-400 border border-white/10 mx-auto">
                   SOON
                 </span>
               </div>
             </div>
-            <p className="mt-2.5 text-xs text-slate-400 leading-relaxed">
+            <p className="mt-3.5 text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
               Executes the full 13-analyst framework including independent Bull/Bear drafting and rebuttal analysis.
             </p>
           </div>
         </div>
 
         {/* CTA Button */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-white/10">
-          <div className="text-xs text-slate-300 text-center sm:text-left">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-5 border-t border-white/10">
+          <div className="text-sm sm:text-base text-slate-200 text-center sm:text-left">
             {selectedStock ? (
               <span>
                 Selected for research:{' '}
-                <strong className="text-fuchsia-400 font-mono text-sm font-bold">
+                <strong className="text-fuchsia-400 font-mono text-base sm:text-lg font-bold">
                   {selectedStock.symbol} ({selectedStock.exchange})
                 </strong>{' '}
-                <span className="text-slate-300">• {selectedStock.company_name}</span>
+                <span className="text-slate-300 font-medium">• {selectedStock.company_name}</span>
               </span>
             ) : (
               <span className="text-slate-400">Select an equity above to generate institutional research</span>
@@ -328,14 +346,14 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
             type="button"
             disabled={!selectedStock}
             onClick={() => selectedStock && onStartAnalysis(selectedStock)}
-            className={`w-full sm:w-auto px-7 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-xl ${
+            className={`w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2.5 transition-all shadow-xl ${
               selectedStock
                 ? 'bg-gradient-to-r from-fuchsia-600 to-pink-600 hover:from-fuchsia-500 hover:to-pink-500 text-white shadow-fuchsia-600/30 cursor-pointer hover:scale-[1.02] active:scale-[0.98]'
                 : 'bg-white/5 text-slate-500 border border-white/5 cursor-not-allowed opacity-50'
             }`}
           >
             <span>Generate Research Report</span>
-            <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+            <ChevronRight className="w-5 h-5 stroke-[2.5]" />
           </button>
         </div>
       </div>

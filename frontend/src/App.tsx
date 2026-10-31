@@ -22,11 +22,13 @@ import { FeatureGrid } from './components/FeatureGrid';
 import { AgentExecutionModal } from './components/AgentExecutionModal';
 import { AuthModal } from './components/AuthModal';
 import { ReportHistoryView } from './components/ReportHistoryView';
+import { WatchlistView } from './components/WatchlistView';
+import { fetchWatchlist, addToWatchlist, removeFromWatchlist } from './api';
 import type { AgentProgressItem } from './components/AgentExecutionModal';
 import type { ResearchReport, StockDetail, StockSummary, User } from './types';
 import { ChevronLeft, ChevronRight, Database } from 'lucide-react';
 
-type ViewMode = 'catalog' | 'profile' | 'report' | 'history';
+type ViewMode = 'catalog' | 'profile' | 'report' | 'history' | 'watchlist';
 
 const INITIAL_13_AGENTS: AgentProgressItem[] = [
   { id: 'manager', name: 'Research Manager', role: 'Research Manager & Orchestrator', stage: 0, status: 'pending' },
@@ -73,6 +75,46 @@ export function App() {
   const [authPromptMessage, setAuthPromptMessage] = useState<string | null>(null);
   const [pendingAnalysisStock, setPendingAnalysisStock] = useState<{ symbol: string; company_name: string; exchange: string } | null>(null);
   const [savedCount, setSavedCount] = useState(0);
+  const [watchlistSymbols, setWatchlistSymbols] = useState<Set<string>>(new Set());
+
+  const loadWatchlistSymbols = async () => {
+    try {
+      if (getAuthToken()) {
+        const items = await fetchWatchlist();
+        setWatchlistSymbols(new Set((items || []).map((i: any) => `${i.symbol}-${i.exchange}`)));
+      } else {
+        const local = JSON.parse(localStorage.getItem('equiagentic_guest_watchlist') || '[]');
+        setWatchlistSymbols(new Set(local.map((i: any) => `${i.symbol}-${i.exchange}`)));
+      }
+    } catch {}
+  };
+
+  const handleToggleWatchlist = async (stock: StockSummary, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const key = `${stock.symbol}-${stock.exchange}`;
+    const isAlready = watchlistSymbols.has(key);
+    const next = new Set(watchlistSymbols);
+    if (isAlready) {
+      next.delete(key);
+      setWatchlistSymbols(next);
+      if (getAuthToken()) {
+        await removeFromWatchlist(stock.symbol, stock.exchange);
+      } else {
+        const local = JSON.parse(localStorage.getItem('equiagentic_guest_watchlist') || '[]');
+        localStorage.setItem('equiagentic_guest_watchlist', JSON.stringify(local.filter((i: any) => `${i.symbol}-${i.exchange}` !== key)));
+      }
+    } else {
+      next.add(key);
+      setWatchlistSymbols(next);
+      if (getAuthToken()) {
+        await addToWatchlist({ symbol: stock.symbol, exchange: stock.exchange, company_name: stock.company_name, sector: stock.sector });
+      } else {
+        const local = JSON.parse(localStorage.getItem('equiagentic_guest_watchlist') || '[]');
+        local.unshift({ symbol: stock.symbol, exchange: stock.exchange, company_name: stock.company_name, sector: stock.sector });
+        localStorage.setItem('equiagentic_guest_watchlist', JSON.stringify(local));
+      }
+    }
+  };
 
   // Live SSE Stepper State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -92,12 +134,14 @@ export function App() {
   useEffect(() => {
     checkHealth();
     fetchStocksList('', '', 1);
+    loadWatchlistSymbols();
 
     if (getAuthToken()) {
       fetchCurrentUser()
         .then((u) => {
           setUser(u);
           refreshSavedCount();
+loadWatchlistSymbols();
         })
         .catch(() => {
           clearAuthSession();
@@ -153,7 +197,6 @@ export function App() {
     if (newPage < 1 || newPage > totalPages) return;
     setCurrentPage(newPage);
     fetchStocksList(searchQuery, selectedExchange, newPage);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSelectStock = async (symbol: string, exchange: string) => {
@@ -186,7 +229,7 @@ export function App() {
         symbol: reportData.symbol,
         exchange: reportData.exchange,
         company_name: reportData.company_name,
-        verdict: reportData.final_assessment?.title || 'ACCUMULATE',
+        verdict: reportData.conviction || 'NEUTRAL',
         conviction: reportData.conviction || 'NEUTRAL',
         target_price: targetPrice,
         created_at: new Date().toISOString()
@@ -207,7 +250,7 @@ export function App() {
         symbol: reportData.symbol,
         exchange: reportData.exchange,
         company_name: reportData.company_name,
-        verdict: reportData.final_assessment?.title || 'ACCUMULATE',
+        verdict: reportData.conviction || 'NEUTRAL',
         conviction: reportData.conviction || 'NEUTRAL',
         target_price: targetPrice,
         report_data: reportData
@@ -509,13 +552,19 @@ export function App() {
 
   return (
     <div className="min-h-screen bg-[#06080e] text-slate-100 flex flex-col font-sans selection:bg-fuchsia-500/30 selection:text-fuchsia-200 relative overflow-hidden bg-terminal-grid">
-      {/* Ambient background glows */}
-      <div className="fixed top-0 left-1/4 w-[600px] h-[600px] bg-fuchsia-600/5 rounded-full blur-[140px] pointer-events-none" />
+      {/* Ambient background glows via fast radial gradient */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(600px circle at 25% 10%, rgba(217,70,239,0.06), transparent 70%)'
+        }}
+      />
 
       <Navbar
         onHomeClick={handleGoHome}
         onCatalogClick={handleScrollToCatalog}
         onHistoryClick={() => setViewMode('history')}
+        onWatchlistClick={() => setViewMode('watchlist')}
         backendHealthy={backendHealthy}
         dhanProActive={dhanProActive}
         user={user}
@@ -593,6 +642,8 @@ export function App() {
                       key={`${stock.exchange}-${stock.symbol}`}
                       stock={stock}
                       onSelect={(sym, exch) => handleSelectStock(sym, exch)}
+                      isWatchlisted={watchlistSymbols.has(`${stock.symbol}-${stock.exchange}`)}
+                      onToggleWatchlist={handleToggleWatchlist}
                     />
                   ))}
                 </div>
@@ -676,6 +727,16 @@ export function App() {
           <ReportHistoryView
             isAuthenticated={!!user}
             onOpenReport={handleOpenPastReport}
+            onBackToCatalog={handleGoHome}
+            onRequireAuth={() => setIsAuthModalOpen(true)}
+          />
+        )}
+
+        {/* VIEW 5: USER WATCHLIST & FAVOURITES */}
+        {viewMode === 'watchlist' && (
+          <WatchlistView
+            isAuthenticated={!!user}
+            onSelectStock={handleSelectStock}
             onBackToCatalog={handleGoHome}
             onRequireAuth={() => setIsAuthModalOpen(true)}
           />

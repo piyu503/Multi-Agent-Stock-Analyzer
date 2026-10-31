@@ -96,6 +96,22 @@ def init_db() -> None:
     """)
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)")
 
+    # User Watchlist / Favourites table
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS user_watchlists (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        symbol TEXT NOT NULL,
+        exchange TEXT NOT NULL DEFAULT 'NSE',
+        company_name TEXT NOT NULL,
+        sector TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(user_id, symbol, exchange),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    )
+    ''')
+    cursor.execute('CREATE INDEX IF NOT EXISTS idx_watchlist_user ON user_watchlists(user_id)')
+
     # User Reports table for persisted research history
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS user_reports (
@@ -528,6 +544,33 @@ def get_stock_by_symbol(symbol: str, exchange: Optional[str] = None) -> Optional
 
     row = cursor.fetchone()
 
+    if not row and exchange:
+        # Cross-exchange fallback: check other exchange if not found on requested exchange
+        cursor.execute("""
+        SELECT id, symbol, company_name, exchange, scrip_code, sector, industry, isin, series,
+               market_cap_category, currency, description, headquarters, listing_date,
+               is_active, is_prototype_data, data_source, imported_at
+        FROM stocks
+        WHERE UPPER(symbol) = UPPER(?) OR scrip_code = ?
+        ORDER BY CASE WHEN exchange = 'NSE' THEN 1 ELSE 2 END
+        LIMIT 1
+        """, (cleaned_symbol, cleaned_symbol))
+        row = cursor.fetchone()
+
+    # Corporate demerger / alias resolution for Tata Motors
+    if not row and cleaned_symbol.upper() in ("TATAMOTORS", "TATAMTRDVR", "TMCV", "TMPV"):
+        cursor.execute("""
+        SELECT id, symbol, company_name, exchange, scrip_code, sector, industry, isin, series,
+               market_cap_category, currency, description, headquarters, listing_date,
+               is_active, is_prototype_data, data_source, imported_at
+        FROM stocks
+        WHERE UPPER(symbol) IN ('TATAMOTORS', 'TMCV', 'TMPV')
+        ORDER BY CASE WHEN UPPER(symbol) = 'TATAMOTORS' THEN 1 WHEN UPPER(symbol) = 'TMCV' THEN 2 ELSE 3 END,
+                 CASE WHEN exchange = 'NSE' THEN 1 ELSE 2 END
+        LIMIT 1
+        """)
+        row = cursor.fetchone()
+
     if not row:
         conn.close()
         return None
@@ -915,3 +958,41 @@ def delete_user_report(user_id: int, report_id: int) -> bool:
     conn.commit()
     conn.close()
     return affected > 0
+
+# USER WATCHLIST / FAVOURITES INTERFACES
+def add_to_watchlist(user_id: int, symbol: str, exchange: str, company_name: str, sector: Optional[str] = None) -> bool:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute('''
+        INSERT OR IGNORE INTO user_watchlists (user_id, symbol, exchange, company_name, sector)
+        VALUES (?, ?, ?, ?, ?)
+        ''', (user_id, symbol.upper().strip(), exchange.upper().strip(), company_name.strip(), sector))
+        conn.commit()
+        return True
+    except Exception:
+        return False
+    finally:
+        conn.close()
+
+def remove_from_watchlist(user_id: int, symbol: str, exchange: str) -> bool:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM user_watchlists WHERE user_id = ? AND symbol = ? AND exchange = ?', (user_id, symbol.upper().strip(), exchange.upper().strip()))
+    affected = cursor.rowcount
+    conn.commit()
+    conn.close()
+    return affected > 0
+
+def get_user_watchlist(user_id: int) -> List[Dict[str, Any]]:
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+    SELECT id, symbol, exchange, company_name, sector, created_at
+    FROM user_watchlists
+    WHERE user_id = ?
+    ORDER BY created_at DESC
+    ''', (user_id,))
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(r) for r in rows]

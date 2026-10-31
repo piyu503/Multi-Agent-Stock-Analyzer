@@ -24,7 +24,7 @@ export const StockProfile: React.FC<StockProfileProps> = ({
       <div>
         <button
           onClick={onBack}
-          className="inline-flex items-center gap-2 text-xs font-mono text-slate-300 hover:text-white transition px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 hover:border-white/20 cursor-pointer shadow-sm"
+          className="inline-flex items-center gap-2 text-xs font-mono text-slate-300 hover:text-white transition px-3.5 py-2 rounded-[8px] bg-white/5 border border-white/10 hover:border-white/20 cursor-pointer shadow-sm"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>RETURN TO MARKET CATALOG</span>
@@ -32,7 +32,7 @@ export const StockProfile: React.FC<StockProfileProps> = ({
       </div>
 
       {/* Header Profile Banner */}
-      <div className="bg-[#0c101c]/90 border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl shadow-black/60 backdrop-blur-md">
+      <div className="bg-[#0c101c]/90 border border-white/10 rounded-[8px] p-6 sm:p-8 shadow-2xl shadow-black/60 ">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-white/10">
           <div>
             <div className="flex flex-wrap items-center gap-2 mb-2.5">
@@ -40,7 +40,7 @@ export const StockProfile: React.FC<StockProfileProps> = ({
                 {stock.symbol}
               </h1>
               <span
-                className={`text-xs font-mono font-bold px-2.5 py-0.5 rounded-md border ${
+                className={`text-xs font-mono font-bold px-2.5 py-0.5 rounded-[4px] border ${
                   isNSE
                     ? 'bg-cyan-500/15 text-cyan-300 border-cyan-500/40'
                     : 'bg-amber-500/15 text-amber-300 border-amber-500/40'
@@ -49,12 +49,12 @@ export const StockProfile: React.FC<StockProfileProps> = ({
                 {stock.exchange} MASTER
               </span>
               {stock.series && (
-                <span className="text-xs font-mono px-2 py-0.5 rounded-md bg-white/5 text-slate-300 border border-white/10">
+                <span className="text-xs font-mono px-2 py-0.5 rounded-[4px] bg-white/5 text-slate-300 border border-white/10">
                   Series: {stock.series}
                 </span>
               )}
               {stock.market_cap_category && (
-                <span className="text-xs font-mono font-medium px-2 py-0.5 rounded-md bg-fuchsia-500/15 text-fuchsia-300 border border-fuchsia-500/30">
+                <span className="text-xs font-mono font-medium px-2 py-0.5 rounded-[4px] bg-fuchsia-500/15 text-fuchsia-300 border border-fuchsia-500/30">
                   {stock.market_cap_category}
                 </span>
               )}
@@ -82,14 +82,14 @@ export const StockProfile: React.FC<StockProfileProps> = ({
             <button
               onClick={() => onGenerateReport(stock.symbol, stock.exchange)}
               disabled={isGeneratingReport}
-              className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-xl bg-gradient-to-r from-fuchsia-600 via-purple-600 to-cyan-500 hover:from-fuchsia-500 hover:to-cyan-400 text-white font-bold text-sm transition-all shadow-xl shadow-fuchsia-950/40 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+              className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-[8px] bg-gradient-to-r from-fuchsia-600 via-purple-600 to-cyan-500 hover:from-fuchsia-500 hover:to-cyan-400 text-white font-bold text-sm transition-colors duration-120 shadow-xl shadow-fuchsia-950/40 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 cursor-pointer"
             >
               <Sparkles className="w-4 h-4 text-white" />
               <span>{isGeneratingReport ? 'Compiling Research Report...' : 'Generate Full Research Report'}</span>
             </button>
             {dhanProActive ? (
-              <span className="text-[11px] font-mono text-cyan-300 flex items-center gap-1.5 bg-cyan-500/10 border border-cyan-500/30 px-3 py-1 rounded-full shadow-[0_0_8px_rgba(6,182,212,0.2)]">
-                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+              <span className="text-[11px] font-mono text-cyan-300 flex items-center gap-1.5 bg-cyan-500/10 border border-cyan-500/30 px-3 py-1 rounded-[4px] shadow-[0_0_8px_rgba(6,182,212,0.2)]">
+                <span className="w-2 h-2 rounded-[4px] bg-cyan-400 animate-pulse" />
                 <span>Dhan Pro Verified Live Feed Active</span>
               </span>
             ) : (
@@ -103,7 +103,7 @@ export const StockProfile: React.FC<StockProfileProps> = ({
 
         {/* Meta Attributes Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
-          <div className="bg-[#070b13] p-4 rounded-xl border border-white/5">
+          <div className="bg-[#070b13] p-4 rounded-[8px] border border-white/5">
             <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
               <Building2 className="w-3.5 h-3.5 text-cyan-400" />
               <span>Sector</span>
@@ -111,7 +111,7 @@ export const StockProfile: React.FC<StockProfileProps> = ({
             <p className="text-sm font-semibold text-white truncate">{stock.sector || stock.industry || 'General Equity'}</p>
           </div>
 
-          <div className="bg-[#070b13] p-4 rounded-xl border border-white/5">
+          <div className="bg-[#070b13] p-4 rounded-[8px] border border-white/5">
             <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
               <Tag className="w-3.5 h-3.5 text-fuchsia-400" />
               <span>Industry</span>
@@ -119,7 +119,7 @@ export const StockProfile: React.FC<StockProfileProps> = ({
             <p className="text-sm font-semibold text-white truncate">{stock.industry || stock.sector || 'N/A'}</p>
           </div>
 
-          <div className="bg-[#070b13] p-4 rounded-xl border border-white/5">
+          <div className="bg-[#070b13] p-4 rounded-[8px] border border-white/5">
             <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
               <MapPin className="w-3.5 h-3.5 text-emerald-400" />
               <span>Jurisdiction</span>
@@ -127,7 +127,7 @@ export const StockProfile: React.FC<StockProfileProps> = ({
             <p className="text-sm font-semibold text-white truncate">{stock.headquarters || 'Mumbai, India'}</p>
           </div>
 
-          <div className="bg-[#070b13] p-4 rounded-xl border border-white/5">
+          <div className="bg-[#070b13] p-4 rounded-[8px] border border-white/5">
             <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
               <Calendar className="w-3.5 h-3.5 text-amber-400" />
               <span>Listing Date</span>
@@ -140,7 +140,7 @@ export const StockProfile: React.FC<StockProfileProps> = ({
         {stock.description && (
           <div className="mt-6 pt-6 border-t border-white/10">
             <h3 className="text-xs uppercase tracking-wider text-slate-300 font-mono font-semibold mb-2 flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+              <span className="w-1.5 h-1.5 rounded-[4px] bg-cyan-400" />
               Business Profile &amp; Core Operations
             </h3>
             <p className="text-sm text-slate-200 leading-relaxed max-w-4xl font-sans">

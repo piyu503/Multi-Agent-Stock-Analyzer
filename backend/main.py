@@ -36,6 +36,9 @@ from database import (
     init_db,
     is_official_catalog_imported,
     save_user_report,
+    add_to_watchlist,
+    remove_from_watchlist,
+    get_user_watchlist,
     search_stocks,
     verify_access_token,
     verify_password,
@@ -316,6 +319,31 @@ def delete_user_saved_report(
         raise HTTPException(status_code=404, detail="Report not found or unauthorized.")
     return {"status": "deleted", "id": report_id}
 
+
+
+# ============================================================================
+# WATCHLIST / FAVOURITES ENDPOINTS
+# ============================================================================
+
+@app.get('/api/watchlist', tags=['Watchlist'])
+def get_watchlist(current_user: dict = Depends(get_current_user_required)):
+    return get_user_watchlist(user_id=current_user['id'])
+
+@app.post('/api/watchlist', tags=['Watchlist'])
+def add_watchlist_item(req: dict, current_user: dict = Depends(get_current_user_required)):
+    sym = req.get('symbol', '').strip().upper()
+    exch = req.get('exchange', 'NSE').strip().upper()
+    name = req.get('company_name', sym).strip()
+    sec = req.get('sector')
+    if not sym:
+        raise HTTPException(status_code=400, detail='Stock symbol is required.')
+    success = add_to_watchlist(current_user['id'], sym, exch, name, sec)
+    return {'status': 'added', 'symbol': sym, 'exchange': exch}
+
+@app.delete('/api/watchlist/{symbol}', tags=['Watchlist'])
+def remove_watchlist_item(symbol: str, exchange: str = 'NSE', current_user: dict = Depends(get_current_user_required)):
+    success = remove_from_watchlist(current_user['id'], symbol, exchange)
+    return {'status': 'removed', 'symbol': symbol, 'exchange': exchange}
 
 @app.get("/api/health", response_model=HealthResponse, tags=["Health"])
 def health_check():

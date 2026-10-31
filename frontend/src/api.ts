@@ -237,3 +237,31 @@ export async function uploadCatalogFile(exchange: 'NSE' | 'BSE', file: File): Pr
   });
   return handleResponse<ImportSummary>(res);
 }
+
+// ============================================================================
+// WATCHLIST / FAVOURITES API
+// ============================================================================
+
+export async function fetchWatchlist(): Promise<any[]> {
+  const res = await fetch(`${API_BASE}/watchlist`, {
+    headers: getAuthHeaders(),
+  });
+  return handleResponse<any[]>(res);
+}
+
+export async function addToWatchlist(item: { symbol: string; exchange: string; company_name: string; sector?: string }): Promise<any> {
+  const res = await fetch(`${API_BASE}/watchlist`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(item),
+  });
+  return handleResponse<any>(res);
+}
+
+export async function removeFromWatchlist(symbol: string, exchange: string = 'NSE'): Promise<any> {
+  const res = await fetch(`${API_BASE}/watchlist/${encodeURIComponent(symbol)}?exchange=${encodeURIComponent(exchange)}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+  return handleResponse<any>(res);
+}

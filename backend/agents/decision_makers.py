@@ -413,10 +413,11 @@ class PortfolioManagerAgent(BaseAgent):
             "   - valuation_attractiveness_score: Margin of safety, P/E vs growth runway\n"
             "   - catalyst_momentum_score: Near-term earnings growth, capex realization\n"
             "   - downside_risk_penalty: (0.0 to -5.0) Tail risks, cyclical vulnerability, debt burden\n"
-            "2. CONVICTION ALIGNMENT:\n"
-            "   - A company with strong business quality DOES NOT automatically justify an OVERWEIGHT rating if valuation attractiveness is low (e.g. fair/full pricing, narrow spread).\n"
-            "   - If conviction is NEUTRAL, your narrative MUST explicitly state: 'High franchise quality offset by fair/full valuation, leaving insufficient margin of safety at CMP.'\n"
-            "   - DO NOT claim 'strong case for investment' if the final conviction is NEUTRAL.\n"
+            "2. CONVICTION CRITERIA (Differentiated & Objective):\n"
+            "   - OVERWEIGHT: High business quality, strong balance sheet, and clear earnings momentum / market share expansion catalysts. Do NOT shy away from assigning OVERWEIGHT to prime compounders even if traded at a reasonable quality premium.\n"
+            "   - NEUTRAL: Assign ONLY when bull and bear factors truly cancel each other out, or when extreme cyclical/macro headwinds directly offset franchise quality.\n"
+            "   - UNDERWEIGHT: Structural moat impairment, high leverage / solvency vulnerability, or severe downside valuation de-rating risks.\n"
+            "   - DIVERSITY RULE: Do NOT default every stock to NEUTRAL. High quality franchises with market leadership, robust capital adequacy, and compounding earnings warrant definitive OVERWEIGHT capital conviction.\n"
             "3. In your JSON response under 'role_specific_data', you MUST provide:\n"
             '{\n'
             '  "conviction": "OVERWEIGHT" | "NEUTRAL" | "UNDERWEIGHT",\n'

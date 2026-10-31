@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { BarChart3, Layers, Clock, LogIn, LogOut } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { BarChart3, Layers, Clock, LogIn, LogOut, Star } from 'lucide-react';
 import type { User } from '../types';
 
 interface NavbarProps {
   onHomeClick: () => void;
   onCatalogClick?: () => void;
   onHistoryClick: () => void;
+  onWatchlistClick?: () => void;
   backendHealthy: boolean | null;
   dhanProActive?: boolean;
   user: User | null;
@@ -19,6 +20,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onHomeClick,
   onCatalogClick,
   onHistoryClick,
+  onWatchlistClick,
   backendHealthy,
   dhanProActive,
   user,
@@ -28,6 +30,21 @@ export const Navbar: React.FC<NavbarProps> = ({
   savedCount = 0,
 }) => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    if (isUserMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isUserMenuOpen]);
 
   const handleCatalogNav = () => {
     if (onCatalogClick) {
@@ -38,14 +55,14 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="border-b border-white/10 bg-[#07090e]/90 backdrop-blur-xl sticky top-0 z-40 shadow-2xl shadow-black/60">
+    <header className="border-b border-white/10 bg-[#0d101d]/95 backdrop-blur-md sticky top-0 z-50 shadow-2xl shadow-black/80">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Brand */}
         <div
           onClick={onHomeClick}
-          className="flex items-center gap-3 cursor-pointer group transition-all"
+          className="flex items-center gap-3 cursor-pointer group transition-colors duration-120"
         >
-          <div className="relative w-9 h-9 rounded-xl bg-fuchsia-500/10 border border-fuchsia-500/30 flex items-center justify-center text-white font-black text-sm tracking-tighter shadow-lg shadow-fuchsia-500/10 group-hover:border-fuchsia-400/60 group-hover:shadow-fuchsia-500/20 transition-all">
+          <div className="relative w-9 h-9 rounded-[8px] bg-fuchsia-500/10 border border-fuchsia-500/30 flex items-center justify-center text-white font-black text-sm tracking-tight shadow-lg shadow-fuchsia-500/10 group-hover:border-fuchsia-400/60 group-hover:shadow-fuchsia-500/20 transition-colors">
             <span className="text-fuchsia-400 font-black">
               EQ
             </span>
@@ -53,17 +70,15 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-display font-bold text-white tracking-wider text-base sm:text-lg">
+              <span className="font-display font-bold text-white tracking-normal text-base sm:text-lg">
                 EQUI<span className="text-fuchsia-400">AGENTIC</span>
               </span>
-              <span className="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded bg-fuchsia-500/10 text-fuchsia-300 border border-fuchsia-500/30">
+              <span className="text-[10px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded-[4px] bg-fuchsia-500/10 text-fuchsia-300 border border-fuchsia-500/30">
                 RESEARCH
               </span>
             </div>
             <p className="text-[11px] text-slate-400 hidden sm:flex items-center gap-1.5 font-mono">
               <span>Institutional Equity Intelligence</span>
-              <span className="text-slate-600">•</span>
-              <span className="text-slate-300">NSE &amp; BSE Universe</span>
             </p>
           </div>
         </div>
@@ -73,7 +88,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onHomeClick}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors duration-120 flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'catalog'
                 ? 'text-white bg-white/10 shadow-sm border border-white/10'
                 : 'text-slate-300 hover:text-white'
@@ -86,7 +101,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={handleCatalogNav}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors duration-120 flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'catalog'
                 ? 'text-slate-300 hover:text-white'
                 : 'text-slate-400 hover:text-white'
@@ -100,7 +115,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onHistoryClick}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 cursor-pointer ${
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors duration-120 flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'history'
                 ? 'text-white bg-fuchsia-500/20 text-fuchsia-300 shadow-sm border border-fuchsia-500/30'
                 : 'text-slate-300 hover:text-white hover:bg-white/[0.04]'
@@ -141,65 +156,80 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Dhan Pro Live Feed Indicator */}
           {dhanProActive && (
-            <div className="hidden sm:flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 font-mono text-[11px] font-bold shadow-[0_0_10px_rgba(6,182,212,0.25)]">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+            <div className="hidden sm:flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-[4px] bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 font-mono text-[11px] font-semibold tracking-[0.04em]">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
               <span>DHAN PRO</span>
             </div>
           )}
 
           {/* Authentication Component / Profile Pill */}
           {user ? (
-            <div className="relative pl-2 border-l border-white/10">
+            <div ref={userMenuRef} className="relative pl-2 border-l border-white/10 flex items-center">
               <button
                 type="button"
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center gap-2 py-1 px-2 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10 transition-all cursor-pointer"
+                className="flex items-center gap-2 px-2.5 py-1 rounded-[6px] border border-white/15 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/30 transition-all cursor-pointer"
               >
                 {user.picture ? (
                   <img
                     src={user.picture}
                     alt={user.name}
-                    className="w-7 h-7 rounded-lg object-cover ring-1 ring-fuchsia-500/40"
+                    className="w-5 h-5 rounded-[4px] object-cover"
                   />
                 ) : (
-                  <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-fuchsia-600 to-violet-600 flex items-center justify-center text-white font-bold text-xs shadow-sm">
+                  <div className="w-5 h-5 rounded-[4px] bg-gradient-to-tr from-fuchsia-600 to-violet-600 flex items-center justify-center text-white font-bold text-[11px]">
                     {user.name.charAt(0).toUpperCase()}
                   </div>
                 )}
-                <span className="text-xs text-slate-200 font-medium hidden sm:inline max-w-[100px] truncate">
+                <span className="text-xs font-semibold text-slate-200 hover:text-white hidden sm:inline max-w-[120px] truncate">
                   {user.name}
                 </span>
               </button>
 
               {/* User Dropdown Menu */}
               {isUserMenuOpen && (
-                <div className="absolute right-0 mt-2 w-48 rounded-xl border border-white/10 bg-[#090d16]/95 backdrop-blur-xl shadow-2xl shadow-black/80 p-1.5 z-50 animate-fade-in">
-                  <div className="px-3 py-2 border-b border-white/5 mb-1">
-                    <p className="text-xs font-semibold text-white truncate">{user.name}</p>
-                    <p className="text-[10px] text-slate-400 font-mono truncate">{user.email}</p>
+                <div className="absolute right-0 top-full mt-2 w-64 rounded-[8px] border border-white/15 bg-[#090d16] shadow-2xl p-2 z-50 animate-fade-in">
+                  <div className="px-3 py-2 rounded-[6px] bg-white/[0.03] border border-white/5 mb-1.5">
+                    <p className="text-xs font-bold text-white truncate">{user.name}</p>
+                    <p className="text-[11px] text-slate-400 font-mono truncate mt-0.5">{user.email}</p>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      setIsUserMenuOpen(false);
-                      onHistoryClick();
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-slate-300 hover:text-white hover:bg-white/5 transition-all text-left cursor-pointer"
-                  >
-                    <Clock className="w-3.5 h-3.5 text-fuchsia-400" />
-                    <span>Saved Reports</span>
-                  </button>
+                  <div className="space-y-0.5">
+                    <button
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        if (onWatchlistClick) onWatchlistClick();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[6px] text-xs font-medium text-slate-200 hover:text-white hover:bg-white/5 transition-colors duration-120 text-left cursor-pointer"
+                    >
+                      <Star className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span>Watchlist &amp; Favourites</span>
+                    </button>
 
-                  <button
-                    onClick={() => {
-                      setIsUserMenuOpen(false);
-                      onLogout();
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-all text-left mt-1 cursor-pointer"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                    <span>Sign Out</span>
-                  </button>
+                    <button
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        onHistoryClick();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[6px] text-xs font-medium text-slate-200 hover:text-white hover:bg-white/5 transition-colors duration-120 text-left cursor-pointer"
+                    >
+                      <Clock className="w-3.5 h-3.5 text-fuchsia-400 shrink-0" />
+                      <span>Saved Reports</span>
+                    </button>
+
+                    <div className="pt-1.5 mt-1 border-t border-white/10">
+                      <button
+                        onClick={() => {
+                          setIsUserMenuOpen(false);
+                          onLogout();
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[6px] text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors duration-120 text-left cursor-pointer"
+                      >
+                        <LogOut className="w-3.5 h-3.5 shrink-0" />
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -208,7 +238,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 type="button"
                 onClick={onOpenAuth}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-fuchsia-600/30 to-violet-600/30 hover:from-fuchsia-600/50 hover:to-violet-600/50 border border-fuchsia-500/40 text-fuchsia-200 text-xs font-mono font-medium transition-all shadow-sm cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-fuchsia-600/30 to-violet-600/30 hover:from-fuchsia-600/50 hover:to-violet-600/50 border border-fuchsia-500/40 text-fuchsia-200 text-xs font-mono font-medium transition-colors duration-120 shadow-sm cursor-pointer"
               >
                 <LogIn className="w-3.5 h-3.5 text-fuchsia-400" />
                 <span>SIGN IN</span>

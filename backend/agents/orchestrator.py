@@ -375,21 +375,25 @@ def build_final_research_report(
     trader_data = trader_out.role_specific_data if (trader_out and trader_out.role_specific_data) else {}
 
     raw_conviction = str(pm_data.get("conviction") or "").upper()
-    if "OVERWEIGHT" in raw_conviction:
+    pm_summary = (pm_output.summary if pm_output else "").upper()
+    recommendation = str(pm_data.get("recommendation") or "").upper()
+    combined_conviction_text = f"{raw_conviction} {pm_summary} {recommendation}"
+
+    bullish_keywords = ["OVERWEIGHT", "BUY", "ACCUMULATE", "OUTPERFORM", "CONSTRUCTIVE"]
+    bearish_keywords = ["UNDERWEIGHT", "SELL", "REDUCE", "UNDERPERFORM", "AVOID"]
+
+    if any(k in raw_conviction for k in bullish_keywords) or any(k in combined_conviction_text for k in ["OVERWEIGHT", "STRONG BUY", "ACCUMULATE"]):
         conviction = "OVERWEIGHT"
-    elif "UNDERWEIGHT" in raw_conviction:
+    elif any(k in raw_conviction for k in bearish_keywords) or any(k in combined_conviction_text for k in ["UNDERWEIGHT", "STRONG SELL", "REDUCE"]):
         conviction = "UNDERWEIGHT"
-    elif "NEUTRAL" in raw_conviction:
+    elif "NEUTRAL" in raw_conviction or "HOLD" in raw_conviction:
         conviction = "NEUTRAL"
+    elif any(k in pm_summary for k in bullish_keywords):
+        conviction = "OVERWEIGHT"
+    elif any(k in pm_summary for k in bearish_keywords):
+        conviction = "UNDERWEIGHT"
     else:
-        # Fallback check on PM summary if role_specific_data wasn't parsed
-        pm_summary = (pm_output.summary if pm_output else "").upper()
-        if "OVERWEIGHT" in pm_summary:
-            conviction = "OVERWEIGHT"
-        elif "UNDERWEIGHT" in pm_summary:
-            conviction = "UNDERWEIGHT"
-        else:
-            conviction = "NEUTRAL"
+        conviction = "NEUTRAL"
 
     try:
         target_alloc = float(pm_data.get("target_allocation_pct") or 2.5)
