@@ -1,20 +1,11 @@
-"""Dhan API Pro Data Provider for EquiAgentic.
-
-Integrates DhanHQ v2 Market Data APIs to retrieve:
-1. Institutional Real-time Tick, VWAP & Level-2 Market Depth
-2. Exact 14-Day ATR, 14-Day RSI, 50/200 DMA from Daily Candles
-3. Official NSE Delivery Volume & Absorption Percentage
-4. F&O Derivatives Sentiment (Put-Call Ratio, Open Interest Buildup)
-
-Features zero-crash automatic failover: If credentials are not set, token is expired,
-or endpoints fail, it returns is_active=False so aggregator falls back to secondary sources.
-"""
-
 import asyncio
+import base64
 import json
 import logging
 import math
 import os
+import time
+import urllib.error
 import urllib.request
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -22,6 +13,47 @@ logger = logging.getLogger("equiagentic.data.dhan")
 
 DHAN_BASE_URL = "https://api.dhan.co/v2"
 _INSTRUMENTS_CACHE: Optional[Dict[str, Any]] = None
+_DHAN_TOKEN_EXPIRED_FLAG: bool = False
+
+
+def is_dhan_token_valid(token: Optional[str] = None) -> bool:
+    """Validate whether the Dhan API access token exists and has not expired."""
+    global _DHAN_TOKEN_EXPIRED_FLAG
+    if _DHAN_TOKEN_EXPIRED_FLAG:
+        return False
+
+    tok = (token or os.environ.get("DHAN_ACCESS_TOKEN", "")).strip()
+    if not tok or tok.startswith("EXPIRED"):
+        return False
+
+    # Inspect JWT payload expiration if formatted as JWT
+    if "." in tok:
+        parts = tok.split(".")
+        if len(parts) >= 2:
+            try:
+                payload_b64 = parts[1]
+                padded = payload_b64 + "=" * (-len(payload_b64) % 4)
+                payload_json = json.loads(base64.urlsafe_b64decode(padded).decode("utf-8"))
+                exp_ts = payload_json.get("exp")
+                if exp_ts and isinstance(exp_ts, (int, float)):
+                    if time.time() >= float(exp_ts):
+                        logger.warning(
+                            f"Dhan access token expired at {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime(exp_ts))}. "
+                            "Switched to Standard Feed."
+                        )
+                        _DHAN_TOKEN_EXPIRED_FLAG = True
+                        return False
+            except Exception as e:
+                logger.debug(f"Could not parse Dhan JWT payload: {e}")
+
+    return True
+
+
+def mark_dhan_token_expired(reason: str = "401_unauthorized") -> None:
+    """Explicitly mark Dhan token expired in runtime cache to trigger instant zero-stall fallback."""
+    global _DHAN_TOKEN_EXPIRED_FLAG
+    _DHAN_TOKEN_EXPIRED_FLAG = True
+    logger.warning(f"Dhan token marked expired in runtime ({reason}). Failing over permanently to Standard Feed.")
 
 
 def _load_instruments_map() -> Dict[str, Any]:
@@ -69,7 +101,6 @@ def calculate_atr(candles: List[Dict[str, float]], period: int = 14) -> Optional
     if len(true_ranges) < period:
         return None
 
-    # Standard simple 14-day average of true ranges
     recent_tr = true_ranges[-period:]
     return round(sum(recent_tr) / period, 2)
 
@@ -132,7 +163,7 @@ def calculate_historical_volatility(candles: List[Dict[str, float]], period: int
 
 
 def _sync_fetch_dhan_raw(symbol: str, exchange: str = "NSE") -> Dict[str, Any]:
-    """Synchronous network fetch with automatic token expiration and failover interception."""
+    """Synchronous network fetch with automatic token expiration and zero-stall failover."""
     try:
         from dotenv import load_dotenv
         load_dotenv("backend/.env")
@@ -144,12 +175,15 @@ def _sync_fetch_dhan_raw(symbol: str, exchange: str = "NSE") -> Dict[str, Any]:
     access_token = os.environ.get("DHAN_ACCESS_TOKEN", "").strip()
 
     if not client_id or not access_token:
-        # No credentials configured yet; silent graceful fallback
         return {"is_active": False, "reason": "no_credentials"}
+
+    # Zero-stall check: if JWT is expired, fail over immediately without burning network timeouts
+    if not is_dhan_token_valid(access_token):
+        return {"is_active": False, "reason": "Dhan token expired - switched to Standard Feed"}
 
     sec_id = get_security_id(symbol, exchange)
     if not sec_id:
-        logger.info(f"Dhan scrip ID not mapped for symbol {symbol}. Falling back to secondary sources.")
+        logger.info(f"Dhan scrip ID not mapped for symbol {symbol}. Falling back to standard sources.")
         return {"is_active": False, "reason": "scrip_not_mapped"}
 
     headers = {
@@ -167,13 +201,9 @@ def _sync_fetch_dhan_raw(symbol: str, exchange: str = "NSE") -> Dict[str, Any]:
         quote_payload = json.dumps({"NSE_EQ": [int(sec_id)]}).encode("utf-8")
         req = urllib.request.Request(quote_url, data=quote_payload, headers=headers, method="POST")
 
-        with urllib.request.urlopen(req, timeout=4.0) as resp:
-            if resp.status in (401, 403):
-                logger.warning("Dhan API Access Token expired or unauthorized. Failing over to standard sources.")
-                return {"is_active": False, "reason": "token_expired"}
+        with urllib.request.urlopen(req, timeout=3.0) as resp:
             quote_json = json.loads(resp.read().decode("utf-8"))
 
-        # Parse quote response (DhanHQ v2 format: {"data": {"NSE_EQ": {"<sec_id>": {...}}}})
         data_block = quote_json.get("data", {}) or {}
         nse_eq = data_block.get("NSE_EQ", {}) if isinstance(data_block, dict) else {}
         quote_data = nse_eq.get(str(sec_id)) or nse_eq.get(int(sec_id)) or (data_block if not isinstance(data_block, list) else {})
@@ -208,7 +238,7 @@ def _sync_fetch_dhan_raw(symbol: str, exchange: str = "NSE") -> Dict[str, Any]:
 
         hist_req = urllib.request.Request(hist_url, data=hist_payload, headers=headers, method="POST")
         candles = []
-        with urllib.request.urlopen(hist_req, timeout=4.0) as resp:
+        with urllib.request.urlopen(hist_req, timeout=3.0) as resp:
             hist_json = json.loads(resp.read().decode("utf-8"))
             raw_candles = hist_json.get("data") if isinstance(hist_json.get("data"), dict) else hist_json
             opens = raw_candles.get("open", [])
@@ -226,13 +256,11 @@ def _sync_fetch_dhan_raw(symbol: str, exchange: str = "NSE") -> Dict[str, Any]:
                     "volume": vols[i] if i < len(vols) else 0
                 })
 
-        # Calculate exact indicators
         atr_14 = calculate_atr(candles, period=14)
         rsi_14 = calculate_rsi(candles, period=14)
         dma_50, dma_200 = calculate_moving_averages(candles)
         historical_volatility = calculate_historical_volatility(candles, period=30)
 
-        # Derivatives / F&O Build-up Analysis
         fno_oi = int(quote_data.get("oi") or quote_data.get("open_interest") or 0)
         pcr = float(quote_data.get("pcr") or 1.12)
         price_change_pct = ((ltp - prev_close) / prev_close * 100) if prev_close > 0 else 0.0
@@ -277,6 +305,11 @@ def _sync_fetch_dhan_raw(symbol: str, exchange: str = "NSE") -> Dict[str, Any]:
             }
         }
 
+    except urllib.error.HTTPError as e:
+        if e.code in (401, 403):
+            mark_dhan_token_expired(f"HTTP_{e.code}")
+            return {"is_active": False, "reason": f"Dhan API HTTP {e.code} (Unauthorized) - switched to Standard Feed"}
+        return {"is_active": False, "reason": str(e)}
     except Exception as e:
         logger.warning(f"Dhan API request note for {symbol}: {e}. Triggering silent fallback.")
         return {"is_active": False, "reason": str(e)}
@@ -286,4 +319,3 @@ async def fetch_dhan_intelligence(symbol: str, exchange: str = "NSE") -> Dict[st
     """Asynchronously fetch Dhan market data without blocking the event loop."""
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(None, _sync_fetch_dhan_raw, symbol, exchange)
-

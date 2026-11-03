@@ -23,7 +23,7 @@ async def enrich_company_with_free_sources(company_context: Dict[str, Any]) -> D
     company_name = company_context.get("company_name", symbol)
     scrip_code = str(company_context.get("scrip_code") or "")
 
-    # Execute fetches concurrently: Dhan Pro, Yahoo Finance, Google News, BSE RSS/API, and Earnings Transcripts
+    # Execute ALL fetches concurrently in parallel (Dhan, Yahoo Finance, News, BSE, Transcripts, and NSE bridge)
     dhan_task = fetch_dhan_intelligence(symbol, exchange)
     yf_task = fetch_stock_market_and_financials(symbol, exchange)
     news_task = fetch_stock_recent_news(company_name, symbol, max_items=6)
@@ -35,9 +35,10 @@ async def enrich_company_with_free_sources(company_context: Dict[str, Any]) -> D
         max_items=5
     )
     transcript_task = fetch_transcript_insights(symbol)
+    nse_task = fetch_nse_market_microstructure(symbol, timeout_sec=2.0)
 
-    dhan_data, market_data, news_items, sentiment_data, bse_filings, transcript_data = await asyncio.gather(
-        dhan_task, yf_task, news_task, sentiment_task, bse_task, transcript_task, return_exceptions=True
+    dhan_data, market_data, news_items, sentiment_data, bse_filings, transcript_data, nse_data = await asyncio.gather(
+        dhan_task, yf_task, news_task, sentiment_task, bse_task, transcript_task, nse_task, return_exceptions=True
     )
 
     # Safe defaults if network issues occur
@@ -47,14 +48,7 @@ async def enrich_company_with_free_sources(company_context: Dict[str, Any]) -> D
     safe_bse = bse_filings if isinstance(bse_filings, list) else []
     safe_transcripts = transcript_data if isinstance(transcript_data, dict) else {"has_transcripts": False}
     safe_dhan = dhan_data if isinstance(dhan_data, dict) and dhan_data.get("is_active") else None
-
-    # Only invoke slow NSE scraper bridge if Dhan Pro is not active
-    safe_nse = {}
-    if not safe_dhan:
-        try:
-            safe_nse = await fetch_nse_market_microstructure(symbol, timeout_sec=4.0)
-        except Exception:
-            safe_nse = {}
+    safe_nse = nse_data if isinstance(nse_data, dict) and nse_data.get("status") == "success" else {}
 
     # Dual-Tier Ingestion: Upgrade market data if Dhan API Pro returned active verified feed
     if safe_dhan:

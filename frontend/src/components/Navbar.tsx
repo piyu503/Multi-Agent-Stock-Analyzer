@@ -154,11 +154,16 @@ export const Navbar: React.FC<NavbarProps> = ({
             </span>
           </div>
 
-          {/* Dhan Pro Live Feed Indicator */}
-          {dhanProActive && (
+          {/* Feed Tier Indicator */}
+          {dhanProActive ? (
             <div className="hidden sm:flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-[4px] bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 font-mono text-[11px] font-semibold tracking-[0.04em]">
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
               <span>DHAN PRO</span>
+            </div>
+          ) : (
+            <div className="hidden sm:flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-[4px] bg-white/[0.04] border border-white/10 text-slate-400 font-mono text-[11px] font-semibold tracking-[0.04em]">
+              <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
+              <span>STANDARD FEED</span>
             </div>
           )}
 

@@ -352,14 +352,10 @@ def health_check():
     catalog_imported = is_official_catalog_imported()
     total_listings = get_total_listings_count()
     coverage_data = get_catalog_coverage_summary()
-    # Dhan Pro is only active if client ID and access token exist, are non-empty, and valid
+    # Dhan Pro is only active if client ID exists and access token is structurally valid and unexpired
+    from data_providers.dhan_provider import is_dhan_token_valid
     client_id = (os.environ.get("DHAN_CLIENT_ID") or "").strip()
-    access_token = (os.environ.get("DHAN_ACCESS_TOKEN") or "").strip()
-    dhan_active = bool(
-        client_id
-        and access_token
-        and not access_token.startswith("EXPIRED")
-    )
+    dhan_active = bool(client_id and is_dhan_token_valid())
 
     return HealthResponse(
         status="ok",
