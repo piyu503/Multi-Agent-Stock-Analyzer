@@ -589,11 +589,8 @@ loadWatchlistSymbols();
             <div id="listed-equity-universe" className="pt-6 border-t border-white/10 scroll-mt-24">
               <div className="mb-4">
                 <h3 className="text-xl font-bold text-white font-display">
-                  Listed Indian Equity Universe
+                  Listed Indian Equities
                 </h3>
-                <p className="text-xs text-slate-400">
-                  Direct master catalog covering active National Stock Exchange &amp; Bombay Stock Exchange equities
-                </p>
               </div>
               <SearchBar
                 onSearch={handleSearch}

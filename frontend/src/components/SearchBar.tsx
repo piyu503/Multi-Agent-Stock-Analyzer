@@ -66,7 +66,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               className="px-4 py-2 rounded-lg bg-fuchsia-600 hover:bg-fuchsia-500 text-white text-xs font-bold tracking-wide transition shadow-lg shadow-fuchsia-950/50 cursor-pointer disabled:opacity-50"
               disabled={isLoading}
             >
-              {isLoading ? 'Scanning...' : 'Scan'}
+              {isLoading ? 'Searching...' : 'Search'}
             </button>
           </div>
         </div>
@@ -77,7 +77,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         <div className="flex items-center gap-2">
           <span className="text-slate-400 flex items-center gap-1.5 font-medium">
             <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
-            <span>Exchange:</span>
+            <span>Filter:</span>
           </span>
           <button
             type="button"
@@ -112,10 +112,6 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           >
             BSE
           </button>
-        </div>
-
-        <div className="text-[11px] font-mono text-slate-400 hidden sm:block">
-          Matches Ticker • Corporate Name • 12-Digit ISIN • Scrip Code
         </div>
       </div>
     </div>

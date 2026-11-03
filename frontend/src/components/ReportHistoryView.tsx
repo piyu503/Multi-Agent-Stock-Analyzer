@@ -6,8 +6,7 @@ import {
   Trash2,
   FileText,
   Loader2,
-  ArrowLeft,
-  Sparkles
+  ArrowLeft
 } from 'lucide-react';
 import { fetchReportHistory, fetchSavedReportDetail, deleteSavedReport } from '../api';
 import type { SavedReportSummary, ResearchReport } from '../types';
@@ -149,11 +148,13 @@ export const ReportHistoryView: React.FC<ReportHistoryViewProps> = ({
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
       {/* Guest Mode Callout Banner */}
       {!isAuthenticated && (
-        <div className="mb-6 p-4 rounded-[8px] border border-fuchsia-500/30 bg-gradient-to-r from-fuchsia-950/40 via-violet-950/20 to-black/60  flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="mb-6 p-4 rounded-[8px] border border-white/10 bg-[#0c0e18] flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-[8px] bg-fuchsia-500/20 border border-fuchsia-500/40 flex items-center justify-center text-fuchsia-300 shrink-0">
-              <Sparkles className="h-5 w-5" />
-            </div>
+            <img
+              src="/logo.png"
+              alt="Logo"
+              className="w-10 h-10 rounded-[6px] object-cover border border-white/10 shrink-0"
+            />
             <div>
               <h4 className="text-sm font-semibold text-white">Viewing Session Reports</h4>
               <p className="text-xs text-slate-400 font-mono">Sign in to sync your reports across devices and unlock permanent cloud archive.</p>
@@ -161,7 +162,7 @@ export const ReportHistoryView: React.FC<ReportHistoryViewProps> = ({
           </div>
           <button
             onClick={onRequireAuth}
-            className="px-4 py-2 rounded-[8px] bg-gradient-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-500 hover:to-violet-500 text-white text-xs font-semibold shrink-0 cursor-pointer shadow-lg shadow-fuchsia-950/40"
+            className="px-4 py-2 rounded-[6px] bg-[#671270] hover:bg-[#86198f] text-white text-xs font-semibold shrink-0 cursor-pointer"
           >
             Sign In / Register
           </button>
@@ -179,27 +180,24 @@ export const ReportHistoryView: React.FC<ReportHistoryViewProps> = ({
           </button>
           <h1 className="text-2xl font-bold text-white font-display flex items-center gap-2.5">
             <span>Research Archive &amp; History</span>
-            <span className="text-xs font-mono px-2.5 py-0.5 rounded-[4px] bg-fuchsia-500/10 text-fuchsia-400 border border-fuchsia-500/30">
+            <span className="text-xs font-mono px-2.5 py-0.5 rounded-[4px] bg-white/[0.06] text-slate-300 border border-white/10 font-semibold">
               {isAuthenticated
                 ? `${reports.length} Reports Saved`
                 : `${reports.length} Local Session Reports (Unsynced)`}
             </span>
           </h1>
-          <p className="text-xs text-slate-400 font-mono mt-1">
-            Instantly reload comprehensive multi-agent investment memos from your archive
-          </p>
         </div>
 
         {/* Search within history */}
         <div className="flex items-center gap-2">
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-500" />
+          <div className="relative w-full sm:w-80">
+            <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search ticker or company..."
-              className="w-full rounded-[8px] border border-white/10 bg-white/[0.03] pl-9 pr-3.5 py-1.5 text-xs text-white placeholder-slate-600 focus:border-fuchsia-500 focus:outline-none transition-colors duration-120 font-sans"
+              className="w-full rounded-[6px] border border-white/15 bg-white/[0.04] pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-400 focus:border-fuchsia-500 focus:bg-white/[0.06] focus:outline-none transition-all font-sans"
             />
           </div>
         </div>
@@ -213,8 +211,8 @@ export const ReportHistoryView: React.FC<ReportHistoryViewProps> = ({
             onClick={() => setFilterVerdict(verdict)}
             className={`px-3 py-1 rounded-[4px] text-xs font-mono uppercase tracking-wider transition-colors duration-120 cursor-pointer ${
               filterVerdict === verdict
-                ? 'bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/40 shadow-sm'
-                : 'bg-white/[0.02] text-slate-400 hover:text-white border border-white/5'
+                ? 'bg-white/15 text-white border border-white/25 shadow-sm font-semibold'
+                : 'bg-white/[0.02] text-slate-400 hover:text-white hover:bg-white/[0.05] border border-white/5'
             }`}
           >
             {verdict}
@@ -252,14 +250,14 @@ export const ReportHistoryView: React.FC<ReportHistoryViewProps> = ({
             <div
               key={report.id}
               onClick={() => handleOpen(report.id)}
-              className="group relative rounded-[8px] border border-white/10 bg-[#07090e]/80 hover:bg-[#07090e] p-5 transition-colors duration-120 hover:border-fuchsia-500/40 hover:shadow-xl hover:shadow-fuchsia-950/20 cursor-pointer  flex flex-col justify-between"
+              className="group relative rounded-[8px] border border-white/10 bg-[#07090e]/80 hover:bg-[#0b0e17] p-5 transition-all duration-150 hover:border-white/25 hover:shadow-lg hover:shadow-black/40 cursor-pointer flex flex-col justify-between"
             >
               <div>
                 {/* Header: Ticker & Exchange */}
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-lg font-bold text-white tracking-wide group-hover:text-fuchsia-400 transition-colors">
+                      <span className="font-mono text-lg font-bold text-white tracking-wide group-hover:text-slate-100 transition-colors">
                         {report.symbol}
                       </span>
                       <span className="text-[11px] font-mono px-2 py-0.5 rounded-[4px] bg-white/5 text-slate-300 border border-white/10 font-semibold">
@@ -287,7 +285,7 @@ export const ReportHistoryView: React.FC<ReportHistoryViewProps> = ({
                   </div>
                   <div>
                     <span className="text-xs text-slate-400 block uppercase font-medium tracking-wider mb-1">Target Price</span>
-                    <span className="text-base text-fuchsia-400 font-bold">
+                    <span className="text-base text-slate-100 font-bold font-mono">
                       {report.target_price || 'Multi-tranche'}
                     </span>
                   </div>
@@ -321,14 +319,14 @@ export const ReportHistoryView: React.FC<ReportHistoryViewProps> = ({
                   <button
                     onClick={() => handleOpen(report.id)}
                     disabled={loadingReportId === report.id}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[6px] bg-fuchsia-500/15 border border-fuchsia-500/30 hover:bg-fuchsia-500/25 hover:border-fuchsia-500/50 text-fuchsia-300 hover:text-white transition-all text-xs font-semibold cursor-pointer shadow-sm shadow-fuchsia-950/30"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[6px] bg-white/[0.06] border border-white/15 hover:bg-white/[0.12] hover:border-white/30 text-white transition-all text-xs font-medium cursor-pointer"
                   >
                     {loadingReportId === report.id ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     ) : (
                       <>
                         <span>View</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
+                        <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
                       </>
                     )}
                   </button>

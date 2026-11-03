@@ -55,43 +55,36 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="border-b border-white/10 bg-[#0d101d]/95 backdrop-blur-md sticky top-0 z-50 shadow-2xl shadow-black/80">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <header className="border-b border-white/[0.12] bg-[#04060c]/98 backdrop-blur-md sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-[60px] flex items-center justify-between">
         {/* Brand */}
         <div
           onClick={onHomeClick}
-          className="flex items-center gap-3 cursor-pointer group transition-colors duration-120"
+          className="flex items-center gap-2.5 cursor-pointer group"
         >
-          <div className="relative w-9 h-9 rounded-[8px] bg-fuchsia-500/10 border border-fuchsia-500/30 flex items-center justify-center text-white font-black text-sm tracking-tight shadow-lg shadow-fuchsia-500/10 group-hover:border-fuchsia-400/60 group-hover:shadow-fuchsia-500/20 transition-colors">
-            <span className="text-fuchsia-400 font-black">
-              EQ
-            </span>
-            <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-fuchsia-400 ring-2 ring-[#07090e] animate-pulse" />
-          </div>
+          <img
+            src="/logo.png"
+            alt="EquiAgentic Logo"
+            className="w-8 h-8 rounded-[6px] object-cover shrink-0 border border-white/10"
+          />
           <div>
-            <div className="flex items-center gap-2">
-              <span className="font-display font-bold text-white tracking-normal text-base sm:text-lg">
+            <div className="flex items-center gap-1.5">
+              <span className="font-display font-bold text-white tracking-tight text-base">
                 EQUI<span className="text-fuchsia-400">AGENTIC</span>
               </span>
-              <span className="text-[10px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded-[4px] bg-fuchsia-500/10 text-fuchsia-300 border border-fuchsia-500/30">
-                RESEARCH
-              </span>
             </div>
-            <p className="text-[11px] text-slate-400 hidden sm:flex items-center gap-1.5 font-mono">
-              <span>Institutional Equity Intelligence</span>
-            </p>
           </div>
         </div>
 
         {/* Center Nav Links - Financial Tabs */}
-        <nav className="hidden md:flex items-center gap-1 bg-white/[0.03] p-1 rounded-xl border border-white/5">
+        <nav className="hidden md:flex items-center gap-1">
           <button
             type="button"
             onClick={onHomeClick}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors duration-120 flex items-center gap-1.5 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-[5px] text-xs font-medium transition-colors duration-120 flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'catalog'
-                ? 'text-white bg-white/10 shadow-sm border border-white/10'
-                : 'text-slate-300 hover:text-white'
+                ? 'text-white bg-white/[0.08] border border-white/15'
+                : 'text-slate-300 hover:text-white hover:bg-white/[0.04]'
             }`}
           >
             <BarChart3 className="w-3.5 h-3.5 text-fuchsia-400" />
@@ -101,10 +94,10 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={handleCatalogNav}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors duration-120 flex items-center gap-1.5 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-[5px] text-xs font-medium transition-colors duration-120 flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'catalog'
-                ? 'text-slate-300 hover:text-white'
-                : 'text-slate-400 hover:text-white'
+                ? 'text-slate-300 hover:text-white hover:bg-white/[0.04]'
+                : 'text-slate-400 hover:text-white hover:bg-white/[0.04]'
             }`}
           >
             <Layers className="w-3.5 h-3.5 text-slate-400" />
@@ -115,57 +108,43 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             type="button"
             onClick={onHistoryClick}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors duration-120 flex items-center gap-1.5 cursor-pointer ${
+            className={`px-3 py-1.5 rounded-[5px] text-xs font-medium transition-colors duration-120 flex items-center gap-1.5 cursor-pointer ${
               activeTab === 'history'
-                ? 'text-white bg-fuchsia-500/20 text-fuchsia-300 shadow-sm border border-fuchsia-500/30'
+                ? 'text-white bg-white/[0.08] border border-white/15'
                 : 'text-slate-300 hover:text-white hover:bg-white/[0.04]'
             }`}
           >
             <Clock className="w-3.5 h-3.5 text-fuchsia-400" />
             <span>My Reports</span>
             {savedCount > 0 && (
-              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded-full bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/40">
+              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-white/10 text-slate-200 border border-white/15">
                 {savedCount}
               </span>
             )}
           </button>
         </nav>
 
-        {/* Right Section: Live Feed Status & User Auth Pill */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-xs px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/10 text-slate-200 shadow-inner">
+        {/* Right Section: Merged Live Feed Status & User Auth Pill */}
+        <div className="flex items-center gap-2.5">
+          {/* Unified Feed Status Chip */}
+          <div className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-[4px] bg-white/[0.03] border border-white/10 text-slate-200 font-mono text-[11px] font-semibold tracking-[0.03em]">
             <span
-              className={`w-2 h-2 rounded-full ${
-                backendHealthy === true
-                  ? 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.6)] animate-pulse'
-                  : backendHealthy === false
-                  ? 'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.6)]'
-                  : 'bg-amber-400'
+              className={`w-1.5 h-1.5 rounded-full ${
+                backendHealthy === false
+                  ? 'bg-rose-500'
+                  : dhanProActive
+                  ? 'bg-cyan-400'
+                  : 'bg-emerald-400'
               }`}
             />
-            <span className="font-mono text-[11px] font-medium tracking-tight hidden sm:inline">
-              {backendHealthy === true ? (
-                <span className="text-slate-300 font-semibold">FEED ONLINE</span>
-              ) : backendHealthy === false ? (
-                <span className="text-rose-400">FEED OFFLINE</span>
-              ) : (
-                <span className="text-amber-300">CONNECTING</span>
-              )}
+            <span>
+              {backendHealthy === false
+                ? 'FEED OFFLINE'
+                : dhanProActive
+                ? 'DHAN PRO'
+                : 'STANDARD FEED'}
             </span>
           </div>
-
-          {/* Feed Tier Indicator */}
-          {dhanProActive ? (
-            <div className="hidden sm:flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-[4px] bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 font-mono text-[11px] font-semibold tracking-[0.04em]">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-              <span>DHAN PRO</span>
-            </div>
-          ) : (
-            <div className="hidden sm:flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-[4px] bg-white/[0.04] border border-white/10 text-slate-400 font-mono text-[11px] font-semibold tracking-[0.04em]">
-              <span className="w-1.5 h-1.5 rounded-full bg-slate-500" />
-              <span>STANDARD FEED</span>
-            </div>
-          )}
 
           {/* Authentication Component / Profile Pill */}
           {user ? (

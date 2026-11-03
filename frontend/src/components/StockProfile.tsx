@@ -1,4 +1,4 @@
-import { ArrowLeft, Building2, Calendar, MapPin, Sparkles, Tag, ShieldCheck, Hash } from 'lucide-react';
+import { ArrowLeft, Building2, Calendar, MapPin, Tag, ShieldCheck, Hash } from 'lucide-react';
 import type { StockDetail } from '../types';
 
 interface StockProfileProps {
@@ -82,9 +82,8 @@ export const StockProfile: React.FC<StockProfileProps> = ({
             <button
               onClick={() => onGenerateReport(stock.symbol, stock.exchange)}
               disabled={isGeneratingReport}
-              className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-[8px] bg-gradient-to-r from-fuchsia-600 via-purple-600 to-cyan-500 hover:from-fuchsia-500 hover:to-cyan-400 text-white font-bold text-sm transition-colors duration-120 shadow-xl shadow-fuchsia-950/40 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+              className="inline-flex items-center gap-2.5 px-6 py-3 rounded-[6px] bg-[#671270] hover:bg-[#86198f] text-white font-semibold text-xs transition-colors duration-120 border border-purple-600/40 disabled:opacity-50 cursor-pointer"
             >
-              <Sparkles className="w-4 h-4 text-white" />
               <span>{isGeneratingReport ? 'Compiling Research Report...' : 'Generate Full Research Report'}</span>
             </button>
             {dhanProActive ? (

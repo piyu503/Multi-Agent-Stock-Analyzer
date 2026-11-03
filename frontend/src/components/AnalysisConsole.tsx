@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, ChevronRight, Lock, Loader2, Sparkles } from 'lucide-react';
+import { Search, ChevronRight, Lock, Loader2 } from 'lucide-react';
 import type { StockSummary } from '../types';
 import { searchStocks } from '../api';
 
@@ -123,15 +123,11 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
 
   return (
     <div className="w-full max-w-5xl mx-auto mb-14">
-      {/* Hero Badge & Heading */}
+      {/* Hero Heading */}
       <div className="mb-10 text-center sm:text-left">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-fuchsia-500/10 border border-fuchsia-500/30 text-fuchsia-300 text-xs font-semibold mb-4 tracking-wide shadow-sm">
-          <Sparkles className="w-3.5 h-3.5 text-fuchsia-400 animate-pulse" />
-          <span>Institutional Equity Research Platform</span>
-        </div>
         <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight font-display">
           Deep Equity Intelligence, <br className="hidden sm:inline" />
-          <span className="bg-gradient-to-r from-fuchsia-400 to-pink-300 bg-clip-text text-transparent">
+          <span className="text-[#a21caf] font-bold">
             Institutional Coverage
           </span>
         </h1>
@@ -142,11 +138,11 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
       </div>
 
       {/* 3-Step Interactive Card - Enlarged & Enhanced */}
-      <div className="rounded-2xl bg-[#0c101c]/95 border border-white/15 p-6 sm:p-8 lg:p-9 shadow-2xl shadow-black/70 backdrop-blur-md">
+      <div className="rounded-2xl bg-[#05060b]/95 border border-purple-950/40 p-6 sm:p-8 lg:p-9 shadow-2xl shadow-black backdrop-blur-md">
         {/* Step 1: Stock Selection */}
         <div className="mb-7" ref={dropdownRef}>
           <div className="flex items-center gap-2.5 mb-3 text-sm sm:text-base font-bold uppercase tracking-wider text-slate-100">
-            <span className="w-6 h-6 rounded-full bg-fuchsia-500/20 border border-fuchsia-500/40 text-fuchsia-300 text-xs sm:text-sm flex items-center justify-center font-mono font-bold">
+            <span className="w-6 h-6 rounded-full bg-[#130517] border border-purple-950 text-fuchsia-400 text-xs sm:text-sm flex items-center justify-center font-mono font-bold">
               1
             </span>
             <span>Security Selection</span>
@@ -165,19 +161,19 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
                 }}
                 onFocus={() => setIsDropdownOpen(true)}
                 placeholder="Search symbol, legal name, or ISIN (e.g. RELIANCE, TCS, ZOMATO, HDFCBANK)..."
-                className="w-full bg-[#060911] border border-white/15 focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/30 rounded-xl pl-12 pr-12 py-4 text-base sm:text-lg text-white placeholder-slate-400 outline-none transition-all shadow-inner font-sans"
+                className="w-full bg-[#030407] border border-white/10 focus:border-purple-900 focus:ring-1 focus:ring-purple-950 rounded-xl pl-12 pr-12 py-4 text-base sm:text-lg text-white placeholder-slate-400 outline-none transition-all font-sans"
               />
               {isSearching && (
-                <Loader2 className="w-5 h-5 text-fuchsia-400 absolute right-4 animate-spin" />
+                <Loader2 className="w-5 h-5 text-purple-400 absolute right-4 animate-spin" />
               )}
             </div>
 
             {/* Autocomplete Dropdown across all stocks */}
             {isDropdownOpen && searchResults.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-[#0d1322] border border-white/15 rounded-xl shadow-2xl z-50 overflow-hidden divide-y divide-white/5 max-h-72 overflow-y-auto">
-                <div className="px-4 py-2 bg-[#080d18] text-xs font-mono text-slate-300 uppercase tracking-wider flex items-center justify-between border-b border-white/10">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-[#06070d] border border-purple-950/60 rounded-xl shadow-2xl z-50 overflow-hidden divide-y divide-white/5 max-h-72 overflow-y-auto">
+                <div className="px-4 py-2 bg-[#030408] text-xs font-mono text-slate-300 uppercase tracking-wider flex items-center justify-between border-b border-white/10">
                   <span>NSE &amp; BSE Universe Matches</span>
-                  <span className="text-fuchsia-400 font-semibold">{searchResults.length} results</span>
+                  <span className="text-purple-400 font-semibold">{searchResults.length} results</span>
                 </div>
                 {searchResults.map((s) => (
                   <button
@@ -188,7 +184,7 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
                   >
                     <div>
                       <div className="flex items-center gap-2.5">
-                        <span className="font-mono font-bold text-white text-base group-hover:text-fuchsia-400 transition-colors">
+                        <span className="font-mono font-bold text-white text-base group-hover:text-purple-400 transition-colors">
                           {s.symbol}
                         </span>
                         <span className="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-white/5 text-slate-200 border border-white/10">
@@ -222,7 +218,7 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
                 key={`${qp.exchange}-${qp.symbol}`}
                 type="button"
                 onClick={() => handleQuickPick(qp)}
-                className="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-mono font-bold bg-white/5 border border-white/10 hover:border-fuchsia-500/50 hover:bg-white/10 text-slate-200 hover:text-fuchsia-300 transition-all cursor-pointer shadow-sm"
+                className="px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-mono font-bold bg-[#0d0411] border border-purple-950/80 hover:border-purple-800 hover:bg-[#14061a] text-slate-200 hover:text-white transition-all cursor-pointer shadow-sm"
               >
                 {qp.symbol}
               </button>
@@ -233,10 +229,10 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
         {/* Step 2 & Step 3: Horizon & Research Depth */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {/* Step 2: Investment Horizon */}
-          <div className="rounded-xl bg-[#070a14] border border-white/10 p-5 sm:p-6 flex flex-col justify-between">
+          <div className="rounded-xl bg-[#030408] border border-white/10 p-5 sm:p-6 flex flex-col justify-between">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2.5 text-sm sm:text-base font-bold uppercase tracking-wider text-slate-100">
-                <span className="w-6 h-6 rounded-full bg-fuchsia-500/20 border border-fuchsia-500/40 text-fuchsia-300 text-xs sm:text-sm flex items-center justify-center font-mono font-bold">
+                <span className="w-6 h-6 rounded-full bg-[#130517] border border-purple-950 text-fuchsia-400 text-xs sm:text-sm flex items-center justify-center font-mono font-bold">
                   2
                 </span>
                 <span>Investment Horizon</span>
@@ -254,15 +250,15 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
                 </span>
               </div>
 
-              {/* Medium-Term Active - Guaranteed Single Line */}
-              <div className="rounded-xl border-2 border-fuchsia-500 bg-fuchsia-500/15 px-2.5 sm:px-3 py-3.5 text-center ring-2 ring-fuchsia-500/30 cursor-pointer shadow-xl shadow-fuchsia-950/40 flex flex-col justify-between min-h-[110px]">
+              {/* Medium-Term Active - Extra Deep Plum Obsidian */}
+              <div className="rounded-xl border border-purple-800/80 bg-[#130517] px-2.5 sm:px-3 py-3.5 text-center cursor-pointer shadow-lg shadow-black/70 flex flex-col justify-between min-h-[110px]">
                 <div>
-                  <div className="text-xs sm:text-sm md:text-base font-extrabold text-white whitespace-nowrap">
+                  <div className="text-xs sm:text-sm md:text-base font-bold text-white whitespace-nowrap">
                     Medium-Term
                   </div>
-                  <div className="text-xs sm:text-sm text-fuchsia-200 font-semibold mt-1 whitespace-nowrap">1 Year Outlook</div>
+                  <div className="text-xs sm:text-sm text-slate-300 font-medium mt-1 whitespace-nowrap">1 Year Outlook</div>
                 </div>
-                <span className="inline-block mt-2.5 text-xs uppercase font-mono font-bold px-2.5 py-0.5 rounded bg-fuchsia-500/30 text-white border border-fuchsia-400/50 mx-auto">
+                <span className="inline-block mt-2.5 text-xs uppercase font-mono font-semibold px-2.5 py-0.5 rounded bg-[#330838] text-fuchsia-300 border border-purple-700/60 mx-auto">
                   Active
                 </span>
               </div>
@@ -283,10 +279,10 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
           </div>
 
           {/* Step 3: Research Depth */}
-          <div className="rounded-xl bg-[#070a14] border border-white/10 p-5 sm:p-6 flex flex-col justify-between">
+          <div className="rounded-xl bg-[#030408] border border-white/10 p-5 sm:p-6 flex flex-col justify-between">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2.5 text-sm sm:text-base font-bold uppercase tracking-wider text-slate-100">
-                <span className="w-6 h-6 rounded-full bg-fuchsia-500/20 border border-fuchsia-500/40 text-fuchsia-300 text-xs sm:text-sm flex items-center justify-center font-mono font-bold">
+                <span className="w-6 h-6 rounded-full bg-[#130517] border border-purple-950 text-fuchsia-400 text-xs sm:text-sm flex items-center justify-center font-mono font-bold">
                   3
                 </span>
                 <span>Research Scope</span>
@@ -294,15 +290,15 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
             </div>
 
             <div className="grid grid-cols-2 gap-3">
-              {/* Standard Review Active */}
-              <div className="rounded-xl border-2 border-fuchsia-500 bg-fuchsia-500/15 p-4 text-center ring-2 ring-fuchsia-500/30 cursor-pointer shadow-xl shadow-fuchsia-950/40 flex flex-col justify-between min-h-[110px]">
+              {/* Standard Review Active - Extra Deep Plum Obsidian */}
+              <div className="rounded-xl border border-purple-800/80 bg-[#130517] p-4 text-center cursor-pointer shadow-lg shadow-black/70 flex flex-col justify-between min-h-[110px]">
                 <div>
-                  <div className="text-sm sm:text-base font-extrabold text-white">
+                  <div className="text-sm sm:text-base font-bold text-white">
                     Full 13-Analyst Review
                   </div>
-                  <div className="text-xs sm:text-sm text-fuchsia-200 font-semibold mt-1">Bull vs Bear Debate</div>
+                  <div className="text-xs sm:text-sm text-slate-300 font-medium mt-1">Bull vs Bear Debate</div>
                 </div>
-                <span className="inline-block mt-2.5 text-xs uppercase font-mono font-bold px-2.5 py-0.5 rounded bg-fuchsia-500/30 text-white border border-fuchsia-400/50 mx-auto">
+                <span className="inline-block mt-2.5 text-xs uppercase font-mono font-semibold px-2.5 py-0.5 rounded bg-[#330838] text-fuchsia-300 border border-purple-700/60 mx-auto">
                   Active
                 </span>
               </div>
@@ -346,14 +342,14 @@ export const AnalysisConsole: React.FC<AnalysisConsoleProps> = ({
             type="button"
             disabled={!selectedStock}
             onClick={() => selectedStock && onStartAnalysis(selectedStock)}
-            className={`w-full sm:w-auto px-8 py-4 rounded-xl font-bold text-base flex items-center justify-center gap-2.5 transition-all shadow-xl ${
+            className={`w-full sm:w-auto px-8 py-3.5 rounded-lg font-semibold text-sm flex items-center justify-center gap-2.5 transition-all shadow-md ${
               selectedStock
-                ? 'bg-gradient-to-r from-fuchsia-600 to-pink-600 hover:from-fuchsia-500 hover:to-pink-500 text-white shadow-fuchsia-600/30 cursor-pointer hover:scale-[1.02] active:scale-[0.98]'
+                ? 'bg-[#701a75] hover:bg-[#86198f] border border-[#86198f]/60 text-white cursor-pointer active:translate-y-0.5'
                 : 'bg-white/5 text-slate-500 border border-white/5 cursor-not-allowed opacity-50'
             }`}
           >
             <span>Generate Research Report</span>
-            <ChevronRight className="w-5 h-5 stroke-[2.5]" />
+            <ChevronRight className="w-4 h-4 stroke-[2.5]" />
           </button>
         </div>
       </div>

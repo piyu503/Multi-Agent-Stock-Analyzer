@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Loader2, Sparkles, X, ShieldAlert } from 'lucide-react';
+import { Check, Loader2, X, ShieldAlert } from 'lucide-react';
 
 export interface AgentProgressItem {
   id: string;
@@ -52,9 +52,11 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
         {/* Header */}
         <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between bg-[#060912]">
           <div className="flex items-center gap-3.5">
-            <div className="w-10 h-10 rounded-[8px] bg-gradient-to-br from-fuchsia-500/20 to-purple-500/20 border border-fuchsia-500/40 flex items-center justify-center text-fuchsia-300 shadow-lg shadow-fuchsia-500/20">
-              <Sparkles className="w-5 h-5" />
-            </div>
+            <img
+              src="/logo.png"
+              alt="Logo"
+              className="w-10 h-10 rounded-[8px] object-cover border border-white/10 shrink-0"
+            />
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-base font-bold text-white font-display">

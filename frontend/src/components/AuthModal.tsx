@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Lock, Mail, User as UserIcon, Eye, EyeOff, ShieldCheck, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
+import { X, Lock, Mail, User as UserIcon, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import { loginUser, registerUser, googleAuth } from '../api';
 import type { User } from '../types';
 
@@ -100,9 +100,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
         {/* Header */}
         <div className="mb-6 text-center">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-tr from-fuchsia-500/20 to-violet-500/20 border border-fuchsia-500/30 text-fuchsia-400 mb-3 shadow-lg shadow-fuchsia-500/10">
-            <Sparkles className="h-6 w-6" />
-          </div>
+          <img
+            src="/logo.png"
+            alt="EquiAgentic Logo"
+            className="w-10 h-10 rounded-[6px] object-cover mx-auto mb-3 border border-white/10"
+          />
           <h2 className="text-xl font-bold tracking-tight text-white font-display">
             {actionPrompt ? 'Authentication Required' : mode === 'signin' ? 'Welcome Back to EquiAgentic' : 'Create Investor Account'}
           </h2>
@@ -299,12 +301,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             )}
           </button>
         </form>
-
-        {/* Security Assurance Badge */}
-        <div className="mt-5 pt-4 border-t border-white/5 flex items-center justify-center gap-1.5 text-[11px] text-slate-500 font-mono">
-          <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-          <span>PBKDF2 SHA-256 Encrypted • Secure Session</span>
-        </div>
       </div>
     </div>
   );
