@@ -23,6 +23,8 @@ def _get_local_rag_engine():
         return _RAG_ENGINE_INSTANCE
 
     _RAG_INITIALIZED = True
+    if os.environ.get("RENDER") or os.environ.get("DISABLE_TRANSCRIPT_RAG") == "1":
+        return None
     try:
         os.environ["HF_HUB_DISABLE_SYMLINKS_WARNING"] = "1"
         import chromadb
