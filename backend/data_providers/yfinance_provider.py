@@ -31,7 +31,11 @@ def get_yfinance_symbol(symbol: str, exchange: str = "NSE") -> str:
 def _fetch_yfinance_data_sync(yf_ticker: str) -> Dict[str, Any]:
     """Synchronous fetcher wrapped in threadpool by caller."""
     try:
-        ticker = yf.Ticker(yf_ticker)
+        # Use custom headers session to prevent 401 Crumb errors on cloud hosting
+        import requests
+        s = requests.Session()
+        s.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'})
+        ticker = yf.Ticker(yf_ticker, session=s)
         fast_info = getattr(ticker, "fast_info", None)
         info = {}
         try:

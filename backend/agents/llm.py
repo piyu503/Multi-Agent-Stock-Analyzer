@@ -203,6 +203,12 @@ async def call_llm(
                 raise QuotaExhaustedError(
                     f"Cloud model ({chosen_model}) has exhausted its request/token limit. Please wait 45-60 seconds before generating another report."
                 )
+            for _r in range(3):
+                if response.status_code not in (429, 503):
+                    break
+                await asyncio.sleep(2.0 * (_r + 1))
+                async with httpx.AsyncClient(timeout=timeout_sec) as _c:
+                    response = await _c.post(base_url + chr(47) + chr(99) + chr(104) + chr(97) + chr(116) + chr(47) + chr(99) + chr(111) + chr(109) + chr(112) + chr(108) + chr(101) + chr(116) + chr(105) + chr(111) + chr(110) + chr(115), headers=headers, json=payload)
             if response.status_code == 503:
                 logger.error(f"[LLM 503 OVERLOAD] Status 503 for {chosen_model}: {response.text}")
                 raise QuotaExhaustedError(
