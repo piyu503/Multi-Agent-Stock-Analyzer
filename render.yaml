@@ -2,7 +2,7 @@ services:
   - type: web
     name: equiagentic-stock-analyzer
     runtime: python
-    buildCommand: "cd frontend && npm install && npm run build && cd ../backend && pip install -r requirements.txt"
+    buildCommand: "pip install -r backend/requirements.txt"
     startCommand: "uvicorn main:app --app-dir backend --host 0.0.0.0 --port $PORT"
     envVars:
       - key: PYTHON_VERSION

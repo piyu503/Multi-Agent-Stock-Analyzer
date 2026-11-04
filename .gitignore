@@ -9,7 +9,6 @@ venv/
 ENV/
 build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
@@ -30,7 +29,6 @@ htmlcov/
 node_modules/
 frontend/node_modules/
 backend/nse_service/node_modules/
-frontend/dist/
 frontend/dist-ssr/
 *.local
 
