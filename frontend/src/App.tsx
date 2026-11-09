@@ -48,6 +48,29 @@ const INITIAL_13_AGENTS: AgentProgressItem[] = [
 
 export function App() {
   const [viewMode, setViewMode] = useState<ViewMode>('catalog');
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    try {
+      const stored = localStorage.getItem('equiagentic_theme');
+      if (stored === 'light' || stored === 'dark') return stored;
+    } catch {}
+    return 'dark';
+  });
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+    try {
+      localStorage.setItem('equiagentic_theme', theme);
+    } catch {}
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
   const [stocks, setStocks] = useState<StockSummary[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedExchange, setSelectedExchange] = useState<string>('');
@@ -551,15 +574,7 @@ loadWatchlistSymbols();
   };
 
   return (
-    <div className="min-h-screen bg-[#06080e] text-slate-100 flex flex-col font-sans selection:bg-fuchsia-500/30 selection:text-fuchsia-200 relative overflow-hidden bg-terminal-grid">
-      {/* Ambient background glows via fast radial gradient */}
-      <div
-        className="fixed inset-0 pointer-events-none"
-        style={{
-          background: 'radial-gradient(600px circle at 25% 10%, rgba(217,70,239,0.06), transparent 70%)'
-        }}
-      />
-
+    <div className="min-h-screen bg-white dark:bg-[#0a0b0d] text-[#0a0b0d] dark:text-white flex flex-col font-sans selection:bg-[#0052ff]/20 selection:text-[#0052ff] relative transition-colors duration-200">
       <Navbar
         onHomeClick={handleGoHome}
         onCatalogClick={handleScrollToCatalog}
@@ -572,12 +587,14 @@ loadWatchlistSymbols();
         onLogout={handleLogout}
         activeTab={viewMode}
         savedCount={savedCount}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         {/* VIEW 1: CATALOG / DASHBOARD */}
         {viewMode === 'catalog' && (
-          <div className="space-y-8">
+          <div className="space-y-12">
             <AnalysisConsole
               onStartAnalysis={(stock) => handleStartRealtimeAnalysis(stock)}
               stocks={stocks}
@@ -586,11 +603,14 @@ loadWatchlistSymbols();
             <FeatureGrid />
 
             {/* Catalog Browser Search Bar & Exchange Selector */}
-            <div id="listed-equity-universe" className="pt-6 border-t border-white/10 scroll-mt-24">
+            <div id="listed-equity-universe" className="pt-8 border-t border-[#dee1e6] dark:border-white/10 scroll-mt-24">
               <div className="mb-4">
-                <h3 className="text-xl font-bold text-white font-display">
+                <h3 className="text-xl sm:text-2xl font-normal text-[#0a0b0d] dark:text-white font-display">
                   Listed Indian Equities
                 </h3>
+                <p className="text-xs text-[#5b616e] dark:text-[#a8acb3] mt-0.5">
+                  Search and analyze securities listed on National Stock Exchange (NSE) and Bombay Stock Exchange (BSE).
+                </p>
               </div>
               <SearchBar
                 onSearch={handleSearch}
@@ -601,15 +621,15 @@ loadWatchlistSymbols();
 
             {/* Catalog Content Area */}
             <div className="space-y-4">
-              <div className="flex items-center justify-between text-xs text-slate-400 border-b border-white/10 pb-3">
+              <div className="flex items-center justify-between text-xs text-[#5b616e] dark:text-[#a8acb3] border-b border-[#dee1e6] dark:border-white/10 pb-3">
                 <div className="flex items-center gap-2">
-                  <Database className="w-4 h-4 text-fuchsia-400" />
-                  <span className="font-mono text-slate-300 font-semibold">{totalMatches}</span>
+                  <Database className="w-4 h-4 text-[#0052ff]" />
+                  <span className="font-mono text-[#0a0b0d] dark:text-white font-semibold">{totalMatches}</span>
                   <span>securities indexed across</span>
-                  <span className="font-mono text-fuchsia-300">NSE / BSE</span>
+                  <span className="font-mono font-medium text-[#0052ff]">NSE / BSE</span>
                 </div>
                 {totalPages > 1 && (
-                  <span className="font-mono text-[11px] text-slate-500">
+                  <span className="font-mono text-[11px] text-[#7c828a]">
                     Page {currentPage} of {totalPages}
                   </span>
                 )}
@@ -629,8 +649,8 @@ loadWatchlistSymbols();
                   />
                 </div>
               ) : stocks.length === 0 ? (
-                <div className="py-16 text-center rounded-2xl border border-dashed border-white/10 bg-white/[0.01]">
-                  <p className="text-sm text-slate-400 font-mono">No matching securities found for current query parameters.</p>
+                <div className="py-16 text-center rounded-2xl border border-dashed border-[#dee1e6] dark:border-white/10 bg-[#f7f7f7] dark:bg-white/[0.02]">
+                  <p className="text-sm text-[#5b616e] dark:text-[#a8acb3] font-mono">No matching securities found for current query parameters.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -648,21 +668,21 @@ loadWatchlistSymbols();
 
               {/* Pagination Controls */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 pt-6">
+                <div className="flex items-center justify-center gap-3 pt-6">
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1 || isLoadingStocks}
-                    className="p-2 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition"
+                    className="p-2 rounded-full bg-[#f7f7f7] dark:bg-white/5 border border-[#dee1e6] dark:border-white/10 text-[#0a0b0d] dark:text-white hover:bg-[#eef0f3] dark:hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
-                  <span className="text-xs font-mono text-slate-400 px-3">
+                  <span className="text-xs font-mono font-medium text-[#5b616e] dark:text-[#a8acb3] px-3">
                     {currentPage} / {totalPages}
                   </span>
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages || isLoadingStocks}
-                    className="p-2 rounded-xl bg-white/5 border border-white/10 text-slate-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition"
+                    className="p-2 rounded-full bg-[#f7f7f7] dark:bg-white/5 border border-[#dee1e6] dark:border-white/10 text-[#0a0b0d] dark:text-white hover:bg-[#eef0f3] dark:hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -772,13 +792,13 @@ loadWatchlistSymbols();
         />
       </main>
 
-      {/* Footer */}
-      <footer className="no-print border-t border-white/10 bg-[#04060b] py-6 text-center text-xs text-slate-400 relative z-10">
+      {/* Footer - Coinbase Quiet Institutional Style */}
+      <footer className="no-print border-t border-[#dee1e6] dark:border-white/10 bg-white dark:bg-[#0a0b0d] py-8 text-center text-xs text-[#5b616e] dark:text-[#7c828a] relative z-10 transition-colors duration-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="font-display font-medium text-slate-300">
+          <p className="font-display font-medium text-[#0a0b0d] dark:text-[#a8acb3]">
             EquiAgentic Research Platform • Institutional Equity Intelligence &amp; Multi-Agent Consensus
           </p>
-          <p className="font-mono text-[11px] text-slate-500">
+          <p className="font-mono text-[11px] text-[#7c828a]">
             National Stock Exchange (NSE) &amp; Bombay Stock Exchange (BSE) Coverage
           </p>
         </div>

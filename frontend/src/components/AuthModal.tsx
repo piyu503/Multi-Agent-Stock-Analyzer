@@ -71,7 +71,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       const res = await googleAuth({
         email: targetEmail.toLowerCase().trim(),
         name: displayName,
-        picture: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}&backgroundColor=d946ef`,
+        picture: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName)}&backgroundColor=0052ff`,
       });
       onAuthSuccess(res.user);
       onClose();
@@ -83,49 +83,45 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
-      <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-white/10 bg-[#07090e]/95 p-6 sm:p-8 shadow-2xl shadow-fuchsia-950/40 backdrop-blur-2xl transition-all">
-        {/* Glow ambient background effects */}
-        <div className="pointer-events-none absolute -top-24 -left-24 h-48 w-48 rounded-full bg-fuchsia-600/20 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-24 -right-24 h-48 w-48 rounded-full bg-violet-600/20 blur-3xl" />
-
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm animate-fade-in">
+      <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-[#dee1e6] dark:border-white/10 bg-white dark:bg-[#16181c] p-6 sm:p-8 shadow-2xl backdrop-blur-2xl transition-all">
         {/* Close Button */}
         <button
           onClick={onClose}
           type="button"
-          className="absolute top-5 right-5 rounded-lg p-1.5 text-slate-400 hover:bg-white/5 hover:text-white transition-all"
+          className="absolute top-5 right-5 rounded-full p-1.5 text-[#7c828a] hover:bg-black/5 dark:hover:bg-white/10 hover:text-[#0a0b0d] dark:hover:text-white transition-all cursor-pointer"
         >
           <X className="h-5 w-5" />
         </button>
 
-        {/* Header */}
+        {/* Header - Coinbase Calm Editorial */}
         <div className="mb-6 text-center">
           <img
             src="/logo.png"
             alt="EquiAgentic Logo"
-            className="w-10 h-10 rounded-[6px] object-cover mx-auto mb-3 border border-white/10"
+            className="w-14 h-14 rounded-2xl object-contain bg-white dark:bg-white/5 mx-auto mb-3 border border-[#dee1e6] dark:border-white/10 p-1.5 shadow-sm"
           />
-          <h2 className="text-xl font-bold tracking-tight text-white font-display">
-            {actionPrompt ? 'Authentication Required' : mode === 'signin' ? 'Welcome Back to EquiAgentic' : 'Create Investor Account'}
+          <h2 className="text-xl font-normal tracking-tight text-[#0a0b0d] dark:text-white font-display">
+            {actionPrompt ? 'Authentication Required' : mode === 'signin' ? 'Sign in to EquiAgentic' : 'Create Investor Account'}
           </h2>
-          <p className="mt-1 text-xs text-slate-400 font-mono">
+          <p className="mt-1 text-xs text-[#5b616e] dark:text-[#a8acb3] font-sans">
             {actionPrompt || 'Access multi-agent deliberations & persistent report history'}
           </p>
         </div>
 
         {/* Error Alert */}
         {error && (
-          <div className="mb-4 flex items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-300">
-            <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
+          <div className="mb-4 flex items-center gap-2 rounded-xl border border-[#cf202f]/30 bg-[#cf202f]/10 p-3 text-xs text-[#cf202f]">
+            <AlertCircle className="h-4 w-4 shrink-0 text-[#cf202f]" />
             <span>{error}</span>
           </div>
         )}
 
         {/* Google Authentication Section */}
         {isGooglePickerOpen ? (
-          <div className="mb-4 p-4 rounded-xl border border-fuchsia-500/30 bg-white/[0.03] space-y-3 animate-fade-in">
-            <div className="flex items-center justify-between text-xs text-slate-300">
-              <span className="font-mono text-fuchsia-400 flex items-center gap-1.5">
+          <div className="mb-4 p-4 rounded-2xl border border-[#0052ff]/30 bg-[#f7f7f7] dark:bg-white/[0.03] space-y-3 animate-fade-in">
+            <div className="flex items-center justify-between text-xs text-[#0a0b0d] dark:text-white">
+              <span className="font-mono text-[#0052ff] font-semibold flex items-center gap-1.5">
                 <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
@@ -137,7 +133,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <button
                 type="button"
                 onClick={() => setIsGooglePickerOpen(false)}
-                className="text-[11px] text-slate-400 hover:text-white"
+                className="text-[11px] text-[#7c828a] hover:text-[#0a0b0d] dark:hover:text-white"
               >
                 Cancel
               </button>
@@ -147,14 +143,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               value={googleEmailInput}
               onChange={(e) => setGoogleEmailInput(e.target.value)}
               placeholder="Enter your Gmail address..."
-              className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-2 text-xs text-white placeholder-slate-500 focus:border-fuchsia-500 focus:outline-none"
+              className="w-full rounded-xl border border-[#dee1e6] dark:border-white/10 bg-white dark:bg-[#0a0b0d] px-3.5 py-2.5 text-xs text-[#0a0b0d] dark:text-white placeholder-[#7c828a] focus:border-[#0052ff] focus:outline-none"
             />
             <div className="flex gap-2">
               <button
                 type="button"
                 disabled={isLoading || !googleEmailInput}
                 onClick={() => handleExecuteGoogleAuth(googleEmailInput)}
-                className="flex-1 py-1.5 rounded-lg bg-gradient-to-r from-fuchsia-600 to-violet-600 text-white text-xs font-medium hover:from-fuchsia-500 hover:to-violet-500 disabled:opacity-50 transition-all cursor-pointer"
+                className="cb-pill-btn-primary flex-1 py-2 text-xs font-semibold shadow-sm cursor-pointer disabled:opacity-50"
               >
                 {isLoading ? 'Connecting...' : 'Authorize with Google'}
               </button>
@@ -165,7 +161,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             onClick={() => setIsGooglePickerOpen(true)}
             disabled={isLoading}
             type="button"
-            className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-white/10 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/20 text-white font-medium text-xs transition-all shadow-sm group cursor-pointer"
+            className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-full border border-[#dee1e6] dark:border-white/10 bg-[#f7f7f7] dark:bg-white/5 hover:bg-[#eef0f3] dark:hover:bg-white/10 text-[#0a0b0d] dark:text-white font-semibold text-xs transition-all shadow-sm group cursor-pointer"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24">
               <path
@@ -191,21 +187,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
         {/* Divider */}
         <div className="relative my-5 flex items-center justify-center">
-          <div className="w-full border-t border-white/10" />
-          <span className="absolute bg-[#07090e] px-3 text-[10px] uppercase font-mono tracking-wider text-slate-500">
+          <div className="w-full border-t border-[#dee1e6] dark:border-white/10" />
+          <span className="absolute bg-white dark:bg-[#16181c] px-3 text-[10px] uppercase font-mono tracking-wider text-[#7c828a]">
             or continue with email
           </span>
         </div>
 
-        {/* Mode Switcher Tabs */}
-        <div className="flex rounded-xl bg-white/[0.03] p-1 border border-white/5 mb-4">
+        {/* Mode Switcher Tabs - Coinbase Pill Container */}
+        <div className="flex rounded-full bg-[#f7f7f7] dark:bg-white/5 p-1 border border-[#dee1e6] dark:border-white/10 mb-4">
           <button
             type="button"
             onClick={() => { setMode('signin'); setError(null); }}
-            className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${
+            className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer ${
               mode === 'signin'
-                ? 'bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30 shadow-sm'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-white dark:bg-white/15 text-[#0a0b0d] dark:text-white shadow-sm'
+                : 'text-[#7c828a] hover:text-[#0a0b0d] dark:hover:text-white'
             }`}
           >
             Sign In
@@ -213,10 +209,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <button
             type="button"
             onClick={() => { setMode('signup'); setError(null); }}
-            className={`flex-1 py-1.5 text-xs font-medium rounded-lg transition-all ${
+            className={`flex-1 py-1.5 text-xs font-semibold rounded-full transition-all cursor-pointer ${
               mode === 'signup'
-                ? 'bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30 shadow-sm'
-                : 'text-slate-400 hover:text-white'
+                ? 'bg-white dark:bg-white/15 text-[#0a0b0d] dark:text-white shadow-sm'
+                : 'text-[#7c828a] hover:text-[#0a0b0d] dark:hover:text-white'
             }`}
           >
             Create Account
@@ -227,46 +223,46 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-3.5">
           {mode === 'signup' && (
             <div>
-              <label className="block text-[11px] font-mono text-slate-400 uppercase tracking-wider mb-1.5">
+              <label className="block text-[11px] font-mono text-[#5b616e] dark:text-[#a8acb3] uppercase tracking-wider mb-1.5 font-semibold">
                 Full Name
               </label>
               <div className="relative">
-                <UserIcon className="absolute left-3.5 top-2.5 h-4 w-4 text-slate-500" />
+                <UserIcon className="absolute left-3.5 top-3 h-4 w-4 text-[#7c828a]" />
                 <input
                   type="text"
                   required
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="e.g. Piyush Sharma"
-                  className="w-full rounded-xl border border-white/10 bg-white/[0.03] pl-10 pr-3.5 py-2 text-xs text-white placeholder-slate-600 focus:border-fuchsia-500 focus:outline-none focus:ring-1 focus:ring-fuchsia-500 transition-all font-sans"
+                  className="w-full rounded-xl border border-[#dee1e6] dark:border-white/10 bg-[#f7f7f7] dark:bg-[#0a0b0d] pl-10 pr-3.5 py-2.5 text-xs text-[#0a0b0d] dark:text-white placeholder-[#7c828a] focus:border-[#0052ff] focus:outline-none focus:ring-1 focus:ring-[#0052ff] transition-all font-sans"
                 />
               </div>
             </div>
           )}
 
           <div>
-            <label className="block text-[11px] font-mono text-slate-400 uppercase tracking-wider mb-1.5">
-              Gmail / Email Address
+            <label className="block text-[11px] font-mono text-[#5b616e] dark:text-[#a8acb3] uppercase tracking-wider mb-1.5 font-semibold">
+              Email Address
             </label>
             <div className="relative">
-              <Mail className="absolute left-3.5 top-2.5 h-4 w-4 text-slate-500" />
+              <Mail className="absolute left-3.5 top-3 h-4 w-4 text-[#7c828a]" />
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="investor@domain.com"
-                className="w-full rounded-xl border border-white/10 bg-white/[0.03] pl-10 pr-3.5 py-2 text-xs text-white placeholder-slate-600 focus:border-fuchsia-500 focus:outline-none focus:ring-1 focus:ring-fuchsia-500 transition-all font-sans"
+                className="w-full rounded-xl border border-[#dee1e6] dark:border-white/10 bg-[#f7f7f7] dark:bg-[#0a0b0d] pl-10 pr-3.5 py-2.5 text-xs text-[#0a0b0d] dark:text-white placeholder-[#7c828a] focus:border-[#0052ff] focus:outline-none focus:ring-1 focus:ring-[#0052ff] transition-all font-sans"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-[11px] font-mono text-slate-400 uppercase tracking-wider mb-1.5">
+            <label className="block text-[11px] font-mono text-[#5b616e] dark:text-[#a8acb3] uppercase tracking-wider mb-1.5 font-semibold">
               Password
             </label>
             <div className="relative">
-              <Lock className="absolute left-3.5 top-2.5 h-4 w-4 text-slate-500" />
+              <Lock className="absolute left-3.5 top-3 h-4 w-4 text-[#7c828a]" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
@@ -274,12 +270,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••••••"
-                className="w-full rounded-xl border border-white/10 bg-white/[0.03] pl-10 pr-10 py-2 text-xs text-white placeholder-slate-600 focus:border-fuchsia-500 focus:outline-none focus:ring-1 focus:ring-fuchsia-500 transition-all font-mono"
+                className="w-full rounded-xl border border-[#dee1e6] dark:border-white/10 bg-[#f7f7f7] dark:bg-[#0a0b0d] pl-10 pr-10 py-2.5 text-xs text-[#0a0b0d] dark:text-white placeholder-[#7c828a] focus:border-[#0052ff] focus:outline-none focus:ring-1 focus:ring-[#0052ff] transition-all font-mono"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300 transition-colors"
+                className="absolute right-3.5 top-3 text-[#7c828a] hover:text-[#0a0b0d] dark:hover:text-white transition-colors"
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -289,15 +285,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full mt-4 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-gradient-to-r from-fuchsia-600 to-violet-600 hover:from-fuchsia-500 hover:to-violet-500 text-white font-medium text-xs transition-all shadow-lg shadow-fuchsia-600/20 disabled:opacity-50 cursor-pointer"
+            className="cb-pill-btn-primary w-full mt-5 py-3 text-xs font-semibold shadow-sm cursor-pointer disabled:opacity-50"
           >
             {isLoading ? (
-              <>
+              <span className="flex items-center justify-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span>Processing...</span>
-              </>
+              </span>
             ) : (
-              <span>{mode === 'signin' ? 'Sign In to Terminal' : 'Create My Account'}</span>
+              <span>{mode === 'signin' ? 'Sign In to EquiAgentic' : 'Create My Account'}</span>
             )}
           </button>
         </form>
@@ -305,4 +301,3 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     </div>
   );
 };
-

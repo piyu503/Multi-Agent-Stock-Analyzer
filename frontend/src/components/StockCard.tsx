@@ -9,66 +9,91 @@ interface StockCardProps {
   onToggleWatchlist?: (stock: StockSummary, e: React.MouseEvent) => void;
 }
 
-export const StockCard: React.FC<StockCardProps> = ({ stock, onSelect, isWatchlisted = false, onToggleWatchlist }) => {
+export const StockCard: React.FC<StockCardProps> = ({
+  stock,
+  onSelect,
+  isWatchlisted = false,
+  onToggleWatchlist
+}) => {
+  const monogram = stock.symbol.slice(0, 2).toUpperCase();
+
   return (
     <div
       onClick={() => onSelect(stock.symbol, stock.exchange)}
-      className="group relative bg-[#0d121f]/80 hover:bg-[#131b2e] border border-white/10 hover:border-white/20 p-4 rounded-[8px] transition-colors duration-120 cursor-pointer flex flex-col justify-between"
+      className="cb-card cb-card-hover p-6 rounded-[24px] cursor-pointer flex flex-col justify-between group transition-all duration-200 select-none"
     >
       <div>
-        <div className="flex items-start justify-between gap-2 mb-2.5">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-mono text-lg font-bold text-white tracking-wide group-hover:text-fuchsia-300 transition-colors">
-              {stock.symbol}
-            </span>
-            <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded-[4px] bg-white/5 text-slate-300 border border-white/10 tracking-[0.04em]">
-              {stock.exchange}
-            </span>
-            {stock.series && (
-              <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded-[4px] bg-white/5 text-slate-400 border border-white/5 tracking-[0.04em]">
-                {stock.series}
-              </span>
-            )}
+        {/* Top Header: Circular Monogram + Symbol + Actions */}
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <div className="flex items-center gap-3 min-w-0">
+            {/* 44px Circular Asset Plate - Signature Coinbase Geometry */}
+            <div className="w-11 h-11 rounded-full bg-[#f7f7f7] dark:bg-white/5 border border-[#dee1e6] dark:border-white/10 flex items-center justify-center font-mono font-medium text-sm text-[#0a0b0d] dark:text-white group-hover:bg-[#0052ff] group-hover:text-white group-hover:border-[#0052ff] transition-all duration-200 shrink-0">
+              {monogram}
+            </div>
+
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-base font-semibold text-[#0a0b0d] dark:text-white tracking-tight group-hover:text-[#0052ff] transition-colors">
+                  {stock.symbol}
+                </span>
+                <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-[#eef0f3] dark:bg-white/10 text-[#5b616e] dark:text-[#a8acb3] border border-[#dee1e6] dark:border-white/10">
+                  {stock.exchange}
+                </span>
+                {stock.series && (
+                  <span className="text-[10px] font-mono font-normal px-1.5 py-0.5 rounded-full bg-[#f7f7f7] dark:bg-white/5 text-[#7c828a] border border-[#dee1e6] dark:border-white/5">
+                    {stock.series}
+                  </span>
+                )}
+              </div>
+              <h3 className="text-sm font-normal text-[#5b616e] dark:text-[#a8acb3] group-hover:text-[#0a0b0d] dark:group-hover:text-white truncate mt-0.5 transition-colors">
+                {stock.company_name}
+              </h3>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
+
+          <div className="flex items-center gap-1 shrink-0">
             {onToggleWatchlist && (
               <button
                 type="button"
                 onClick={(e) => onToggleWatchlist(stock, e)}
                 title={isWatchlisted ? "Remove from watchlist" : "Add to watchlist"}
-                className={`p-1 rounded-[4px] transition-colors cursor-pointer ${
-                  isWatchlisted
-                    ? "text-amber-400 hover:text-amber-300 bg-amber-500/10 border border-amber-500/30"
-                    : "text-slate-500 hover:text-amber-400 hover:bg-white/5 border border-transparent"
-                }`}
+                className={`w-9 h-9 rounded-full flex items-center justify-center transition-all cursor-pointer ${isWatchlisted
+                    ? "text-[#f4b000] bg-[#f4b000]/10 border border-[#f4b000]/30"
+                    : "text-[#7c828a] hover:text-[#f4b000] hover:bg-black/5 dark:hover:bg-white/10 border border-transparent"
+                  }`}
               >
-                <Star className={`w-3.5 h-3.5 ${isWatchlisted ? "fill-amber-400" : ""}`} />
+                <Star className={`w-4 h-4 ${isWatchlisted ? "fill-[#f4b000]" : ""}`} />
               </button>
             )}
-            <div className="p-1 rounded-[4px] text-slate-400 group-hover:text-white transition-colors">
-              <ArrowUpRight className="w-4 h-4" />
+            <div className="w-8 h-8 rounded-full flex items-center justify-center text-[#7c828a] group-hover:text-[#0052ff] transition-colors">
+              <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
             </div>
           </div>
         </div>
 
-        <h3 className="text-sm font-medium text-slate-200 line-clamp-1 mb-3">
-          {stock.company_name}
-        </h3>
+        {/* Sector Tag Pill */}
+        <div className="mb-4">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#f7f7f7] dark:bg-white/5 border border-[#dee1e6] dark:border-white/10 text-xs text-[#5b616e] dark:text-[#a8acb3] font-normal truncate max-w-full">
+            <Building2 className="w-3 h-3 text-[#7c828a] shrink-0" />
+            <span className="truncate">{stock.sector || stock.industry || 'Listed Security'}</span>
+          </span>
+        </div>
       </div>
 
-      <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs text-slate-400">
-        <div className="flex items-center gap-1.5 truncate max-w-[65%]">
-          <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-          <span className="truncate text-slate-300">{stock.sector || stock.industry || 'Listed Equity'}</span>
-        </div>
+      {/* Bottom Metadata & Hover CTA with Hairline Border */}
+      <div className="pt-3 border-t border-[#dee1e6] dark:border-white/10 flex items-center justify-between text-xs text-[#7c828a]">
         {stock.isin ? (
-          <span className="text-[10px] font-mono text-slate-300 bg-white/5 px-1.5 py-0.5 rounded-[4px] border border-white/10 flex items-center gap-1 tracking-[0.02em]">
-            <Hash className="w-2.5 h-2.5 text-slate-500" />
+          <span className="text-[11px] font-mono text-[#7c828a] dark:text-[#636870] flex items-center gap-1">
+            <Hash className="w-2.5 h-2.5" />
             <span>{stock.isin}</span>
           </span>
         ) : (
-          <span className="text-[10px] font-mono text-slate-500">EQUITY</span>
+          <span className="text-[11px] font-mono text-[#7c828a] dark:text-[#636870]">EQUITY MASTER</span>
         )}
+
+        <span className="text-xs font-medium text-[#0052ff] opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+          Analyze Dossier →
+        </span>
       </div>
     </div>
   );

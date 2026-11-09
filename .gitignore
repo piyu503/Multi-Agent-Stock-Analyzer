@@ -58,3 +58,8 @@ Thumbs.db
 # Archives
 compressed.zip
 *.zip
+
+# Personal Design Files
+DESIGN.md
+Official Logo.png
+logo.png

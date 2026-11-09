@@ -1,3 +1,4 @@
+import React from 'react';
 import { AlertCircle, AlertTriangle, FolderSearch, Loader2, RefreshCw } from 'lucide-react';
 
 interface StateCardProps {
@@ -19,24 +20,24 @@ export const StateFeedback: React.FC<StateCardProps> = ({
 }) => {
   if (type === 'loading') {
     return (
-      <div className="flex flex-col items-center justify-center p-14 text-center bg-[#090d18]/80 rounded-3xl border border-white/10 shadow-xl backdrop-blur-md">
-        <Loader2 className="w-9 h-9 text-fuchsia-400 animate-spin mb-4" />
-        <h4 className="text-base font-bold text-white font-display">{title || 'Scanning Indian Equity Universe...'}</h4>
-        <p className="text-xs text-slate-300 mt-1 max-w-sm font-sans">{message || 'Querying active securities, ISIN records, and exchange masters.'}</p>
+      <div className="flex flex-col items-center justify-center p-14 text-center bg-[#f7f7f7] dark:bg-[#16181c] rounded-3xl border border-[#dee1e6] dark:border-white/10 shadow-sm transition-colors duration-200">
+        <Loader2 className="w-9 h-9 text-[#0052ff] animate-spin mb-4" />
+        <h4 className="text-base font-semibold text-[#0a0b0d] dark:text-white font-display">{title || 'Scanning Indian Equity Universe...'}</h4>
+        <p className="text-xs text-[#5b616e] dark:text-[#a8acb3] mt-1.5 max-w-sm font-sans">{message || 'Querying active securities, ISIN records, and exchange masters.'}</p>
       </div>
     );
   }
 
   if (type === 'error') {
     return (
-      <div className="flex flex-col items-center justify-center p-10 text-center bg-rose-950/20 rounded-3xl border border-rose-500/40 shadow-xl backdrop-blur-md">
-        <AlertCircle className="w-10 h-10 text-rose-400 mb-3 shadow-[0_0_15px_rgba(244,63,94,0.3)]" />
-        <h4 className="text-base font-bold text-rose-200 font-display">{title || 'System Operational Alert'}</h4>
-        <p className="text-xs text-rose-200/90 mt-1 max-w-md font-sans leading-relaxed">{message || 'Unable to connect to the intelligence backend or query failed.'}</p>
+      <div className="flex flex-col items-center justify-center p-10 text-center bg-[#cf202f]/5 dark:bg-[#cf202f]/10 rounded-3xl border border-[#cf202f]/25 shadow-sm transition-colors duration-200">
+        <AlertCircle className="w-10 h-10 text-[#cf202f] mb-3" />
+        <h4 className="text-base font-semibold text-[#cf202f] font-display">{title || 'System Operational Alert'}</h4>
+        <p className="text-xs text-[#5b616e] dark:text-[#a8acb3] mt-1.5 max-w-md font-sans leading-relaxed">{message || 'Unable to connect to the intelligence backend or query failed.'}</p>
         {onRetry && (
           <button
             onClick={onRetry}
-            className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-900/60 hover:bg-rose-800 text-xs font-bold text-rose-100 border border-rose-500/50 transition cursor-pointer shadow-lg shadow-rose-950/40"
+            className="mt-4 cb-pill-btn-primary inline-flex items-center gap-1.5 px-5 py-2 text-xs font-semibold shadow-sm cursor-pointer"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             <span>Reconnect Terminal</span>
@@ -48,13 +49,13 @@ export const StateFeedback: React.FC<StateCardProps> = ({
 
   if (type === 'no-results') {
     return (
-      <div className="flex flex-col items-center justify-center p-14 text-center bg-[#090d18]/80 rounded-3xl border border-dashed border-white/15 backdrop-blur-md">
-        <FolderSearch className="w-10 h-10 text-slate-400 mb-3" />
-        <h4 className="text-base font-bold text-white font-display">
+      <div className="flex flex-col items-center justify-center p-14 text-center bg-[#f7f7f7] dark:bg-[#16181c] rounded-3xl border border-dashed border-[#dee1e6] dark:border-white/15 transition-colors duration-200">
+        <FolderSearch className="w-10 h-10 text-[#7c828a] mb-3" />
+        <h4 className="text-base font-semibold text-[#0a0b0d] dark:text-white font-display">
           No matches found {query ? `for "${query}"` : ''} {exchange ? `on ${exchange}` : ''}
         </h4>
-        <p className="text-xs text-slate-300 mt-1.5 max-w-md font-sans leading-relaxed">
-          Verify spelling or search by legal name, exchange symbol, or 12-digit ISIN (e.g. <span className="font-mono text-fuchsia-300 font-bold">INE002A01018</span> or <span className="font-mono text-fuchsia-300 font-bold">500325</span>).
+        <p className="text-xs text-[#5b616e] dark:text-[#a8acb3] mt-1.5 max-w-md font-sans leading-relaxed">
+          Verify spelling or search by legal name, exchange symbol, or 12-digit ISIN (e.g. <span className="font-mono text-[#0052ff] font-bold">INE002A01018</span> or <span className="font-mono text-[#0052ff] font-bold">500325</span>).
         </p>
       </div>
     );
@@ -62,10 +63,10 @@ export const StateFeedback: React.FC<StateCardProps> = ({
 
   if (type === 'unimported-catalog') {
     return (
-      <div className="flex flex-col items-center justify-center p-10 text-center bg-amber-950/20 rounded-3xl border border-amber-500/30">
-        <AlertTriangle className="w-10 h-10 text-amber-400 mb-3" />
-        <h4 className="text-base font-bold text-amber-200 font-display">{title || 'Catalog Sync Notice'}</h4>
-        <p className="text-xs text-amber-200/90 mt-1 max-w-lg leading-relaxed font-sans">
+      <div className="flex flex-col items-center justify-center p-10 text-center bg-[#f4b000]/10 rounded-3xl border border-[#f4b000]/30 transition-colors duration-200">
+        <AlertTriangle className="w-10 h-10 text-[#f4b000] mb-3" />
+        <h4 className="text-base font-semibold text-[#f4b000] font-display">{title || 'Catalog Sync Notice'}</h4>
+        <p className="text-xs text-[#5b616e] dark:text-[#a8acb3] mt-1 max-w-lg leading-relaxed font-sans">
           {message || 'The full NSE and BSE stock directory is being synced.'}
         </p>
       </div>
@@ -74,10 +75,10 @@ export const StateFeedback: React.FC<StateCardProps> = ({
 
   // Generic empty state
   return (
-    <div className="flex flex-col items-center justify-center p-14 text-center bg-[#090d18]/80 rounded-3xl border border-dashed border-white/15">
-      <FolderSearch className="w-10 h-10 text-slate-400 mb-3" />
-      <h4 className="text-base font-bold text-white font-display">{title || 'No Equities Listed'}</h4>
-      <p className="text-xs text-slate-300 mt-1 max-w-md font-sans">{message || 'Stock database contains no matching records.'}</p>
+    <div className="flex flex-col items-center justify-center p-14 text-center bg-[#f7f7f7] dark:bg-[#16181c] rounded-3xl border border-dashed border-[#dee1e6] dark:border-white/15 transition-colors duration-200">
+      <FolderSearch className="w-10 h-10 text-[#7c828a] mb-3" />
+      <h4 className="text-base font-semibold text-[#0a0b0d] dark:text-white font-display">{title || 'No Equities Listed'}</h4>
+      <p className="text-xs text-[#5b616e] dark:text-[#a8acb3] mt-1 max-w-md font-sans">{message || 'Stock database contains no matching records.'}</p>
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Search, X, SlidersHorizontal } from 'lucide-react';
 
 interface SearchBarProps {
@@ -32,11 +32,11 @@ export const SearchBar: React.FC<SearchBarProps> = ({
   };
 
   return (
-    <div className="w-full space-y-3">
+    <div className="w-full space-y-3.5">
       <form onSubmit={handleSubmit} className="w-full relative">
         <div className="relative flex items-center">
-          <div className="absolute left-4 pointer-events-none text-slate-400">
-            <Search className="w-5 h-5 text-slate-400" />
+          <div className="absolute left-5 pointer-events-none text-[#7c828a]">
+            <Search className="w-5 h-5 text-[#7c828a]" />
           </div>
           <input
             type="text"
@@ -46,15 +46,15 @@ export const SearchBar: React.FC<SearchBarProps> = ({
               onSearch(e.target.value, exchange);
             }}
             placeholder="Search by company name, ticker symbol, or ISIN (e.g. RELIANCE, TCS, INE002A01018, 500325)..."
-            className="w-full bg-[#0d121f]/90 text-white placeholder-slate-400 pl-12 pr-28 py-4 rounded-xl border border-white/10 focus:outline-none focus:ring-2 focus:ring-fuchsia-500/40 focus:border-fuchsia-500 transition-all text-sm sm:text-base shadow-xl shadow-black/40 font-sans"
+            className="w-full bg-[#f7f7f7] dark:bg-[#16181c] text-[#0a0b0d] dark:text-white placeholder-[#7c828a] pl-13 pr-32 py-4 rounded-full border border-[#dee1e6] dark:border-white/10 focus:outline-none focus:border-[#0052ff] focus:ring-2 focus:ring-[#0052ff]/20 transition-all text-sm sm:text-base shadow-sm font-sans"
           />
 
-          <div className="absolute right-3 flex items-center gap-2">
+          <div className="absolute right-3.5 flex items-center gap-2">
             {value && (
               <button
                 type="button"
                 onClick={handleClear}
-                className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                className="p-1 rounded-full text-[#7c828a] hover:text-[#0a0b0d] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition cursor-pointer"
                 title="Clear search"
               >
                 <X className="w-4 h-4" />
@@ -63,7 +63,7 @@ export const SearchBar: React.FC<SearchBarProps> = ({
 
             <button
               type="submit"
-              className="px-4 py-2 rounded-lg bg-fuchsia-600 hover:bg-fuchsia-500 text-white text-xs font-bold tracking-wide transition shadow-lg shadow-fuchsia-950/50 cursor-pointer disabled:opacity-50"
+              className="cb-pill-btn-primary px-5 py-2 text-xs font-semibold tracking-wide shadow-sm cursor-pointer disabled:opacity-50"
               disabled={isLoading}
             >
               {isLoading ? 'Searching...' : 'Search'}
@@ -72,20 +72,20 @@ export const SearchBar: React.FC<SearchBarProps> = ({
         </div>
       </form>
 
-      {/* Exchange Filters and Shortcuts */}
+      {/* Exchange Filters and Shortcuts - Coinbase Pill Hierarchy */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-2">
-          <span className="text-slate-400 flex items-center gap-1.5 font-medium">
-            <SlidersHorizontal className="w-3.5 h-3.5 text-slate-400" />
-            <span>Filter:</span>
+          <span className="text-[#5b616e] dark:text-[#a8acb3] flex items-center gap-1.5 font-medium mr-1">
+            <SlidersHorizontal className="w-3.5 h-3.5 text-[#7c828a]" />
+            <span>Market Filter:</span>
           </span>
           <button
             type="button"
             onClick={() => handleExchangeChange('')}
-            className={`px-3 py-1 rounded-lg border font-mono transition cursor-pointer ${
+            className={`px-4 py-1.5 rounded-full font-mono text-xs transition cursor-pointer ${
               exchange === ''
-                ? 'bg-fuchsia-600 text-white border-fuchsia-500 font-bold shadow-md shadow-fuchsia-600/20'
-                : 'bg-white/5 text-slate-300 border-white/10 hover:border-white/20 hover:text-white'
+                ? 'bg-[#0052ff] text-white font-semibold shadow-sm'
+                : 'bg-[#f7f7f7] dark:bg-white/5 text-[#5b616e] dark:text-[#a8acb3] border border-[#dee1e6] dark:border-white/10 hover:border-[#0052ff] hover:text-[#0a0b0d] dark:hover:text-white'
             }`}
           >
             All Markets
@@ -93,10 +93,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           <button
             type="button"
             onClick={() => handleExchangeChange('NSE')}
-            className={`px-3 py-1 rounded-lg border font-mono transition cursor-pointer ${
+            className={`px-4 py-1.5 rounded-full font-mono text-xs transition cursor-pointer ${
               exchange === 'NSE'
-                ? 'bg-fuchsia-600 text-white border-fuchsia-500 font-bold shadow-md shadow-fuchsia-600/20'
-                : 'bg-white/5 text-slate-300 border-white/10 hover:border-fuchsia-500/40 hover:text-white'
+                ? 'bg-[#0052ff] text-white font-semibold shadow-sm'
+                : 'bg-[#f7f7f7] dark:bg-white/5 text-[#5b616e] dark:text-[#a8acb3] border border-[#dee1e6] dark:border-white/10 hover:border-[#0052ff] hover:text-[#0a0b0d] dark:hover:text-white'
             }`}
           >
             NSE
@@ -104,10 +104,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({
           <button
             type="button"
             onClick={() => handleExchangeChange('BSE')}
-            className={`px-3 py-1 rounded-lg border font-mono transition cursor-pointer ${
+            className={`px-4 py-1.5 rounded-full font-mono text-xs transition cursor-pointer ${
               exchange === 'BSE'
-                ? 'bg-fuchsia-600 text-white border-fuchsia-500 font-bold shadow-md shadow-fuchsia-600/20'
-                : 'bg-white/5 text-slate-300 border-white/10 hover:border-fuchsia-500/40 hover:text-white'
+                ? 'bg-[#0052ff] text-white font-semibold shadow-sm'
+                : 'bg-[#f7f7f7] dark:bg-white/5 text-[#5b616e] dark:text-[#a8acb3] border border-[#dee1e6] dark:border-white/10 hover:border-[#0052ff] hover:text-[#0a0b0d] dark:hover:text-white'
             }`}
           >
             BSE

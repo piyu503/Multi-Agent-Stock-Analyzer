@@ -1,122 +1,210 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 8px;
-  --radius-2xl: 10px;
-  --radius-3xl: 10px;
+  --font-sans: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-display: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+
+  --color-cb-blue: #0052ff;
+  --color-cb-blue-hover: #003ecc;
+  --color-cb-blue-disabled: #a8b8cc;
+  --color-cb-ink: #0a0b0d;
+  --color-cb-body: #5b616e;
+  --color-cb-muted: #7c828a;
+  --color-cb-hairline: #dee1e6;
+  --color-cb-canvas: #ffffff;
+  --color-cb-surface-soft: #f7f7f7;
+  --color-cb-surface-strong: #eef0f3;
+  --color-cb-surface-dark: #0a0b0d;
+  --color-cb-surface-dark-elevated: #16181c;
+  --color-cb-up: #05b169;
+  --color-cb-down: #cf202f;
+  --color-cb-yellow: #f4b000;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-2xl: 24px;
+  --radius-3xl: 28px;
+  --radius-pill: 100px;
 }
 
 @layer base {
   :root {
-    color-scheme: dark;
-    --font-sans: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
-    --font-display: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
-    /* Strict Institutional Radius Hierarchy */
-    --r-panel: 10px;
-    --r-card: 8px;
-    --r-chip: 4px;
+    color-scheme: light;
+    --font-sans: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-display: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+
+    --bg-canvas: #ffffff;
+    --bg-surface-soft: #f7f7f7;
+    --bg-surface-card: #ffffff;
+    --bg-surface-strong: #eef0f3;
+    --border-hairline: #dee1e6;
+    --border-hairline-soft: #eef0f3;
+    --text-ink: #0a0b0d;
+    --text-body: #5b616e;
+    --text-muted: #7c828a;
+    --text-muted-soft: #a8acb3;
   }
-  
+
+  .dark {
+    color-scheme: dark;
+    --bg-canvas: #0a0b0d;
+    --bg-surface-soft: #121316;
+    --bg-surface-card: #16181c;
+    --bg-surface-strong: #212429;
+    --border-hairline: rgba(255, 255, 255, 0.08);
+    --border-hairline-soft: rgba(255, 255, 255, 0.05);
+    --text-ink: #ffffff;
+    --text-body: #a8acb3;
+    --text-muted: #7c828a;
+    --text-muted-soft: #636870;
+  }
+
+  html,
   body {
-    background-color: #030408;
-    color: #e2e8f0;
+    background-color: var(--bg-canvas);
+    color: var(--text-ink);
     font-family: var(--font-sans);
     font-variant-numeric: tabular-nums;
+    letter-spacing: -0.011em;
     margin: 0;
     padding: 0;
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
+    transition: background-color 200ms ease, color 200ms ease;
   }
 
-  /* Headings: -0.01em tracking, weight 600 */
-  h1, h2, h3, h4, .font-display {
+  input,
+  button,
+  select,
+  textarea {
+    font-family: inherit;
+  }
+
+  /* Coinbase editorial display typography: weight 400 (never 700+), clean negative tracking */
+  h1,
+  h2,
+  h3,
+  h4,
+  .font-display {
     font-family: var(--font-display);
-    font-weight: 600;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
+    font-weight: 400;
   }
 
-  /* Strict monospace for tickers, ISINs, and numbers only */
-  code, pre, .font-mono {
-    font-family: var(--font-mono);
+  /* Monospace for tickers, ISINs, prices, and numbers */
+  code,
+  pre,
+  .font-mono {
+    font-family: var(--font-mono) !important;
     font-variant-numeric: tabular-nums;
   }
 
-  /* Unified focus ring across all inputs and buttons */
+  /* Coinbase Blue focus ring */
   :focus-visible {
-    outline: 2px solid rgba(217, 70, 239, 0.8);
+    outline: 2px solid #0052ff;
     outline-offset: 2px;
   }
 
-  /* Readable prose width */
   .prose-finance {
     max-width: 70ch;
     line-height: 1.6;
   }
 }
 
-/* Cyberpunk Trader Ambient Glows & Card Utilities */
-.terminal-glow-magenta {
-  box-shadow: 0 0 0 1px rgba(217, 70, 239, 0.25), 0 4px 14px -6px rgba(217, 70, 239, 0.35);
+/* Coinbase Specific Card & Component Utilities */
+.cb-card {
+  background-color: #ffffff;
+  border: 1px solid #dee1e6;
+  border-radius: 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
-.terminal-glow-emerald {
-  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.25), 0 4px 14px -6px rgba(16, 185, 129, 0.35);
-}
-
-.terminal-glow-rose {
-  box-shadow: 0 0 0 1px rgba(244, 63, 94, 0.25), 0 4px 14px -6px rgba(244, 63, 94, 0.35);
-}
-
-.terminal-glow-cyan {
-  box-shadow: 0 0 0 1px rgba(6, 182, 212, 0.25), 0 4px 14px -6px rgba(6, 182, 212, 0.35);
-}
-
-/* Glassmorphism Trader Terminal Card */
-.trader-card {
-  background: linear-gradient(135deg, #0e131f 0%, #0a0e18 100%);
+.dark .cb-card {
+  background-color: #16181c;
   border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
-.trader-card-hover {
-  transition: border-color 120ms ease;
-}
-.trader-card-hover:hover {
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-/* Background grid effect */
-.bg-terminal-grid {
-  background-size: 40px 40px;
-  background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+.cb-card-hover:hover {
+  border-color: #0052ff;
+  box-shadow: 0 4px 16px rgba(0, 82, 255, 0.08);
+  transform: translateY(-2px);
 }
 
-/* Custom scrollbars for clean financial dashboard UI */
+.dark .cb-card-hover:hover {
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  transform: translateY(-2px);
+}
+
+/* Pill CTA Buttons */
+.cb-pill-btn-primary {
+  background-color: #0052ff;
+  color: #ffffff;
+  border-radius: 100px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  transition: all 150ms ease;
+}
+
+.cb-pill-btn-primary:hover:not(:disabled) {
+  background-color: #003ecc;
+}
+
+.cb-pill-btn-primary:active:not(:disabled) {
+  background-color: #0033a8;
+  transform: scale(0.98);
+}
+
+.cb-pill-btn-primary:disabled {
+  background-color: #a8b8cc;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.cb-pill-btn-secondary {
+  border-radius: 100px;
+  font-weight: 600;
+  transition: all 150ms ease;
+}
+
+/* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #090d16;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
-  border-radius: 3px;
+  background: #dee1e6;
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #2a2e37;
 }
 
 ::-webkit-scrollbar-thumb:hover {
+  background: #a8b8cc;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
   background: #3b4252;
 }
 
-/* Professional Institutional Equity Research Print & PDF Export Styles */
+/* Institutional Equity Research Print & PDF Export Styles */
 @media print {
   @page {
     margin: 1.2cm 1.5cm;
@@ -126,151 +214,50 @@
   body {
     background-color: #ffffff !important;
     background-image: none !important;
-    color: #0f172a !important;
+    color: #0a0b0d !important;
     font-size: 11pt !important;
     line-height: 1.5 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  /* Hide interactive web chrome */
   header,
   nav,
   footer,
   .no-print,
   button,
-  .animate-pulse,
-  .blur-3xl,
-  .blur-\[140px\] {
+  .animate-pulse {
     display: none !important;
   }
 
-  /* Convert all dark container cards to clean white institutional document cards */
-  .trader-card,
   .report-section,
-  .bg-\[\#07090e\],
-  .bg-\[\#06080e\],
-  .bg-\[\#0c101d\],
-  .bg-\[\#0c101d\]\/90,
-  .bg-\[\#090d18\],
-  .bg-\[\#070b13\],
-  .bg-\[\#060810\],
-  .bg-\[\#070d14\],
-  .bg-black\/40,
-  .bg-black\/50,
-  .bg-gradient-to-br,
-  .bg-gradient-to-tr,
-  .bg-gradient-to-b,
-  .bg-gradient-to-r {
+  .cb-card {
     background: #ffffff !important;
     background-color: #ffffff !important;
     background-image: none !important;
-    color: #0f172a !important;
-    border: 1px solid #cbd5e1 !important;
+    color: #0a0b0d !important;
+    border: 1px solid #dee1e6 !important;
     box-shadow: none !important;
-    text-shadow: none !important;
   }
 
-  /* Force inner boxes inside sections to clean light gray */
-  .bg-\[\#070b13\],
-  .bg-white\/5,
-  .bg-white\/10,
-  .bg-white\/\[0\.02\],
-  .bg-white\/\[0\.03\],
-  .bg-white\/\[0\.04\] {
-    background: #f8fafc !important;
-    background-color: #f8fafc !important;
-    border: 1px solid #e2e8f0 !important;
-    color: #1e293b !important;
-  }
-
-  /* Text color corrections for white paper printing */
-  h1, h2, h3, h4, strong {
-    color: #0f172a !important;
-    font-weight: 700 !important;
-  }
-
-  p, li, span, td, th {
-    color: #334155 !important;
-  }
-
-  .text-white {
-    color: #0f172a !important;
-  }
-
-  .text-slate-100, .text-slate-200, .text-slate-300, .text-slate-400 {
-    color: #475569 !important;
-  }
-
-  .text-fuchsia-400, .text-fuchsia-300, .text-fuchsia-200 {
-    color: #701a75 !important;
+  h1,
+  h2,
+  h3,
+  h4,
+  strong {
+    color: #0a0b0d !important;
     font-weight: 600 !important;
   }
 
-  .text-emerald-400, .text-emerald-300 {
-    color: #047857 !important;
-    font-weight: 600 !important;
+  p,
+  li,
+  span,
+  td,
+  th {
+    color: #5b616e !important;
   }
 
-  .text-rose-400, .text-rose-300 {
-    color: #b91c1c !important;
-    font-weight: 600 !important;
-  }
-
-  .text-cyan-400, .text-cyan-300 {
-    color: #0369a1 !important;
-    font-weight: 600 !important;
-  }
-
-  .text-amber-400, .text-amber-300 {
-    color: #b45309 !important;
-    font-weight: 600 !important;
-  }
-
-  /* Clean badges & borders */
-  .border, .border-b, .border-t, .border-l, .border-r {
-    border-color: #e2e8f0 !important;
-  }
-
-  .bg-white\/5, .bg-white\/\[0\.02\], .bg-white\/\[0\.03\], .bg-white\/\[0\.04\] {
-    background: #f8fafc !important;
-    border: 1px solid #e2e8f0 !important;
-  }
-
-  /* High contrast badge accents */
-  .bg-emerald-500\/10, .bg-emerald-500\/15, .bg-emerald-500\/20 {
-    background: #ecfdf5 !important;
-    border: 1px solid #a7f3d0 !important;
-    color: #065f46 !important;
-  }
-
-  .bg-rose-500\/10, .bg-rose-500\/15, .bg-rose-500\/20 {
-    background: #fff1f2 !important;
-    border: 1px solid #fecdd3 !important;
-    color: #9f1239 !important;
-  }
-
-  .bg-amber-500\/10, .bg-amber-500\/15, .bg-amber-500\/20 {
-    background: #fffbeb !important;
-    border: 1px solid #fde68a !important;
-    color: #92400e !important;
-  }
-
-  .bg-cyan-500\/10, .bg-cyan-500\/15, .bg-cyan-500\/20 {
-    background: #f0f9ff !important;
-    border: 1px solid #bae6fd !important;
-    color: #075985 !important;
-  }
-
-  .bg-fuchsia-500\/10, .bg-fuchsia-500\/15, .bg-fuchsia-500\/20 {
-    background: #fdf4ff !important;
-    border: 1px solid #f5d0fe !important;
-    color: #86198f !important;
-  }
-
-  /* Pagination and page break hygiene */
   .break-inside-avoid,
-  .trader-card,
   .report-section {
     break-inside: avoid !important;
     page-break-inside: avoid !important;

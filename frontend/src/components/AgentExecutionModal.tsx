@@ -47,36 +47,36 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
   const progressPct = Math.round((completedCount / totalAgents) * 100);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90  animate-in fade-in duration-200">
-      <div className="w-full max-w-2xl sm:max-w-3xl bg-[#090d18] border border-white/15 rounded-[10px] shadow-2xl shadow-fuchsia-950/40 overflow-hidden flex flex-col max-h-[88vh]">
-        {/* Header */}
-        <div className="px-6 py-5 border-b border-white/10 flex items-center justify-between bg-[#060912]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="w-full max-w-2xl sm:max-w-3xl bg-white dark:bg-[#16181c] border border-[#dee1e6] dark:border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[88vh] transition-colors duration-200">
+        {/* Header - Coinbase Calm Editorial */}
+        <div className="px-6 py-5 border-b border-[#dee1e6] dark:border-white/10 flex items-center justify-between bg-[#f7f7f7] dark:bg-[#0a0b0d]">
           <div className="flex items-center gap-3.5">
             <img
               src="/logo.png"
               alt="Logo"
-              className="w-10 h-10 rounded-[8px] object-cover border border-white/10 shrink-0"
+              className="w-10 h-10 rounded-xl object-contain bg-white dark:bg-white/5 border border-[#dee1e6] dark:border-white/10 p-1 shrink-0 shadow-sm"
             />
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-bold text-white font-display">
+                <h3 className="text-base font-bold text-[#0a0b0d] dark:text-white font-display">
                   Evaluating {symbol}
                 </h3>
-                <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-white/10 text-cyan-300 border border-white/10">
+                <span className="text-xs font-mono font-semibold px-2.5 py-0.5 rounded-full bg-[#0052ff]/10 text-[#0052ff] border border-[#0052ff]/20">
                   {exchange}
                 </span>
                 {dataSourceTier === 'DHAN_PRO_VERIFIED' ? (
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-[4px] bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 flex items-center gap-1 shadow-[0_0_8px_rgba(6,182,212,0.3)]">
-                    <span className="w-1.5 h-1 rounded-full bg-cyan-400 animate-pulse" />
+                  <span className="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-[#0052ff]/10 text-[#0052ff] border border-[#0052ff]/20 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#0052ff] animate-pulse" />
                     DHAN PRO FEED
                   </span>
                 ) : (
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-[4px] bg-white/5 text-slate-400 border border-white/10">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#eef0f3] dark:bg-white/5 text-[#7c828a] border border-[#dee1e6] dark:border-white/5">
                     STANDARD FEED
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-300 font-medium truncate max-w-md mt-0.5">
+              <p className="text-xs text-[#5b616e] dark:text-[#a8acb3] font-medium truncate max-w-md mt-0.5">
                 {companyName}
               </p>
             </div>
@@ -84,16 +84,16 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
 
           <div className="flex items-center gap-3">
             <div className="text-right hidden sm:block">
-              <div className="text-xs font-mono font-bold text-fuchsia-400">
+              <div className="text-xs font-mono font-bold text-[#0052ff]">
                 {completedCount} / {totalAgents} Roles Complete
               </div>
-              <div className="text-xs text-slate-400 font-mono">Research Committee</div>
+              <div className="text-xs text-[#7c828a] font-mono">Research Committee</div>
             </div>
             {isComplete && (
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1.5 rounded-[4px] text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                className="p-1.5 rounded-full text-[#7c828a] hover:text-[#0a0b0d] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -101,42 +101,42 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
           </div>
         </div>
 
-        {/* Progress Bar with glowing neon gradient */}
-        <div className="w-full bg-[#050810] h-1">
+        {/* Progress Bar - Coinbase Blue */}
+        <div className="w-full bg-[#eef0f3] dark:bg-white/5 h-1.5">
           <div
-            className="bg-gradient-to-r from-fuchsia-500 via-purple-500 to-cyan-400 h-1 transition-colors duration-120 shadow-[0_0_12px_rgba(217,70,239,0.7)]"
+            className="bg-[#0052ff] h-1.5 transition-all duration-300"
             style={{ width: `${progressPct}%` }}
           />
         </div>
 
-        {/* Agent Step-by-Step List with Clean Ticks */}
-        <div className="p-5 overflow-y-auto divide-y divide-white/5 space-y-1">
+        {/* Agent Step-by-Step List */}
+        <div className="p-5 overflow-y-auto divide-y divide-[#dee1e6] dark:divide-white/5 space-y-1">
           {feedNotice && (
-            <div className="p-3.5 mb-3 rounded-[8px] bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-medium flex items-center justify-between gap-2.5">
+            <div className="p-3.5 mb-3 rounded-2xl bg-[#f4b000]/10 border border-[#f4b000]/25 text-[#f4b000] text-xs font-medium flex items-center justify-between gap-2.5">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-amber-400" />
+                <span className="w-2 h-2 rounded-full bg-[#f4b000]" />
                 <span>{feedNotice}</span>
               </div>
-              <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-200">
+              <span className="text-[10px] uppercase font-mono px-2.5 py-0.5 rounded-full bg-[#f4b000]/20 font-bold">
                 Standard Feed
               </span>
             </div>
           )}
 
           {isQuotaExhausted && (
-            <div className="p-4 mb-3 rounded-[8px] bg-rose-500/15 border border-rose-500/40 text-rose-200 text-xs font-medium space-y-2">
-              <div className="flex items-center gap-2 text-rose-300 font-semibold text-sm">
-                <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0" />
-                <span>Cloud model has exhausted its limit</span>
+            <div className="p-4 mb-3 rounded-2xl bg-[#cf202f]/10 border border-[#cf202f]/30 text-[#cf202f] text-xs font-medium space-y-2">
+              <div className="flex items-center gap-2 font-semibold text-sm">
+                <ShieldAlert className="w-4 h-4 shrink-0" />
+                <span>Cloud model request limit reached</span>
               </div>
-              <p className="text-slate-300 leading-relaxed">
-                The Gemini free tier request or token limit has been reached. Please wait 45-60 seconds before triggering the next report, or switch your provider in backend/.env.
+              <p className="text-[#5b616e] dark:text-[#a8acb3] leading-relaxed">
+                The Gemini free tier request or token limit has been reached. Please wait 45-60 seconds before triggering the next report, or check your backend API key.
               </p>
               <div className="pt-1 flex items-center gap-2">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-3 py-1.5 rounded-[4px] bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-full bg-[#cf202f]/15 hover:bg-[#cf202f]/25 text-[#cf202f] font-semibold text-xs transition cursor-pointer"
                 >
                   Close &amp; Retry in 60s
                 </button>
@@ -145,8 +145,8 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
           )}
 
           {error && !isQuotaExhausted && (
-            <div className="p-4 mb-3 rounded-[8px] bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-medium flex items-center gap-2.5">
-              <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0" />
+            <div className="p-4 mb-3 rounded-2xl bg-[#cf202f]/10 border border-[#cf202f]/30 text-[#cf202f] text-xs font-medium flex items-center gap-2.5">
+              <ShieldAlert className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
@@ -157,101 +157,100 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
 
             return (
               <React.Fragment key={agent.id}>
-              <div
-                className={`py-3 px-3.5 rounded-[8px] flex items-start justify-between gap-3 transition-colors duration-120 ${
-                  isRunning
-                    ? 'bg-fuchsia-500/10 border border-fuchsia-500/40 shadow-[0_0_15px_rgba(217,70,239,0.15)]'
-                    : isDone
-                    ? 'hover:bg-white/[0.02]'
-                    : 'opacity-40'
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="mt-0.5 flex-shrink-0">
-                    {isDone ? (
-                      <div className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/50 flex items-center justify-center text-emerald-300 shadow-[0_0_8px_rgba(16,185,129,0.3)]">
-                        <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-                      </div>
-                    ) : isRunning ? (
-                      <div className="w-5 h-5 rounded-full bg-fuchsia-500/20 border border-fuchsia-500/50 flex items-center justify-center text-fuchsia-400">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      </div>
-                    ) : (
-                      <div className="w-5 h-5 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
-                        <span className="w-1.5 h-1 rounded-full bg-slate-600"></span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-white font-display">
-                        {agent.name}
-                      </span>
-                      <span className="text-xs text-slate-400 font-mono">
-                        [{agent.role}]
-                      </span>
+                <div
+                  className={`py-3 px-3.5 rounded-2xl flex items-start justify-between gap-3 transition-colors duration-150 ${
+                    isRunning
+                      ? 'bg-[#0052ff]/5 border border-[#0052ff]/30 shadow-sm'
+                      : isDone
+                      ? 'hover:bg-[#f7f7f7] dark:hover:bg-white/[0.02]'
+                      : 'opacity-40'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="mt-0.5 flex-shrink-0">
+                      {isDone ? (
+                        <div className="w-5 h-5 rounded-full bg-[#05b169]/15 border border-[#05b169]/30 flex items-center justify-center text-[#05b169]">
+                          <Check className="w-3.5 h-3.5 stroke-[2.5]" />
+                        </div>
+                      ) : isRunning ? (
+                        <div className="w-5 h-5 rounded-full bg-[#0052ff]/15 border border-[#0052ff]/30 flex items-center justify-center text-[#0052ff]">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        </div>
+                      ) : (
+                        <div className="w-5 h-5 rounded-full bg-[#eef0f3] dark:bg-white/5 border border-[#dee1e6] dark:border-white/10 flex items-center justify-center">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#7c828a]"></span>
+                        </div>
+                      )}
                     </div>
 
-                    {isDone && agent.summary && (
-                      <p className="mt-1 text-xs sm:text-sm text-slate-300 line-clamp-1 leading-relaxed">
-                        {agent.summary}
-                      </p>
-                    )}
-
-                    {isRunning && (
-                      <p className="mt-1 text-xs sm:text-sm text-fuchsia-300 font-medium animate-pulse flex items-center gap-1.5 font-mono">
-                        <span>
-                          {currentStage === 3 && (agent.id === 'bull' || agent.id === 'bear')
-                            ? 'Cross-examining opposing thesis in rebuttal round...'
-                            : 'Evaluating financial metrics and filing data...'}
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-semibold text-[#0a0b0d] dark:text-white font-display">
+                          {agent.name}
                         </span>
-                      </p>
+                        <span className="text-xs text-[#7c828a] font-mono">
+                          [{agent.role}]
+                        </span>
+                      </div>
+
+                      {isDone && agent.summary && (
+                        <p className="mt-1 text-xs sm:text-sm text-[#5b616e] dark:text-[#a8acb3] line-clamp-1 leading-relaxed">
+                          {agent.summary}
+                        </p>
+                      )}
+
+                      {isRunning && (
+                        <p className="mt-1 text-xs sm:text-sm text-[#0052ff] font-medium animate-pulse flex items-center gap-1.5 font-mono">
+                          <span>
+                            {currentStage === 3 && (agent.id === 'bull' || agent.id === 'bear')
+                              ? 'Cross-examining opposing thesis in rebuttal round...'
+                              : 'Evaluating financial metrics and filing data...'}
+                          </span>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="text-right flex-shrink-0 font-mono text-xs">
+                    {isDone ? (
+                      <span className="text-[#05b169] font-medium">
+                        {agent.duration !== undefined && agent.duration > 0
+                          ? `${Number(agent.duration).toFixed(1)}s`
+                          : '0.8s'}
+                      </span>
+                    ) : isRunning ? (
+                      <span className="text-[#0052ff] font-bold tracking-wider">ACTIVE</span>
+                    ) : (
+                      <span className="text-[#7c828a]">PENDING</span>
                     )}
                   </div>
                 </div>
 
-                <div className="text-right flex-shrink-0 font-mono text-xs">
-                  {isDone ? (
-                    <span className="text-slate-300 font-medium">
-                      {agent.duration !== undefined && agent.duration > 0
-                        ? `${Number(agent.duration).toFixed(1)}s`
-                        : '0.8s'}
+                {agent.id === 'bear' && currentStage === 3 && (
+                  <div className="my-2 py-2 px-3.5 rounded-full bg-[#0052ff]/10 border border-[#0052ff]/20 flex items-center justify-between text-xs font-mono animate-pulse shadow-sm">
+                    <span className="text-[#0052ff] font-semibold tracking-wide">
+                      Adversarial Rebuttal in Progress: Bull and Bear researchers cross-examining opposing theses...
                     </span>
-                  ) : isRunning ? (
-                    <span className="text-fuchsia-400 font-bold tracking-wider">ACTIVE</span>
-                  ) : (
-                    <span className="text-slate-500">PENDING</span>
-                  )}
-                </div>
-              </div>
-              {agent.id === 'bear' && currentStage === 3 && (
-                <div className="my-2 py-2 px-3 rounded-[4px] bg-gradient-to-r from-purple-500/10 via-fuchsia-500/15 to-purple-500/10 border border-fuchsia-500/30 flex items-center justify-between text-xs font-mono animate-pulse shadow-[0_0_12px_rgba(217,70,239,0.15)]">
-                  <span className="text-fuchsia-300 font-semibold tracking-wide">
-                    Adversarial Rebuttal in Progress: Bull and Bear researchers cross-examining opposing theses...
-                  </span>
-                  <span className="text-purple-300 font-bold px-2 py-0.5 rounded bg-purple-500/20 text-[10px] tracking-wider uppercase">
-                    Debate Round
-                  </span>
-                </div>
-              )}
+                    <span className="text-[#0052ff] font-bold px-2 py-0.5 rounded-full bg-[#0052ff]/20 text-[10px] tracking-wider uppercase">
+                      Debate Round
+                    </span>
+                  </div>
+                )}
               </React.Fragment>
             );
           })}
         </div>
 
         {/* Footer */}
-        <div className="px-5 sm:px-6 py-4 border-t border-white/10 bg-[#060912] flex items-center justify-between gap-3 sm:gap-4">
-          <div className="text-xs sm:text-sm text-slate-300 font-mono whitespace-nowrap">
+        <div className="px-5 sm:px-6 py-4 border-t border-[#dee1e6] dark:border-white/10 bg-[#f7f7f7] dark:bg-[#0a0b0d] flex items-center justify-between gap-3 sm:gap-4">
+          <div className="text-xs sm:text-sm text-[#5b616e] dark:text-[#a8acb3] font-mono whitespace-nowrap">
             {isComplete ? (
-              <span className="text-emerald-400 font-bold flex items-center gap-1.5">
-                <Check className="w-4 h-4 stroke-[2.5] shrink-0 text-emerald-400" />
+              <span className="text-[#05b169] font-semibold flex items-center gap-1.5">
+                <Check className="w-4 h-4 stroke-[2.5] shrink-0 text-[#05b169]" />
                 <span>All 13 Research Perspectives Completed</span>
               </span>
             ) : (
-              <span className="text-slate-300 font-medium">
-                Processing multi-analyst research stages...
-              </span>
+              <span>Processing multi-analyst research stages...</span>
             )}
           </div>
 
@@ -259,7 +258,7 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-[8px] bg-gradient-to-r from-fuchsia-600 via-purple-600 to-cyan-500 hover:from-fuchsia-500 hover:to-cyan-400 text-white text-xs sm:text-sm font-bold transition-all shadow-lg shadow-fuchsia-950/50 cursor-pointer hover:scale-[1.02]"
+              className="cb-pill-btn-primary shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 px-5 py-2.5 text-xs sm:text-sm font-semibold shadow-sm cursor-pointer"
             >
               <span>Open Institutional Report</span>
               <span>&rarr;</span>

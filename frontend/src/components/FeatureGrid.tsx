@@ -25,29 +25,29 @@ export const FeatureGrid: React.FC = () => {
 
   return (
     <div className="w-full max-w-5xl mx-auto mb-16">
-      <div className="text-center mb-8">
-        <h2 className="text-xl sm:text-2xl font-bold text-white tracking-tight font-display">
+      <div className="text-center mb-10">
+        <h2 className="text-2xl sm:text-4xl font-normal text-[#0a0b0d] dark:text-white tracking-tight font-display">
           13-Point Institutional Research Framework
         </h2>
-        <p className="mt-2 text-xs sm:text-sm text-slate-300 max-w-xl mx-auto leading-relaxed">
+        <p className="mt-3 text-sm sm:text-base text-[#5b616e] dark:text-[#a8acb3] max-w-xl mx-auto leading-relaxed">
           Single-analyst research creates blind spots. EquiAgentic deploys 13 specialized analytical perspectives to stress-test every angle before capital deployment.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {features.map((f, idx) => {
           const Icon = f.icon;
           return (
             <div
               key={idx}
-              className="rounded-2xl bg-[#0c101c]/80 border border-white/10 p-6 flex flex-col justify-between hover:border-fuchsia-500/40 transition-all duration-300 shadow-xl shadow-black/40 hover:-translate-y-1 backdrop-blur-md group"
+              className="cb-card cb-card-hover p-8 rounded-[24px] flex flex-col justify-between group transition-all duration-200"
             >
               <div>
-                <div className="w-11 h-11 rounded-xl border flex items-center justify-center mb-4 text-fuchsia-400 bg-fuchsia-500/10 border-fuchsia-500/30 shadow-[0_0_15px_rgba(217,70,239,0.15)] group-hover:scale-105 transition-transform">
-                  <Icon className="w-5 h-5 stroke-[1.75]" />
+                <div className="w-12 h-12 rounded-full flex items-center justify-center mb-6 text-[#0052ff] dark:text-white bg-[#f7f7f7] dark:bg-white/5 border border-[#dee1e6] dark:border-white/10 group-hover:bg-[#0052ff] group-hover:text-white group-hover:border-[#0052ff] transition-all duration-200 shadow-sm">
+                  <Icon className="w-6 h-6 stroke-[1.75]" />
                 </div>
-                <h3 className="text-base font-bold text-white mb-2 font-display">{f.title}</h3>
-                <p className="text-xs text-slate-300 leading-relaxed">{f.description}</p>
+                <h3 className="text-xl font-normal text-[#0a0b0d] dark:text-white mb-2.5 font-display tracking-tight">{f.title}</h3>
+                <p className="text-sm font-normal text-[#5b616e] dark:text-[#a8acb3] leading-relaxed">{f.description}</p>
               </div>
             </div>
           );

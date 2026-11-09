@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   Clock,
   Search,
-  ExternalLink,
   Trash2,
   FileText,
   Loader2,
@@ -35,13 +34,12 @@ export const ReportHistoryView: React.FC<ReportHistoryViewProps> = ({
     if (isAuthenticated) {
       loadHistory();
     } else {
-      // Load any locally cached session reports
       try {
         const local = localStorage.getItem('equiagentic_guest_reports');
         if (local) {
           setReports(JSON.parse(local));
         }
-      } catch {}
+      } catch { }
     }
   }, [isAuthenticated]);
 
@@ -67,7 +65,6 @@ export const ReportHistoryView: React.FC<ReportHistoryViewProps> = ({
           onOpenReport(reportToOpen);
         }
       } else {
-        // Open from guest session cache
         const local = localStorage.getItem('equiagentic_guest_reports_full');
         if (local) {
           const parsed = JSON.parse(local);
@@ -125,7 +122,7 @@ export const ReportHistoryView: React.FC<ReportHistoryViewProps> = ({
 
     if (!matchesSearch) return false;
     if (filterVerdict === 'ALL') return true;
-    
+
     const cleanConviction = getCleanConviction(r);
     if (filterVerdict === 'BUY') return cleanConviction === 'OVERWEIGHT';
     if (filterVerdict === 'SELL') return cleanConviction === 'UNDERWEIGHT';
@@ -136,54 +133,55 @@ export const ReportHistoryView: React.FC<ReportHistoryViewProps> = ({
   const getConvictionColor = (conviction?: string) => {
     const upper = (conviction || '').toUpperCase();
     if (upper.includes('BUY') || upper.includes('ACCUMULATE') || upper.includes('OVERWEIGHT')) {
-      return 'text-emerald-300/90';
+      return 'text-[#05b169]';
     }
     if (upper.includes('SELL') || upper.includes('REDUCE') || upper.includes('UNDERWEIGHT')) {
-      return 'text-rose-300/90';
+      return 'text-[#cf202f]';
     }
-    return 'text-amber-200/75';
+    return 'text-[#f4b000]';
   };
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
-      {/* Guest Mode Callout Banner */}
+      {/* Guest Mode Callout Banner - Coinbase Card */}
       {!isAuthenticated && (
-        <div className="mb-6 p-4 rounded-[8px] border border-white/10 bg-[#0c0e18] flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+        <div className="mb-6 p-5 rounded-3xl border border-[#dee1e6] dark:border-white/10 bg-[#f7f7f7] dark:bg-[#16181c] flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+          <div className="flex items-center gap-3.5">
             <img
               src="/logo.png"
               alt="Logo"
-              className="w-10 h-10 rounded-[6px] object-cover border border-white/10 shrink-0"
+              className="w-10 h-10 rounded-xl object-contain bg-white dark:bg-white/5 border border-[#dee1e6] dark:border-white/10 p-1 shrink-0 shadow-sm"
             />
             <div>
-              <h4 className="text-sm font-semibold text-white">Viewing Session Reports</h4>
-              <p className="text-xs text-slate-400 font-mono">Sign in to sync your reports across devices and unlock permanent cloud archive.</p>
+              <h4 className="text-sm font-semibold text-[#0a0b0d] dark:text-white">Viewing Session Reports</h4>
+              <p className="text-xs text-[#5b616e] dark:text-[#a8acb3] font-mono">Sign in to sync your reports across devices and unlock permanent cloud archive.</p>
             </div>
           </div>
           <button
             onClick={onRequireAuth}
-            className="px-4 py-2 rounded-[6px] bg-[#671270] hover:bg-[#86198f] text-white text-xs font-semibold shrink-0 cursor-pointer"
+            className="cb-pill-btn-primary px-5 py-2.5 text-xs font-semibold shrink-0 cursor-pointer shadow-sm"
           >
             Sign In / Register
           </button>
         </div>
       )}
+
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/10 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#dee1e6] dark:border-white/10 mb-6">
         <div>
           <button
             onClick={onBackToCatalog}
-            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-[8px] bg-white/[0.04] border border-white/10 hover:border-fuchsia-500/40 hover:bg-white/[0.08] text-xs font-mono text-slate-300 hover:text-white mb-3 transition-all cursor-pointer shadow-sm group"
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#f7f7f7] dark:bg-white/5 border border-[#dee1e6] dark:border-white/10 hover:border-[#0052ff] text-xs font-mono text-[#5b616e] dark:text-[#a8acb3] hover:text-[#0a0b0d] dark:hover:text-white mb-3 transition-all cursor-pointer shadow-sm"
           >
-            <ArrowLeft className="w-3.5 h-3.5 text-fuchsia-400 group-hover:-translate-x-0.5 transition-transform" />
+            <ArrowLeft className="w-3.5 h-3.5 text-[#0052ff]" />
             <span>Back to Market Catalog</span>
           </button>
-          <h1 className="text-2xl font-bold text-white font-display flex items-center gap-2.5">
+          <h1 className="text-2xl sm:text-3xl font-normal text-[#0a0b0d] dark:text-white font-display flex items-center gap-3">
             <span>Research Archive &amp; History</span>
-            <span className="text-xs font-mono px-2.5 py-0.5 rounded-[4px] bg-white/[0.06] text-slate-300 border border-white/10 font-semibold">
+            <span className="text-xs font-mono px-3 py-1 rounded-full bg-[#eef0f3] dark:bg-white/10 text-[#5b616e] dark:text-[#a8acb3] border border-[#dee1e6] dark:border-white/10 font-semibold">
               {isAuthenticated
                 ? `${reports.length} Reports Saved`
-                : `${reports.length} Local Session Reports (Unsynced)`}
+                : `${reports.length} Local Session Reports`}
             </span>
           </h1>
         </div>
@@ -191,29 +189,28 @@ export const ReportHistoryView: React.FC<ReportHistoryViewProps> = ({
         {/* Search within history */}
         <div className="flex items-center gap-2">
           <div className="relative w-full sm:w-80">
-            <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400 pointer-events-none" />
+            <Search className="absolute left-4 top-3 h-4 w-4 text-[#7c828a] pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search ticker or company..."
-              className="w-full rounded-[6px] border border-white/15 bg-white/[0.04] pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-400 focus:border-fuchsia-500 focus:bg-white/[0.06] focus:outline-none transition-all font-sans"
+              className="w-full rounded-full border border-[#dee1e6] dark:border-white/10 bg-[#f7f7f7] dark:bg-[#16181c] pl-11 pr-4 py-2.5 text-sm text-[#0a0b0d] dark:text-white placeholder-[#7c828a] focus:border-[#0052ff] focus:outline-none transition-all font-sans"
             />
           </div>
         </div>
       </div>
 
-      {/* Filter Chips */}
+      {/* Filter Chips - Coinbase Pill Hierarchy */}
       <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-1">
         {['ALL', 'BUY', 'NEUTRAL', 'SELL'].map((verdict) => (
           <button
             key={verdict}
             onClick={() => setFilterVerdict(verdict)}
-            className={`px-3 py-1 rounded-[4px] text-xs font-mono uppercase tracking-wider transition-colors duration-120 cursor-pointer ${
-              filterVerdict === verdict
-                ? 'bg-white/15 text-white border border-white/25 shadow-sm font-semibold'
-                : 'bg-white/[0.02] text-slate-400 hover:text-white hover:bg-white/[0.05] border border-white/5'
-            }`}
+            className={`px-4 py-1.5 rounded-full text-xs font-mono uppercase tracking-wider transition-all cursor-pointer ${filterVerdict === verdict
+                ? 'bg-[#0052ff] text-white font-semibold shadow-sm'
+                : 'bg-[#f7f7f7] dark:bg-white/5 text-[#5b616e] dark:text-[#a8acb3] hover:text-[#0a0b0d] dark:hover:text-white border border-[#dee1e6] dark:border-white/10'
+              }`}
           >
             {verdict}
           </button>
@@ -222,23 +219,23 @@ export const ReportHistoryView: React.FC<ReportHistoryViewProps> = ({
 
       {/* Loading state */}
       {isLoading ? (
-        <div className="py-20 flex flex-col items-center justify-center text-slate-400">
-          <Loader2 className="w-8 h-8 animate-spin text-fuchsia-400 mb-3" />
+        <div className="py-20 flex flex-col items-center justify-center text-[#7c828a]">
+          <Loader2 className="w-8 h-8 animate-spin text-[#0052ff] mb-3" />
           <p className="text-xs font-mono">Retrieving saved deliberation archives...</p>
         </div>
       ) : filteredReports.length === 0 ? (
         /* Empty State */
-        <div className="rounded-[8px] border border-dashed border-white/10 p-12 text-center bg-white/[0.01]">
-          <FileText className="mx-auto h-10 w-10 text-slate-600 mb-3" />
-          <h3 className="text-sm font-semibold text-white mb-1">No research reports found</h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto mb-4 font-mono">
+        <div className="rounded-3xl border border-dashed border-[#dee1e6] dark:border-white/10 p-12 text-center bg-[#f7f7f7] dark:bg-white/[0.02]">
+          <FileText className="mx-auto h-10 w-10 text-[#7c828a] mb-3" />
+          <h3 className="text-sm font-semibold text-[#0a0b0d] dark:text-white mb-1">No research reports found</h3>
+          <p className="text-xs text-[#5b616e] dark:text-[#a8acb3] max-w-sm mx-auto mb-4 font-mono">
             {searchQuery
               ? `No saved reports match "${searchQuery}".`
               : 'Generate an institutional report for any NSE or BSE stock to automatically archive it here.'}
           </p>
           <button
             onClick={onBackToCatalog}
-            className="px-4 py-2 rounded-[8px] bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-medium transition-colors duration-120 cursor-pointer"
+            className="cb-pill-btn-primary px-5 py-2 text-xs font-semibold cursor-pointer shadow-sm"
           >
             Explore Stock Catalog
           </button>
@@ -246,94 +243,92 @@ export const ReportHistoryView: React.FC<ReportHistoryViewProps> = ({
       ) : (
         /* Report Cards Grid */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredReports.map((report) => (
-            <div
-              key={report.id}
-              onClick={() => handleOpen(report.id)}
-              className="group relative rounded-[8px] border border-white/10 bg-[#07090e]/80 hover:bg-[#0b0e17] p-5 transition-all duration-150 hover:border-white/25 hover:shadow-lg hover:shadow-black/40 cursor-pointer flex flex-col justify-between"
-            >
-              <div>
-                {/* Header: Ticker & Exchange */}
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-lg font-bold text-white tracking-wide group-hover:text-slate-100 transition-colors">
-                        {report.symbol}
-                      </span>
-                      <span className="text-[11px] font-mono px-2 py-0.5 rounded-[4px] bg-white/5 text-slate-300 border border-white/10 font-semibold">
-                        {report.exchange}
-                      </span>
-                      {!isAuthenticated && (
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-[4px] bg-amber-500/10 text-amber-300 border border-amber-500/30 font-medium">
-                          Local Session
-                        </span>
-                      )}
+          {filteredReports.map((report) => {
+            const monogram = report.symbol.slice(0, 2).toUpperCase();
+            return (
+              <div
+                key={report.id}
+                onClick={() => handleOpen(report.id)}
+                className="cb-card cb-card-hover p-6 rounded-[24px] cursor-pointer flex flex-col justify-between group transition-all duration-200 select-none"
+              >
+                <div>
+                  {/* Header: Monogram Plate + Ticker + Exchange */}
+                  <div className="flex items-start justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-11 h-11 rounded-full bg-[#f7f7f7] dark:bg-white/5 border border-[#dee1e6] dark:border-white/10 flex items-center justify-center font-mono font-medium text-sm text-[#0a0b0d] dark:text-white group-hover:bg-[#0052ff] group-hover:text-white group-hover:border-[#0052ff] transition-all duration-200 shrink-0">
+                        {monogram}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-base font-semibold text-[#0a0b0d] dark:text-white tracking-tight group-hover:text-[#0052ff] transition-colors">
+                            {report.symbol}
+                          </span>
+                          <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-[#eef0f3] dark:bg-white/10 text-[#5b616e] dark:text-[#a8acb3] border border-[#dee1e6] dark:border-white/10">
+                            {report.exchange}
+                          </span>
+                          {!isAuthenticated && (
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#f4b000]/10 text-[#f4b000] border border-[#f4b000]/30 font-medium">
+                              Local
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-sm font-normal text-[#5b616e] dark:text-[#a8acb3] group-hover:text-[#0a0b0d] dark:group-hover:text-white truncate mt-0.5 transition-colors" title={report.company_name}>
+                          {report.company_name}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-sm text-slate-300 font-medium truncate max-w-[260px] mt-1" title={report.company_name}>
-                      {report.company_name}
-                    </p>
-                  </div>
-                </div>
 
-                {/* Key Metrics / Highlights - Larger & Highly Readable */}
-                <div className="grid grid-cols-2 gap-3 my-4 py-3 px-4 rounded-[8px] bg-white/[0.03] border border-white/10 font-mono items-center">
-                  <div>
-                    <span className="text-xs text-slate-400 block uppercase font-medium tracking-wider mb-1">Conviction</span>
-                    <span className={`text-base font-bold ${getConvictionColor(getCleanConviction(report))}`}>
-                      {getCleanConviction(report)}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-xs text-slate-400 block uppercase font-medium tracking-wider mb-1">Target Price</span>
-                    <span className="text-base text-slate-100 font-bold font-mono">
-                      {report.target_price || 'Multi-tranche'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Card Footer: Timestamp, Delete, and View in hoverable templates */}
-              <div className="pt-3.5 border-t border-white/10 flex items-center justify-between gap-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] bg-white/[0.03] border border-white/10 text-xs text-slate-400 font-mono hover:text-slate-200 hover:border-white/20 hover:bg-white/[0.06] transition-all">
-                  <Clock className="w-3.5 h-3.5 text-slate-500" />
-                  <span>{new Date(report.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                </span>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={(e) => handleDelete(report.id, e)}
-                    disabled={deletingReportId === report.id}
-                    title="Delete saved report"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-[6px] bg-white/[0.03] border border-white/10 text-xs text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 hover:border-rose-500/30 transition-all cursor-pointer"
-                  >
-                    {deletingReportId === report.id ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <>
+                    <button
+                      onClick={(e) => handleDelete(report.id, e)}
+                      disabled={deletingReportId === report.id}
+                      title="Delete research report"
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-[#7c828a] hover:text-[#cf202f] hover:bg-[#cf202f]/10 transition-colors"
+                    >
+                      {deletingReportId === report.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
                         <Trash2 className="w-3.5 h-3.5" />
-                        <span className="text-xs font-medium hidden sm:inline">Delete</span>
-                      </>
-                    )}
-                  </button>
+                      )}
+                    </button>
+                  </div>
 
-                  <button
-                    onClick={() => handleOpen(report.id)}
-                    disabled={loadingReportId === report.id}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-[6px] bg-white/[0.06] border border-white/15 hover:bg-white/[0.12] hover:border-white/30 text-white transition-all text-xs font-medium cursor-pointer"
-                  >
+                  {/* Key Metrics / Highlights - Coinbase Recessed Metric Plate */}
+                  <div className="grid grid-cols-2 gap-3 my-4 py-3.5 px-4 rounded-[18px] bg-[#f7f7f7] dark:bg-[#0a0b0d] border border-[#dee1e6] dark:border-white/5 font-mono items-center">
+                    <div>
+                      <span className="text-[11px] text-[#7c828a] block uppercase font-medium tracking-wider mb-1">Conviction</span>
+                      <span className={`text-sm sm:text-base font-semibold ${getConvictionColor(getCleanConviction(report))}`}>
+                        {getCleanConviction(report)}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-[#7c828a] block uppercase font-medium tracking-wider mb-1">Target Price</span>
+                      <span className="text-sm sm:text-base text-[#0a0b0d] dark:text-white font-semibold font-mono">
+                        {report.target_price || 'Multi-tranche'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card Footer: Timestamp & Action */}
+                <div className="pt-3 border-t border-[#dee1e6] dark:border-white/10 flex items-center justify-between text-xs text-[#7c828a]">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-[#7c828a] dark:text-[#636870]">
+                    <Clock className="w-3 h-3" />
+                    <span>{new Date(report.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                  </span>
+                  <span className="text-xs font-medium text-[#0052ff] opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                     {loadingReportId === report.id ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
                       <>
-                        <span>View</span>
-                        <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        <span>Opening...</span>
                       </>
+                    ) : (
+                      <span>Open Report →</span>
                     )}
-                  </button>
+                  </span>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
