@@ -332,8 +332,14 @@ export const ReportView: React.FC<ReportViewProps> = ({ report, onBack }) => {
                 <Crosshair className="w-5 h-5 stroke-[2]" />
               </div>
               <div>
-                <h3 className="text-xl font-normal text-[#0a0b0d] dark:text-white font-display">Tactical Trade Desk Execution Matrix</h3>
-                <p className="text-xs text-[#5b616e] dark:text-[#a8acb3]">Disciplined institutional entry bands, invalidation thresholds, and volatility buffers.</p>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <h3 className="text-xl font-normal text-[#0a0b0d] dark:text-white font-display">Tactical Trade Desk</h3>
+                  <span className="text-[11px] font-mono font-medium px-2.5 py-0.5 rounded-full bg-[#f4b000]/10 text-[#f4b000] border border-[#f4b000]/30 flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#f4b000] animate-pulse" />
+                    Coming Soon... (In Progress - Not Yet Implemented)
+                  </span>
+                </div>
+                <p className="text-xs text-[#5b616e] dark:text-[#a8acb3] mt-1">Disciplined institutional entry bands, invalidation thresholds, and volatility buffers.</p>
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">

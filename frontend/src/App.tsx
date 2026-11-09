@@ -52,8 +52,11 @@ export function App() {
     try {
       const stored = localStorage.getItem('equiagentic_theme');
       if (stored === 'light' || stored === 'dark') return stored;
+      if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        return 'dark';
+      }
     } catch {}
-    return 'dark';
+    return 'light';
   });
 
   useEffect(() => {
@@ -67,6 +70,23 @@ export function App() {
       localStorage.setItem('equiagentic_theme', theme);
     } catch {}
   }, [theme]);
+
+  // Sync with system theme preference if user hasn't explicitly chosen yet
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('equiagentic_theme');
+      if (!stored && typeof window !== 'undefined' && window.matchMedia) {
+        const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+        const handleChange = (e: MediaQueryListEvent) => {
+          if (!localStorage.getItem('equiagentic_theme')) {
+            setTheme(e.matches ? 'dark' : 'light');
+          }
+        };
+        mediaQuery.addEventListener('change', handleChange);
+        return () => mediaQuery.removeEventListener('change', handleChange);
+      }
+    } catch {}
+  }, []);
 
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
