@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Lock, Mail, User as UserIcon, Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import { loginUser, registerUser, googleAuth } from '../api';
 import type { User } from '../types';
+import logoImg from '../assets/logo.png';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -97,7 +98,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         {/* Header - Coinbase Calm Editorial */}
         <div className="mb-6 text-center">
           <img
-            src="/logo.png"
+            src={logoImg}
             alt="EquiAgentic Logo"
             className="w-14 h-14 rounded-2xl object-contain bg-white dark:bg-white/5 mx-auto mb-3 border border-[#dee1e6] dark:border-white/10 p-1.5 shadow-sm"
           />

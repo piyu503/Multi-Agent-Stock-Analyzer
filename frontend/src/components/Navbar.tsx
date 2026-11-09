@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BarChart3, Layers, Clock, LogIn, LogOut, Star, Sun, Moon } from 'lucide-react';
 import type { User } from '../types';
+import logoImg from '../assets/logo.png';
 
 interface NavbarProps {
   onHomeClick: () => void;
@@ -67,7 +68,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           className="flex items-center gap-2.5 cursor-pointer group select-none"
         >
           <img
-            src="/logo.png"
+            src={logoImg}
             alt="EquiAgentic Logo"
             className="w-8 h-8 rounded-lg object-contain bg-white dark:bg-white/5 shrink-0 border border-[#dee1e6] dark:border-white/15 p-0.5 shadow-sm"
           />

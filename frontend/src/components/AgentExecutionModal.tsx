@@ -1,5 +1,6 @@
 import React from 'react';
 import { Check, Loader2, X, ShieldAlert } from 'lucide-react';
+import logoImg from '../assets/logo.png';
 
 export interface AgentProgressItem {
   id: string;
@@ -53,7 +54,7 @@ export const AgentExecutionModal: React.FC<AgentExecutionModalProps> = ({
         <div className="px-6 py-5 border-b border-[#dee1e6] dark:border-white/10 flex items-center justify-between bg-[#f7f7f7] dark:bg-[#0a0b0d]">
           <div className="flex items-center gap-3.5">
             <img
-              src="/logo.png"
+              src={logoImg}
               alt="Logo"
               className="w-10 h-10 rounded-xl object-contain bg-white dark:bg-white/5 border border-[#dee1e6] dark:border-white/10 p-1 shrink-0 shadow-sm"
             />
