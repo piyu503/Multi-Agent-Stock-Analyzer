@@ -100,7 +100,12 @@ async def foundational_analysts_node(state: AgentGraphState) -> Dict[str, Any]:
         MarketAnalyst(),
         PeerValuationAnalyst(),
     ]
-    tasks = [a.run(company) for a in analysts]
+    async def _staggered_run(a, delay: float):
+        if delay > 0:
+            await asyncio.sleep(delay)
+        return await a.run(company)
+
+    tasks = [_staggered_run(a, idx * 0.4) for idx, a in enumerate(analysts)]
     results = await asyncio.gather(*tasks, return_exceptions=False)
     
     evidence_pool = {
@@ -189,6 +194,8 @@ async def risk_and_execution_node(state: AgentGraphState) -> Dict[str, Any]:
 
 # Node 5: Portfolio Manager Conviction Synthesis
 async def pm_synthesis_node(state: AgentGraphState) -> Dict[str, Any]:
+    # Pacing buffer before final synthesis to ensure Gemini rolling 15 RPM quota has reset
+    await asyncio.sleep(2.5)
     pm_agent = PortfolioManagerAgent()
     manager_output = state["manager_output"]
     bull_initial = state.get("bull_initial")
@@ -560,7 +567,9 @@ async def stream_stock_research(company_context: Dict[str, Any]):
     for agent in specialist_instances:
         yield {"event": "agent_start", "data": {"role": agent.role, "agent_name": agent.name, "stage": 1}}
 
-    async def _run_foundational_agent(ag):
+    async def _run_foundational_agent(ag, delay: float = 0.0):
+        if delay > 0:
+            await asyncio.sleep(delay)
         logger.info(f"[STAGE 1 DISPATCH] Running '{ag.name}' ({ag.role}) | Tier: {ag.model_tier}")
         t_start = asyncio.get_event_loop().time()
         res = await ag.run(state["company_context"], timeout_sec=60.0)
@@ -568,7 +577,7 @@ async def stream_stock_research(company_context: Dict[str, Any]):
         logger.info(f"[STAGE 1 DONE] '{ag.name}' completed in {dur}s | Status: {res.execution_status}")
         return res
 
-    tasks = [asyncio.create_task(_run_foundational_agent(ag)) for ag in specialist_instances]
+    tasks = [asyncio.create_task(_run_foundational_agent(ag, idx * 0.4)) for idx, ag in enumerate(specialist_instances)]
     foundational_runs = []
 
     for finished in asyncio.as_completed(tasks):
@@ -597,6 +606,7 @@ async def stream_stock_research(company_context: Dict[str, Any]):
     }
 
     # Stage 2: Independent Theses in Parallel (Bull & Bear with Live Ticking)
+    await asyncio.sleep(1.0)
     yield {"event": "agent_start", "data": {"role": "Bull Researcher", "agent_name": "Bull Researcher", "stage": 2}}
     yield {"event": "agent_start", "data": {"role": "Bear Researcher", "agent_name": "Bear Researcher", "stage": 2}}
 
@@ -636,6 +646,7 @@ async def stream_stock_research(company_context: Dict[str, Any]):
             }
 
     # Stage 3: Adversarial Rebuttal Round between Bull & Bear
+    await asyncio.sleep(1.0)
     logger.info("[STAGE 3 DISPATCH] Adversarial Rebuttal: Bull & Bear cross-examining opposing theses...")
     yield {
         "event": "rebuttal_start",
@@ -680,6 +691,7 @@ async def stream_stock_research(company_context: Dict[str, Any]):
     }
 
     # Stage 4: Risk Evaluation (Must complete before Trader to anchor stop-loss & invalidation)
+    await asyncio.sleep(1.0)
     logger.info("[STAGE 4 DISPATCH] Starting Risk Analyst evaluation...")
     yield {"event": "agent_start", "data": {"role": "Risk Analyst", "agent_name": "Risk Analyst", "stage": 4}}
 
@@ -711,6 +723,7 @@ async def stream_stock_research(company_context: Dict[str, Any]):
     }
 
     # Stage 4B: Execution Trader (Directly consumes Risk Analyst downside boundaries)
+    await asyncio.sleep(1.0)
     logger.info("[STAGE 4B DISPATCH] Starting Execution Trader (anchored by Risk Analyst findings)...")
     yield {"event": "agent_start", "data": {"role": "Trader", "agent_name": "Execution Trader", "stage": 4}}
 
@@ -736,6 +749,7 @@ async def stream_stock_research(company_context: Dict[str, Any]):
     }
 
     # Stage 5: Portfolio Manager Synthesis
+    await asyncio.sleep(2.0)
     yield {"event": "agent_start", "data": {"role": "Portfolio Manager", "agent_name": "Portfolio Manager", "stage": 5}}
     pm_res = await pm_synthesis_node(state)
     state["pm_output"] = pm_res["pm_output"]
